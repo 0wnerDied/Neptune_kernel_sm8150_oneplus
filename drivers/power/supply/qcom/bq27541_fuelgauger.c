@@ -1924,7 +1924,6 @@ write_parameter:
 static int bq27541_battery_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
 {
-	char *name;
 	struct bq27541_device_info *di;
 	struct bq27541_access_methods *bus;
 	int num;
@@ -1944,24 +1943,17 @@ static int bq27541_battery_probe(struct i2c_client *client,
 	if (retval < 0)
 		return retval;
 
-	name = kasprintf(GFP_KERNEL, "%s-%d", id->name, num);
-	if (!name) {
-		pr_err("failed to allocate device name\n");
-		retval = -ENOMEM;
-		goto batt_failed_1;
-	}
-
 	di = kzalloc(sizeof(*di), GFP_KERNEL);
 	if (!di) {
 		retval = -ENOMEM;
-		goto batt_failed_2;
+		goto batt_failed_1;
 	}
 	di->id = num;
 
 	bus = kzalloc(sizeof(*bus), GFP_KERNEL);
 	if (!bus) {
 		retval = -ENOMEM;
-		goto batt_failed_3;
+		goto batt_failed_2;
 	}
 
 	i2c_set_clientdata(client, di);
@@ -1990,19 +1982,19 @@ static int bq27541_battery_probe(struct i2c_client *client,
 		retval = sysfs_create_group(&this_device.dev.kobj,
 				&fs_attr_group);
 		if (retval)
-			goto batt_failed_4;
+			goto batt_failed_3;
 	} else
-		goto batt_failed_4;
+		goto batt_failed_3;
 #endif
 
 	if (retval) {
 		pr_err("failed to setup bq27541\n");
-		goto batt_failed_4;
+		goto batt_failed_3;
 	}
 
 	if (retval) {
 		pr_err("failed to powerup bq27541\n");
-		goto batt_failed_4;
+		goto batt_failed_3;
 	}
 	bq27541_di = di;
 	bq27541_parse_dt(di);
@@ -2024,12 +2016,10 @@ static int bq27541_battery_probe(struct i2c_client *client,
 	}
 	return 0;
 
-batt_failed_4:
-	kfree(bus);
 batt_failed_3:
-	kfree(di);
+	kfree(bus);
 batt_failed_2:
-	kfree(name);
+	kfree(di);
 batt_failed_1:
 	mutex_lock(&battery_mutex);
 	idr_remove(&battery_id, num);
