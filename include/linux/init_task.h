@@ -75,6 +75,7 @@ extern struct fs_struct init_fs;
 		.list = LIST_HEAD_INIT(sig.shared_pending.list),	\
 		.signal =  {{0}}},					\
 	INIT_POSIX_TIMERS(sig)						\
+	.leader_pid = &init_struct_pid,						\
 	INIT_CPU_TIMERS(sig)						\
 	.rlim		= INIT_RLIMITS,					\
 	INIT_CPUTIMER(sig)						\
