@@ -75,9 +75,9 @@ extern struct fs_struct init_fs;
 		.list = LIST_HEAD_INIT(sig.shared_pending.list),	\
 		.signal =  {{0}}},					\
 	INIT_POSIX_TIMERS(sig)						\
-	.leader_pid = &init_struct_pid,						\
 	.pids = {						\
 		[PIDTYPE_PID]	= &init_struct_pid,						\
+		[PIDTYPE_TGID]	= &init_struct_pid,						\
 		[PIDTYPE_PGID]	= &init_struct_pid,						\
 		[PIDTYPE_SID]	= &init_struct_pid,						\
 	},						\
