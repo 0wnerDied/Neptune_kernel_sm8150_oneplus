@@ -76,6 +76,11 @@ extern struct fs_struct init_fs;
 		.signal =  {{0}}},					\
 	INIT_POSIX_TIMERS(sig)						\
 	.leader_pid = &init_struct_pid,						\
+	.pids = {						\
+		[PIDTYPE_PID]	= &init_struct_pid,						\
+		[PIDTYPE_PGID]	= &init_struct_pid,						\
+		[PIDTYPE_SID]	= &init_struct_pid,						\
+	},						\
 	INIT_CPU_TIMERS(sig)						\
 	.rlim		= INIT_RLIMITS,					\
 	INIT_CPUTIMER(sig)						\
@@ -108,15 +113,6 @@ extern struct group_info init_groups;
 		.ns		= &init_pid_ns,				\
 		.pid_chain	= { .next = NULL, .pprev = NULL },	\
 	}, }								\
-}
-
-#define INIT_PID_LINK(type) 					\
-{								\
-	.node = {						\
-		.next = NULL,					\
-		.pprev = NULL,					\
-	},							\
-	.pid = &init_struct_pid,				\
 }
 
 #ifdef CONFIG_AUDITSYSCALL
@@ -278,11 +274,7 @@ extern struct cred init_cred;
 	INIT_CPU_TIMERS(tsk)						\
 	.pi_lock	= __RAW_SPIN_LOCK_UNLOCKED(tsk.pi_lock),	\
 	.timer_slack_ns = 50000, /* 50 usec default slack */		\
-	.pids = {							\
-		[PIDTYPE_PID]  = INIT_PID_LINK(PIDTYPE_PID),		\
-		[PIDTYPE_PGID] = INIT_PID_LINK(PIDTYPE_PGID),		\
-		[PIDTYPE_SID]  = INIT_PID_LINK(PIDTYPE_SID),		\
-	},								\
+	.thread_pid	= &init_struct_pid,						\
 	.thread_group	= LIST_HEAD_INIT(tsk.thread_group),		\
 	.thread_node	= LIST_HEAD_INIT(init_signals.thread_head),	\
 	INIT_IDS							\
