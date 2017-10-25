@@ -1001,11 +1001,17 @@ int acpi_subsys_prepare(struct device *dev)
 {
 	struct acpi_device *adev = ACPI_COMPANION(dev);
 	u32 sys_target;
-	int ret, state;
+	int state;
 
-	ret = pm_generic_prepare(dev);
-	if (ret < 0)
-		return ret;
+	if (dev->driver && dev->driver->pm && dev->driver->pm->prepare) {
+		int ret = dev->driver->pm->prepare(dev);
+
+		if (ret < 0)
+			return ret;
+
+		if (!ret && dev_pm_test_driver_flags(dev, DPM_FLAG_SMART_PREPARE))
+			return 0;
+	}
 
 	if (!adev || !pm_runtime_suspended(dev)
 	    || device_may_wakeup(dev) != !!adev->wakeup.prepare_count)
