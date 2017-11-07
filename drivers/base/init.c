@@ -1,8 +1,6 @@
 /*
  * Copyright (c) 2002-3 Patrick Mochel
  * Copyright (c) 2002-3 Open Source Development Labs
- *
- * This file is released under the GPLv2
  */
 
 #include <linux/device.h>
