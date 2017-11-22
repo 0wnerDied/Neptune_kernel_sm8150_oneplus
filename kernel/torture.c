@@ -586,7 +586,6 @@ void stutter_wait(const char *title)
 			schedule_timeout_interruptible(round_jiffies_relative(HZ));
 		}
 		torture_shutdown_absorb(title);
-		spt = READ_ONCE(stutter_pause_test);
 	}
 }
 EXPORT_SYMBOL_GPL(stutter_wait);
