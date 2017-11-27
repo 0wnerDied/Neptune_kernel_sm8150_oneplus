@@ -109,7 +109,7 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
 	struct pid_namespace *ns;
 	char *options;
 
-	if (flags & MS_KERNMOUNT) {
+	if (flags & SB_KERNMOUNT) {
 		ns = (struct pid_namespace *)data;
 		options = NULL;
 	} else {
@@ -137,7 +137,7 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
 			return ERR_PTR(err);
 		}
 
-		sb->s_flags |= MS_ACTIVE;
+		sb->s_flags |= SB_ACTIVE;
 		/* User space would break if executables appear on proc */
 		sb->s_iflags |= SB_I_NOEXEC;
 	}

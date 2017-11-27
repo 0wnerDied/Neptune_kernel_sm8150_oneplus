@@ -251,7 +251,7 @@ static void cramfs_kill_sb(struct super_block *sb)
 static int cramfs_remount(struct super_block *sb, int *flags, char *data)
 {
 	sync_filesystem(sb);
-	*flags |= MS_RDONLY;
+	*flags |= SB_RDONLY;
 	return 0;
 }
 
@@ -263,7 +263,7 @@ static int cramfs_fill_super(struct super_block *sb, void *data, int silent)
 	struct cramfs_sb_info *sbi;
 	struct inode *root;
 
-	sb->s_flags |= MS_RDONLY;
+	sb->s_flags |= SB_RDONLY;
 
 	sbi = kzalloc(sizeof(struct cramfs_sb_info), GFP_KERNEL);
 	if (!sbi)
