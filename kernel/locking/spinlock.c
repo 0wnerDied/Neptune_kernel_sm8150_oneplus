@@ -75,8 +75,8 @@ void __lockfunc __raw_##op##_lock(locktype##_t *lock)			\
 									\
 		if (!(lock)->break_lock)				\
 			(lock)->break_lock = 1;				\
-		while ((lock)->break_lock)				\
-			arch_##op##_relax(&lock->raw_lock);		\
+									\
+		arch_##op##_relax(&lock->raw_lock);			\
 	}								\
 	(lock)->break_lock = 0;						\
 }									\
@@ -95,8 +95,8 @@ unsigned long __lockfunc __raw_##op##_lock_irqsave(locktype##_t *lock)	\
 									\
 		if (!(lock)->break_lock)				\
 			(lock)->break_lock = 1;				\
-		while ((lock)->break_lock)				\
-			arch_##op##_relax(&lock->raw_lock);		\
+									\
+		arch_##op##_relax(&lock->raw_lock);			\
 	}								\
 	(lock)->break_lock = 0;						\
 	return flags;							\
