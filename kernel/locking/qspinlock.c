@@ -475,8 +475,14 @@ pv_queue:
 	if (old & _Q_TAIL_MASK) {
 		prev = decode_tail(old);
 
-		/* Link @node into the waitqueue. */
-		WRITE_ONCE(prev->next, node);
+		/*
+		 * We must ensure that the stores to @node are observed before
+		 * the write to prev->next. The address dependency from
+		 * xchg_tail is not sufficient to ensure this because the read
+		 * component of xchg_tail is unordered with respect to the
+		 * initialisation of @node.
+		 */
+		smp_store_release(&prev->next, node);
 
 		pv_wait_node(node, prev);
 		arch_mcs_spin_lock_contended(&node->locked);
