@@ -2419,6 +2419,7 @@ static int msm_geni_serial_probe(struct platform_device *pdev)
 	struct device_node *wrapper_ph_node;
 	u32 wake_char = 0;
 	char boot_marker[40];
+	int irq;
 
 	id = of_match_device(msm_geni_device_tbl, &pdev->dev);
 	if (id) {
@@ -2608,12 +2609,13 @@ static int msm_geni_serial_probe(struct platform_device *pdev)
 	uport->fifosize =
 		((dev_port->tx_fifo_depth * dev_port->tx_fifo_width) >> 3);
 
-	uport->irq = platform_get_irq(pdev, 0);
-	if (uport->irq < 0) {
-		ret = uport->irq;
+	irq = platform_get_irq(pdev, 0);
+	if (irq < 0) {
+		ret = irq;
 		dev_err(&pdev->dev, "Failed to get IRQ %d\n", ret);
 		goto exit_geni_serial_probe;
 	}
+	uport->irq = irq;
 
 	uport->private_data = (void *)drv;
 	platform_set_drvdata(pdev, dev_port);
