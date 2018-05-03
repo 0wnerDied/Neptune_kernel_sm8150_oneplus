@@ -1605,38 +1605,35 @@ static irqreturn_t msm_geni_wakeup_isr(int isr, void *dev)
 	return IRQ_HANDLED;
 }
 
-static int get_tx_fifo_size(struct msm_geni_serial_port *port)
+static void get_tx_fifo_size(struct msm_geni_serial_port *port)
 {
 	struct uart_port *uport;
-
-	if (!port)
-		return -ENODEV;
 
 	uport = &port->uport;
 	port->tx_fifo_depth = get_tx_fifo_depth(uport->membase);
 	if (!port->tx_fifo_depth) {
 		dev_err(uport->dev, "%s:Invalid TX FIFO depth read\n",
 								__func__);
-		return -ENXIO;
+		return;
 	}
 
 	port->tx_fifo_width = get_tx_fifo_width(uport->membase);
 	if (!port->tx_fifo_width) {
 		dev_err(uport->dev, "%s:Invalid TX FIFO width read\n",
 								__func__);
-		return -ENXIO;
+		return;
 	}
 
 	port->rx_fifo_depth = get_rx_fifo_depth(uport->membase);
 	if (!port->rx_fifo_depth) {
 		dev_err(uport->dev, "%s:Invalid RX FIFO depth read\n",
 								__func__);
-		return -ENXIO;
+		return;
 	}
 
 	uport->fifosize =
 		((port->tx_fifo_depth * port->tx_fifo_width) >> 3);
-	return 0;
+	return;
 }
 
 static void set_rfr_wm(struct msm_geni_serial_port *port)
@@ -1665,7 +1662,6 @@ static void msm_geni_serial_shutdown(struct uart_port *uport)
 		msm_geni_serial_stop_tx(uport);
 	}
 
-	disable_irq(uport->irq);
 	free_irq(uport->irq, uport);
 	spin_lock_irqsave(&uport->lock, flags);
 	msm_geni_serial_stop_tx(uport);
@@ -2442,8 +2438,6 @@ static int msm_geni_serial_probe(struct platform_device *pdev)
 			else
 				uart_line_id++;
 		}
-	} else {
-		line = pdev->id;
 	}
 
 	if (strcmp(id->compatible, "qcom,msm-geni-console") == 0)
