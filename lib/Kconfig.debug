@@ -791,6 +791,11 @@ config ARCH_HAS_KCOV
 config CC_HAS_SANCOV_TRACE_PC
 	def_bool ARCH_HAS_KCOV
 
+# Upstream uses $(cc-option, -fsanitize-coverage=trace-pc), which requires
+# cc-option support. Here we instead check CC in scripts/Makefile.kcov.
+config CC_HAS_SANCOV_TRACE_PC
+	def_bool ARCH_HAS_KCOV
+
 config KCOV
 	bool "Code coverage for fuzzing"
 	depends on ARCH_HAS_KCOV
