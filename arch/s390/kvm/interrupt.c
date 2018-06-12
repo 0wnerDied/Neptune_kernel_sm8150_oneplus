@@ -1093,7 +1093,7 @@ void kvm_s390_vcpu_wakeup(struct kvm_vcpu *vcpu)
 		 * yield-candidate.
 		 */
 		vcpu->preempted = true;
-		swake_up(&vcpu->wq);
+		swake_up_one(&vcpu->wq);
 		vcpu->stat.halt_wakeup++;
 	}
 	/*
