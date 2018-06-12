@@ -3049,8 +3049,7 @@ static int init_blkz_info(struct f2fs_sb_info *sbi, int devi)
 		FDEV(devi).nr_blkz++;
 
 	FDEV(devi).blkz_seq = f2fs_kvzalloc(sbi,
-					BITS_TO_LONGS(FDEV(devi).nr_blkz)
-					* sizeof(unsigned long),
+					array_size(sizeof(unsigned long), BITS_TO_LONGS(FDEV(devi).nr_blkz)),
 					GFP_KERNEL);
 	if (!FDEV(devi).blkz_seq)
 		return -ENOMEM;
