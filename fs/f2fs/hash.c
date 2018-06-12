@@ -118,7 +118,7 @@ f2fs_hash_t f2fs_dentry_hash(const struct inode *dir,
 	if (!name_info->len || !IS_CASEFOLDED(dir))
 		goto opaque_seq;
 
-	buff = f2fs_kzalloc(sbi, PATH_MAX, GFP_KERNEL);
+	buff = f2fs_kzalloc(sbi, sizeof(char) * PATH_MAX, GFP_KERNEL);
 	if (!buff)
 		return -ENOMEM;
 
