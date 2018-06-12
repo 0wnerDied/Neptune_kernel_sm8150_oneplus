@@ -255,8 +255,9 @@ static void CntWrt(struct cam_ois_ctrl_t *o_ctrl,
     }
 
     if (i2c_write_setting_gl == NULL) {
-        i2c_write_setting_gl = (struct cam_sensor_i2c_reg_array *)kzalloc(
-            sizeof(struct cam_sensor_i2c_reg_array)*MAX_DATA_NUM, GFP_KERNEL);
+        i2c_write_setting_gl = (struct cam_sensor_i2c_reg_array *) kcalloc(MAX_DATA_NUM,
+                                                                           sizeof(struct cam_sensor_i2c_reg_array),
+                                                                           GFP_KERNEL);
         if(!i2c_write_setting_gl) {
             CAM_ERR(CAM_OIS, "Alloc i2c_write_setting_gl failed");
             return;

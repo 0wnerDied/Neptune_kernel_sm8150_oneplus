@@ -4696,7 +4696,8 @@ static ssize_t aw8697_haptic_audio_ai_input_store(struct device *dev, struct dev
 	memcpy(ai_tz, buf, sizeof(struct ai_trust_zone));
 	pr_debug("%s: ai_tz num=%d\n", __func__, ai_tz->num);
 
-	ai_tz_info = kzalloc(ai_tz->num * sizeof(struct trust_zone_info), GFP_KERNEL);
+	ai_tz_info = kcalloc(ai_tz->num, sizeof(struct trust_zone_info),
+			     GFP_KERNEL);
 	if (!ai_tz_info) {
 		pr_err("%s: ai_tz_info error allocating memory\n", __func__);
 		kfree(ai_tz);
@@ -4953,7 +4954,7 @@ static ssize_t aw8697_haptic_ram_test_store(struct device *dev, struct device_at
 		pr_err("%s: error allocating memory\n", __func__);
 		return count ;
 	}
-	pbuf = kzalloc(tmp_len*sizeof(char), GFP_KERNEL);
+	pbuf = kzalloc(tmp_len, GFP_KERNEL);
 	if (!pbuf) {
 		pr_err("%s: Error allocating memory\n", __func__);
 		return count;
