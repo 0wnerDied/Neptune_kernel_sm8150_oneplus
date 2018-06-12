@@ -49,8 +49,7 @@ static struct i2c_settings_list*
 	} else {
 		tmp->i2c_settings.reg_setting =
 			(struct cam_sensor_i2c_reg_array *)
-			vzalloc(sizeof(struct cam_sensor_i2c_reg_array) *
-				size);
+			vzalloc(array_size(size, sizeof(struct cam_sensor_i2c_reg_array)));
 		if (tmp->i2c_settings.reg_setting == NULL) {
 			list_del(&(tmp->list));
 			kfree(tmp);
