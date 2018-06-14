@@ -48,6 +48,36 @@ struct kcov {
 	struct task_struct	*t;
 };
 
+static bool check_kcov_mode(enum kcov_mode needed_mode, struct task_struct *t)
+{
+	unsigned int mode;
+
+	/*
+	 * We are interested in code coverage as a function of a syscall inputs,
+	 * so we ignore code executed in interrupts.
+	 */
+	if (!in_task())
+		return false;
+	mode = READ_ONCE(t->kcov_mode);
+	/*
+	 * There is some code that runs in interrupts but for which
+	 * in_interrupt() returns false (e.g. preempt_schedule_irq()).
+	 * READ_ONCE()/barrier() effectively provides load-acquire wrt
+	 * interrupts, there are paired barrier()/WRITE_ONCE() in
+	 * kcov_ioctl_locked().
+	 */
+	barrier();
+	return mode == needed_mode;
+}
+
+static unsigned long canonicalize_ip(unsigned long ip)
+{
+#ifdef CONFIG_RANDOMIZE_BASE
+	ip -= kaslr_offset();
+#endif
+	return ip;
+}
+
 /*
  * Entry point from instrumented code.
  * This is called once per basic-block/edge.
