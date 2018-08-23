@@ -2426,18 +2426,16 @@ static int msm_geni_serial_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	if (pdev->dev.of_node) {
-		if (drv->cons) {
-			line = of_alias_get_id(pdev->dev.of_node, "serial");
-			if (line < 0)
-				line = 0;
-		} else {
-			line = of_alias_get_id(pdev->dev.of_node, "hsuart");
-			if (line < 0)
-				line = uart_line_id++;
-			else
-				uart_line_id++;
-		}
+	if (drv->cons) {
+		line = of_alias_get_id(pdev->dev.of_node, "serial");
+		if (line < 0)
+			line = 0;
+	} else {
+		line = of_alias_get_id(pdev->dev.of_node, "hsuart");
+		if (line < 0)
+			line = uart_line_id++;
+		else
+			uart_line_id++;
 	}
 
 	if (strcmp(id->compatible, "qcom,msm-geni-console") == 0)
