@@ -207,6 +207,12 @@ static void init_suspend_monitor_thread(void)
 }
 #endif
 
+bool pm_suspend_via_s2idle(void)
+{
+	return mem_sleep_current == PM_SUSPEND_TO_IDLE;
+}
+EXPORT_SYMBOL_GPL(pm_suspend_via_s2idle);
+
 void s2idle_set_ops(const struct platform_s2idle_ops *ops)
 {
 	lock_system_sleep();
