@@ -847,3 +847,7 @@ config ONEPLUS_MEM_MONITOR
 	default n
 	help
 	 memory monitor.
+
+config VMSTAT_INTERVAL
+	int "Default interval in seconds to update vmstat"
+	default 1
