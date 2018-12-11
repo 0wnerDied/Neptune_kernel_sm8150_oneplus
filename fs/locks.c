@@ -1773,8 +1773,7 @@ check_conflicting_open(const struct dentry *dentry, const long arg, int flags)
 	if (flags & FL_LAYOUT)
 		return 0;
 
-	if ((arg == F_RDLCK) &&
-	    (atomic_read(&d_real_inode(dentry)->i_writecount) > 0))
+	if ((arg == F_RDLCK) && inode_is_open_for_write(d_real_inode(dentry)))
 		return -EAGAIN;
 
 	if ((arg == F_WRLCK) && ((d_count(dentry) > 1) ||
