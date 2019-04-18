@@ -607,6 +607,9 @@ static int static_obj(void *obj)
 		      end   = (unsigned long) &_end,
 		      addr  = (unsigned long) obj;
 
+	if (arch_is_kernel_initmem_freed(addr))
+		return 0;
+
 	/*
 	 * static variable?
 	 */
