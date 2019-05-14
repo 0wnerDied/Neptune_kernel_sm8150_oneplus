@@ -1093,7 +1093,7 @@ static int cluster_configure(struct lpm_cluster *cluster, int idx,
 		 * LPMs (XO and Vmin).
 		 */
 		if (!from_idle) {
-			clock_debug_print_enabled(true);
+			clock_debug_print_enabled(false);
 			regulator_debug_print_enabled();
 		}
 
