@@ -77,6 +77,13 @@ struct pm_qos_request pm_qos_req_vb;
 /* add haptic audio tp mask */
 extern struct shake_point record_point[10];
 /* add haptic audio tp mask end */
+
+int ignore_next_request = 0;
+void hap_ignore_next_request(void)
+{
+    ignore_next_request = 1;
+}
+
 /******************************************************
  *
  * variable
@@ -3352,6 +3359,11 @@ static ssize_t aw8697_level_store(struct device *dev,
 
     if (val < 0 || val > 10)
         val = 3;
+
+    if ((ignore_next_request) && (val != 0)) {
+       ignore_next_request = 0;
+       return count;
+    }
 
     pr_info("%s: value=%d\n", __FUNCTION__, val);
     mutex_lock(&aw8697->lock);
