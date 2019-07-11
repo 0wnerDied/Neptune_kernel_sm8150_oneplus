@@ -522,7 +522,7 @@ bool pfk_allow_merge_bio(const struct bio *bio1, const struct bio *bio2,
 	if (which_pfe1 != INVALID_PFE) {
 		/* Both bios are for the same type of encrypted file. */
 		return (*(pfk_allow_merge_bio_ftable[which_pfe1]))(bio1, bio2,
-				inode1, inode2, sectors);
+			inode1, inode2, sectors);
 	}
 
 	/*
