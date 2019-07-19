@@ -2004,8 +2004,8 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 		mbhc->fsa_nb.priority = 0;
 		rc = fsa4480_reg_notifier(&mbhc->fsa_nb, mbhc->fsa_np);
 		if (!rc && mbhc->use_usbc_detect)
-			schedule_delayed_work(&mbhc->mbhc_usbc_detect_dwork,
-				      msecs_to_jiffies(50));
+			queue_delayed_work(system_power_efficient_wq, 
+			&mbhc->mbhc_usbc_detect_dwork, msecs_to_jiffies(50));
 	}
 
 	return rc;
