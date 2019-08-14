@@ -3159,7 +3159,12 @@ static inline unsigned long thermal_cap(int cpu)
 
 static inline void clear_walt_request(int cpu) { }
 
-extern void sched_boost_parse_dt(void);
+static inline enum sched_boost_policy sched_boost_policy(void)
+{
+	return SCHED_BOOST_NONE;
+}
+
+static inline void sched_boost_parse_dt(void) { }
 
 static inline void clear_ed_task(struct task_struct *p, struct rq *rq) { }
 
