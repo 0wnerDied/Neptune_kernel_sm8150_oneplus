@@ -453,6 +453,7 @@ static struct zpool_driver zs_zpool_driver = {
 	.owner =	THIS_MODULE,
 	.create =	zs_zpool_create,
 	.destroy =	zs_zpool_destroy,
+	.malloc_support_movable = true,
 	.malloc =	zs_zpool_malloc,
 	.free =		zs_zpool_free,
 	.shrink =	zs_zpool_shrink,
