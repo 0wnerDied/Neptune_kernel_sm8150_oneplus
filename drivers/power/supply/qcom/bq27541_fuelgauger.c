@@ -943,6 +943,28 @@ static int bq27541_full_chg_capacity(struct bq27541_device_info *di)
 	return cap;
 }
 
+static int bq27541_full_chg_capacity(struct bq27541_device_info *di)
+{
+	int ret;
+	int cap = 0;
+
+	if (di->allow_reading) {
+#ifdef CONFIG_GAUGE_BQ27411
+		/* david.liu@bsp, 20161004 Add BQ27411 support */
+		ret = bq27541_read(BQ27411_REG_FCC,
+				&cap, 0, di);
+#else
+		ret = bq27541_read(BQ27541_REG_FCC, &cap, 0, di);
+#endif
+		if (ret) {
+			pr_err("error reading full chg capacity.\n");
+			return ret;
+		}
+	}
+
+	return cap;
+}
+
 
 static int bq27541_batt_health(struct bq27541_device_info *di)
 {
