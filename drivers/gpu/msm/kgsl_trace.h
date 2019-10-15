@@ -72,7 +72,7 @@
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM kgsl
 #undef TRACE_INCLUDE_PATH
-#define TRACE_INCLUDE_PATH .
+#define TRACE_INCLUDE_PATH ../../drivers/gpu/msm/
 #undef TRACE_INCLUDE_FILE
 #define TRACE_INCLUDE_FILE kgsl_trace
 
