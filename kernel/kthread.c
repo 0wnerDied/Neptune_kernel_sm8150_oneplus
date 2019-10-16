@@ -862,9 +862,9 @@ void kthread_delayed_work_timer_fn(unsigned long __data)
 }
 EXPORT_SYMBOL(kthread_delayed_work_timer_fn);
 
-void __kthread_queue_delayed_work(struct kthread_worker *worker,
-				  struct kthread_delayed_work *dwork,
-				  unsigned long delay)
+static void __kthread_queue_delayed_work(struct kthread_worker *worker,
+					 struct kthread_delayed_work *dwork,
+					 unsigned long delay)
 {
 	struct timer_list *timer = &dwork->timer;
 	struct kthread_work *work = &dwork->work;
