@@ -10,6 +10,8 @@
 #include <linux/ratelimit.h>
 #include <linux/nls.h>
 
+#include "exfat_raw.h"
+
 #define EXFAT_SUPER_MAGIC       0x2011BAB0UL
 #define EXFAT_ROOT_INO		1
 
@@ -203,6 +205,8 @@ struct exfat_mount_options {
 	unsigned short allow_utime;
 	/* charset for filename input/display */
 	char *iocharset;
+	/* fake return success on setattr(e.g. chmods/chowns) */
+	unsigned char quiet;
 	/* on error: continue, panic, remount-ro */
 	enum exfat_error_mode errors;
 	unsigned utf8:1, /* Use of UTF-8 character set */
