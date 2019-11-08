@@ -145,6 +145,7 @@
 #define DIAG_QUERY_TRANSPORT	0x223
 #define DIAG_SWITCH_COMMAND	0x081B
 #define DIAG_BUFFERING_MODE	0x080C
+#define DIAG_QUERY_TRANSPORT	0x0064
 
 #define DIAG_CMD_OP_LOG_DISABLE		0
 #define DIAG_CMD_OP_GET_LOG_RANGE	1
@@ -404,6 +405,15 @@ struct diag_cmd_time_sync_switch_rsp_t {
 	uint8_t time_api;
 	uint8_t time_api_status;
 	uint8_t persist_time_status;
+};
+
+struct diag_query_transport_req_t {
+	struct diag_pkt_header_t header;
+};
+
+struct diag_query_transport_rsp_t {
+	struct diag_pkt_header_t header;
+	uint8_t transport;
 };
 
 struct diag_cmd_reg_entry_t {
