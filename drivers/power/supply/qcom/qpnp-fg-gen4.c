@@ -26,6 +26,8 @@
 #include "fg-core.h"
 #include "fg-reg.h"
 #include "fg-alg.h"
+/* @bsp, 2019/04/17 Battery & Charging porting */
+#include <linux/power/oem_external_fg.h>
 
 #define FG_GEN4_DEV_NAME	"qcom,fg-gen4"
 #define TTF_AWAKE_VOTER		"fg_ttf_awake"
@@ -99,12 +101,20 @@
 #define KI_COEFF_MED_DISCHG_OFFSET	0
 #define KI_COEFF_HI_DISCHG_WORD		26
 #define KI_COEFF_HI_DISCHG_OFFSET	1
+#define KI_COEFF_LO_MED_DCHG_THR_WORD	27
+#define KI_COEFF_LO_MED_DCHG_THR_OFFSET	0
+#define KI_COEFF_MED_HI_DCHG_THR_WORD	27
+#define KI_COEFF_MED_HI_DCHG_THR_OFFSET	1
 #define KI_COEFF_LOW_CHG_WORD		28
 #define KI_COEFF_LOW_CHG_OFFSET		0
 #define KI_COEFF_MED_CHG_WORD		28
 #define KI_COEFF_MED_CHG_OFFSET		1
 #define KI_COEFF_HI_CHG_WORD		29
 #define KI_COEFF_HI_CHG_OFFSET		0
+#define KI_COEFF_LO_MED_CHG_THR_WORD	29
+#define KI_COEFF_LO_MED_CHG_THR_OFFSET	1
+#define KI_COEFF_MED_HI_CHG_THR_WORD	30
+#define KI_COEFF_MED_HI_CHG_THR_OFFSET	0
 #define DELTA_BSOC_THR_WORD		30
 #define DELTA_BSOC_THR_OFFSET		1
 #define SLOPE_LIMIT_WORD		32
@@ -168,6 +178,15 @@
 #define CC_SOC_OFFSET			0
 #define MONOTONIC_SOC_WORD		463
 #define MONOTONIC_SOC_OFFSET		0
+
+/* @bsp, 2019/04/17 Battery & Charging porting */
+static void oem_update_cc_cv_setpoint(struct fg_dev *chip,
+	int cv_float_point);
+static void oneplus_set_allow_read_iic(struct fg_dev *chip,
+	bool status);
+static void oneplus_set_lcd_off_status(struct fg_dev *chip,
+	bool status);
+static struct external_battery_gauge *external_fg;
 
 /* v2 SRAM address and offset in ascending order */
 #define LOW_PASS_VBATT_WORD		3
@@ -241,12 +260,16 @@ struct fg_dt_props {
 	int	ki_coeff_low_chg;
 	int	ki_coeff_med_chg;
 	int	ki_coeff_hi_chg;
+	int	ki_coeff_lo_med_chg_thr_ma;
+	int	ki_coeff_med_hi_chg_thr_ma;
 	int	ki_coeff_cutoff_gain;
 	int	ki_coeff_full_soc_dischg[2];
 	int	ki_coeff_soc[KI_COEFF_SOC_LEVELS];
 	int	ki_coeff_low_dischg[KI_COEFF_SOC_LEVELS];
 	int	ki_coeff_med_dischg[KI_COEFF_SOC_LEVELS];
 	int	ki_coeff_hi_dischg[KI_COEFF_SOC_LEVELS];
+	int	ki_coeff_lo_med_dchg_thr_ma;
+	int	ki_coeff_med_hi_dchg_thr_ma;
 	int	slope_limit_coeffs[SLOPE_LIMIT_NUM_COEFFS];
 };
 
@@ -329,6 +352,25 @@ static int fg_sram_dump_period_ms = 20000;
 module_param_named(
 	sram_dump_period_ms, fg_sram_dump_period_ms, int, 0600
 );
+
+/* @bsp, 2019/04/17 Battery & Charging porting */
+void external_battery_gauge_register(
+				struct external_battery_gauge *batt_gauge)
+{
+	if (external_fg) {
+		external_fg = batt_gauge;
+		pr_err("multiple battery gauge called\n");
+	} else
+		external_fg = batt_gauge;
+}
+EXPORT_SYMBOL(external_battery_gauge_register);
+
+void external_battery_gauge_unregister(
+				struct external_battery_gauge *batt_gauge)
+{
+	external_fg = NULL;
+}
+EXPORT_SYMBOL(external_battery_gauge_unregister);
 
 static int fg_restart_mp;
 static bool fg_sram_dump;
@@ -507,12 +549,24 @@ static struct fg_sram_param pm8150b_v2_sram_params[] = {
 	PARAM(KI_COEFF_HI_DISCHG, KI_COEFF_HI_DISCHG_WORD,
 		KI_COEFF_HI_DISCHG_OFFSET, 1, 1000, 61035, 0,
 		fg_encode_default, NULL),
+	PARAM(KI_COEFF_LO_MED_DCHG_THR, KI_COEFF_LO_MED_DCHG_THR_WORD,
+		KI_COEFF_LO_MED_DCHG_THR_OFFSET, 1, 1000, 15625, 0,
+		fg_encode_default, NULL),
+	PARAM(KI_COEFF_MED_HI_DCHG_THR, KI_COEFF_MED_HI_DCHG_THR_WORD,
+		KI_COEFF_MED_HI_DCHG_THR_OFFSET, 1, 1000, 15625, 0,
+		fg_encode_default, NULL),
 	PARAM(KI_COEFF_LOW_CHG, KI_COEFF_LOW_CHG_WORD, KI_COEFF_LOW_CHG_OFFSET,
 		1, 1000, 61035, 0, fg_encode_default, NULL),
 	PARAM(KI_COEFF_MED_CHG, KI_COEFF_MED_CHG_WORD, KI_COEFF_MED_CHG_OFFSET,
 		1, 1000, 61035, 0, fg_encode_default, NULL),
 	PARAM(KI_COEFF_HI_CHG, KI_COEFF_HI_CHG_WORD, KI_COEFF_HI_CHG_OFFSET, 1,
 		1000, 61035, 0, fg_encode_default, NULL),
+	PARAM(KI_COEFF_LO_MED_CHG_THR, KI_COEFF_LO_MED_CHG_THR_WORD,
+		KI_COEFF_LO_MED_CHG_THR_OFFSET, 1, 1000, 15625, 0,
+		fg_encode_default, NULL),
+	PARAM(KI_COEFF_MED_HI_CHG_THR, KI_COEFF_MED_HI_CHG_THR_WORD,
+		KI_COEFF_MED_HI_CHG_THR_OFFSET, 1, 1000, 15625, 0,
+		fg_encode_default, NULL),
 	PARAM(SLOPE_LIMIT, SLOPE_LIMIT_WORD, SLOPE_LIMIT_OFFSET, 1, 8192,
 		1000000, 0, fg_encode_default, NULL),
 	PARAM(BATT_TEMP_COLD, BATT_TEMP_CONFIG_WORD, BATT_TEMP_COLD_OFFSET, 1,
@@ -538,6 +592,9 @@ struct bias_config id_table[3] = {
 };
 
 #define MAX_BIAS_CODE	0x70E4
+
+/* @bsp, 2019/04/17 Battery & Charging porting */
+#define OP_SW_DEFAULT_ID 200000
 static int fg_gen4_get_batt_id(struct fg_gen4_chip *chip)
 {
 	struct fg_dev *fg = &chip->fg;
@@ -584,7 +641,8 @@ static int fg_gen4_get_batt_id(struct fg_gen4_chip *chip)
 	 */
 	batt_id_kohms = (id_table[bias_id].bias_kohms * bias_code) * 10 /
 			(MAX_BIAS_CODE - bias_code);
-	fg->batt_id_ohms = (batt_id_kohms * 1000) / 10;
+/* @bsp, 2019/04/17 Battery & Charging porting */
+	fg->batt_id_ohms = OP_SW_DEFAULT_ID;
 	return 0;
 }
 
@@ -1388,8 +1446,8 @@ static void fg_gen4_update_rslow_coeff(struct fg_dev *fg, int batt_temp)
 	}
 }
 
-#define KI_COEFF_FULL_SOC_NORM_DEFAULT		733
-#define KI_COEFF_FULL_SOC_LOW_DEFAULT		184
+#define KI_COEFF_FULL_SOC_NORM_DEFAULT	2442
+#define KI_COEFF_FULL_SOC_LOW_DEFAULT	2442
 static int fg_gen4_adjust_ki_coeff_full_soc(struct fg_gen4_chip *chip,
 						int batt_temp)
 {
@@ -1397,15 +1455,13 @@ static int fg_gen4_adjust_ki_coeff_full_soc(struct fg_gen4_chip *chip,
 	int rc, ki_coeff_full_soc_norm, ki_coeff_full_soc_low;
 	u8 val;
 
-	if (batt_temp < 0) {
+	if ((batt_temp < 0) ||
+		(fg->charge_status == POWER_SUPPLY_STATUS_DISCHARGING)) {
 		ki_coeff_full_soc_norm = 0;
 		ki_coeff_full_soc_low = 0;
-	} else if (fg->charge_status == POWER_SUPPLY_STATUS_DISCHARGING) {
+	} else if (fg->charge_status == POWER_SUPPLY_STATUS_CHARGING) {
 		ki_coeff_full_soc_norm = chip->dt.ki_coeff_full_soc_dischg[0];
 		ki_coeff_full_soc_low = chip->dt.ki_coeff_full_soc_dischg[1];
-	} else {
-		ki_coeff_full_soc_norm = KI_COEFF_FULL_SOC_NORM_DEFAULT;
-		ki_coeff_full_soc_low = KI_COEFF_FULL_SOC_LOW_DEFAULT;
 	}
 
 	if (chip->ki_coeff_full_soc[0] == ki_coeff_full_soc_norm &&
@@ -1437,9 +1493,63 @@ static int fg_gen4_adjust_ki_coeff_full_soc(struct fg_gen4_chip *chip,
 	return 0;
 }
 
-#define KI_COEFF_LOW_DISCHG_DEFAULT	428
-#define KI_COEFF_MED_DISCHG_DEFAULT	245
-#define KI_COEFF_HI_DISCHG_DEFAULT	123
+static int fg_gen4_set_ki_coeff_dischg(struct fg_dev *fg, int ki_coeff_low,
+		int ki_coeff_med, int ki_coeff_hi)
+{
+	int rc;
+	u8 val;
+
+	if (ki_coeff_low >= 0) {
+		fg_encode(fg->sp, FG_SRAM_KI_COEFF_LOW_DISCHG, ki_coeff_low,
+			&val);
+		rc = fg_sram_write(fg,
+			fg->sp[FG_SRAM_KI_COEFF_LOW_DISCHG].addr_word,
+			fg->sp[FG_SRAM_KI_COEFF_LOW_DISCHG].addr_byte, &val,
+			fg->sp[FG_SRAM_KI_COEFF_LOW_DISCHG].len,
+			FG_IMA_DEFAULT);
+		if (rc < 0) {
+			pr_err("Error in writing ki_coeff_low, rc=%d\n", rc);
+			return rc;
+		}
+		fg_dbg(fg, FG_STATUS, "Wrote ki_coeff_low %d\n", ki_coeff_low);
+	}
+
+	if (ki_coeff_med >= 0) {
+		fg_encode(fg->sp, FG_SRAM_KI_COEFF_MED_DISCHG, ki_coeff_med,
+			&val);
+		rc = fg_sram_write(fg,
+			fg->sp[FG_SRAM_KI_COEFF_MED_DISCHG].addr_word,
+			fg->sp[FG_SRAM_KI_COEFF_MED_DISCHG].addr_byte, &val,
+			fg->sp[FG_SRAM_KI_COEFF_MED_DISCHG].len,
+			FG_IMA_DEFAULT);
+		if (rc < 0) {
+			pr_err("Error in writing ki_coeff_med, rc=%d\n", rc);
+			return rc;
+		}
+		fg_dbg(fg, FG_STATUS, "Wrote ki_coeff_med %d\n", ki_coeff_med);
+	}
+
+	if (ki_coeff_hi >= 0) {
+		fg_encode(fg->sp, FG_SRAM_KI_COEFF_HI_DISCHG, ki_coeff_hi,
+			&val);
+		rc = fg_sram_write(fg,
+			fg->sp[FG_SRAM_KI_COEFF_HI_DISCHG].addr_word,
+			fg->sp[FG_SRAM_KI_COEFF_HI_DISCHG].addr_byte, &val,
+			fg->sp[FG_SRAM_KI_COEFF_HI_DISCHG].len,
+			FG_IMA_DEFAULT);
+		if (rc < 0) {
+			pr_err("Error in writing ki_coeff_hi, rc=%d\n", rc);
+			return rc;
+		}
+		fg_dbg(fg, FG_STATUS, "Wrote ki_coeff_hi %d\n", ki_coeff_hi);
+	}
+
+	return 0;
+}
+
+#define KI_COEFF_LOW_DISCHG_DEFAULT	122
+#define KI_COEFF_MED_DISCHG_DEFAULT	62
+#define KI_COEFF_HI_DISCHG_DEFAULT	0
 static int fg_gen4_adjust_ki_coeff_dischg(struct fg_dev *fg)
 {
 	struct fg_gen4_chip *chip = container_of(fg, struct fg_gen4_chip, fg);
@@ -1447,7 +1557,6 @@ static int fg_gen4_adjust_ki_coeff_dischg(struct fg_dev *fg)
 	int ki_coeff_low = KI_COEFF_LOW_DISCHG_DEFAULT;
 	int ki_coeff_med = KI_COEFF_MED_DISCHG_DEFAULT;
 	int ki_coeff_hi = KI_COEFF_HI_DISCHG_DEFAULT;
-	u8 val;
 
 	if (!chip->ki_coeff_dischg_en)
 		return 0;
@@ -1468,50 +1577,10 @@ static int fg_gen4_adjust_ki_coeff_dischg(struct fg_dev *fg)
 		}
 	}
 
-	if (ki_coeff_low > 0) {
-		fg_encode(fg->sp, FG_SRAM_KI_COEFF_LOW_DISCHG, ki_coeff_low,
-			&val);
-		rc = fg_sram_write(fg,
-			fg->sp[FG_SRAM_KI_COEFF_LOW_DISCHG].addr_word,
-			fg->sp[FG_SRAM_KI_COEFF_LOW_DISCHG].addr_byte, &val,
-			fg->sp[FG_SRAM_KI_COEFF_LOW_DISCHG].len,
-			FG_IMA_DEFAULT);
-		if (rc < 0) {
-			pr_err("Error in writing ki_coeff_low, rc=%d\n", rc);
-			return rc;
-		}
-		fg_dbg(fg, FG_STATUS, "Wrote ki_coeff_low %d\n", ki_coeff_low);
-	}
-
-	if (ki_coeff_med > 0) {
-		fg_encode(fg->sp, FG_SRAM_KI_COEFF_MED_DISCHG, ki_coeff_med,
-			&val);
-		rc = fg_sram_write(fg,
-			fg->sp[FG_SRAM_KI_COEFF_MED_DISCHG].addr_word,
-			fg->sp[FG_SRAM_KI_COEFF_MED_DISCHG].addr_byte, &val,
-			fg->sp[FG_SRAM_KI_COEFF_MED_DISCHG].len,
-			FG_IMA_DEFAULT);
-		if (rc < 0) {
-			pr_err("Error in writing ki_coeff_med, rc=%d\n", rc);
-			return rc;
-		}
-		fg_dbg(fg, FG_STATUS, "Wrote ki_coeff_med %d\n", ki_coeff_med);
-	}
-
-	if (ki_coeff_hi > 0) {
-		fg_encode(fg->sp, FG_SRAM_KI_COEFF_HI_DISCHG, ki_coeff_hi,
-			&val);
-		rc = fg_sram_write(fg,
-			fg->sp[FG_SRAM_KI_COEFF_HI_DISCHG].addr_word,
-			fg->sp[FG_SRAM_KI_COEFF_HI_DISCHG].addr_byte, &val,
-			fg->sp[FG_SRAM_KI_COEFF_HI_DISCHG].len,
-			FG_IMA_DEFAULT);
-		if (rc < 0) {
-			pr_err("Error in writing ki_coeff_hi, rc=%d\n", rc);
-			return rc;
-		}
-		fg_dbg(fg, FG_STATUS, "Wrote ki_coeff_hi %d\n", ki_coeff_hi);
-	}
+	rc = fg_gen4_set_ki_coeff_dischg(fg,
+			ki_coeff_low, ki_coeff_med, ki_coeff_hi);
+	if (rc < 0)
+		return rc;
 
 	return 0;
 }
@@ -2548,6 +2617,9 @@ out:
 	mutex_unlock(&fg->charge_full_lock);
 	return rc;
 }
+
+/* @bsp, 2019/04/17 Battery & Charging porting */
+#define DEFALUT_BATT_TEMP	250
 
 static int fg_gen4_configure_full_soc(struct fg_dev *fg, int bsoc)
 {
@@ -3590,12 +3662,12 @@ static struct fg_irq_info fg_irqs[FG_GEN4_IRQ_MAX] = {
 	[MSOC_DELTA_IRQ] = {
 		.name		= "msoc-delta",
 		.handler	= fg_delta_msoc_irq_handler,
-		.wakeable	= true,
+		/*.wakeable	= true,*/
 	},
 	[BSOC_DELTA_IRQ] = {
 		.name		= "bsoc-delta",
 		.handler	= fg_delta_bsoc_irq_handler,
-		.wakeable	= true,
+		/*.wakeable	= true,*/
 	},
 	[SOC_READY_IRQ] = {
 		.name		= "soc-ready",
@@ -3610,7 +3682,7 @@ static struct fg_irq_info fg_irqs[FG_GEN4_IRQ_MAX] = {
 	[ESR_DELTA_IRQ] = {
 		.name		= "esr-delta",
 		.handler	= fg_delta_esr_irq_handler,
-		.wakeable	= true,
+		/*.wakeable	= true,*//*op disable ers calibration*/
 	},
 	[VBATT_LOW_IRQ] = {
 		.name		= "vbatt-low",
@@ -3890,6 +3962,7 @@ static void pl_current_en_work(struct work_struct *work)
 		return;
 
 	vote(chip->parallel_current_en_votable, FG_PARALLEL_EN_VOTER, en, 0);
+	vote(chip->mem_attn_irq_en_votable, MEM_ATTN_IRQ_VOTER, false, 0);
 }
 
 static void pl_enable_work(struct work_struct *work)
@@ -4189,7 +4262,14 @@ static int fg_psy_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_CAPACITY:
-		rc = fg_gen4_get_prop_capacity(fg, &pval->intval);
+/* @bsp, 2019/04/17 Battery & Charging porting */
+		if (!get_extern_fg_regist_done())
+				pval->intval = get_prop_pre_shutdown_soc();
+		else if (fg->use_external_fg && external_fg
+					&& external_fg->get_battery_soc)
+			pval->intval = external_fg->get_battery_soc();
+		else
+			pval->intval = 50;
 		break;
 	case POWER_SUPPLY_PROP_REAL_CAPACITY:
 		rc = fg_gen4_get_prop_real_capacity(fg, &pval->intval);
@@ -4207,16 +4287,32 @@ static int fg_psy_get_property(struct power_supply *psy,
 		pval->intval = div_s64((int64_t)val * 10000,  CC_SOC_30BIT);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-		if (fg->battery_missing)
-			pval->intval = 3700000;
+/* @bsp, 2019/04/17 Battery & Charging porting */
+		if (fg->use_external_fg && external_fg
+				&& external_fg->get_battery_mvolts)
+			pval->intval = external_fg->get_battery_mvolts();
 		else
-			rc = fg_get_battery_voltage(fg, &pval->intval);
+			pval->intval = 4000000;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		rc = fg_get_battery_current(fg, &pval->intval);
+/* @bsp, 2019/04/17 Battery & Charging porting */
+		if (fg->use_external_fg && external_fg
+				&& external_fg->get_average_current)
+			pval->intval = external_fg->get_average_current();
+		else
+			pval->intval = 0;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
-		rc = fg_gen4_get_battery_temp(fg, &pval->intval);
+/* @bsp, 2019/04/17 Battery & Charging porting */
+		if (!get_extern_fg_regist_done()
+				&& get_extern_bq_present())
+			pval->intval = DEFALUT_BATT_TEMP;
+		else if (fg->use_external_fg && external_fg
+					&& external_fg->get_average_current) {
+				pval->intval =
+					external_fg->get_battery_temperature();
+		} else
+				pval->intval = -400;
 		break;
 	case POWER_SUPPLY_PROP_RESISTANCE:
 		rc = fg_get_battery_resistance(fg, &pval->intval);
@@ -4284,6 +4380,26 @@ static int fg_psy_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_DEBUG_BATTERY:
 		pval->intval = is_debug_batt_id(fg);
 		break;
+/* @bsp, 2019/04/17 Battery & Charging porting */
+	case POWER_SUPPLY_PROP_FG_CAPACITY:
+		rc = fg_gen4_get_prop_capacity(fg, &pval->intval);
+		break;
+	case POWER_SUPPLY_PROP_FG_VOLTAGE_NOW:
+		if (fg->battery_missing)
+			pval->intval = 3700000;
+		else
+			rc = fg_get_battery_voltage(fg, &pval->intval);
+		break;
+	case POWER_SUPPLY_PROP_FG_CURRENT_NOW:
+			rc = fg_get_battery_current(fg, &pval->intval);
+		break;
+	case POWER_SUPPLY_PROP_BQ_SOC:
+		if (fg->use_external_fg && external_fg
+				&& external_fg->get_batt_bq_soc)
+			pval->intval = external_fg->get_batt_bq_soc();
+		else
+			pval->intval = 50;
+		break;
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
 		rc = fg_get_sram_prop(fg, FG_SRAM_VBATT_FULL, &pval->intval);
 		break;
@@ -4344,6 +4460,17 @@ static int fg_psy_set_property(struct power_supply *psy,
 	u8 val, mask;
 
 	switch (psp) {
+/* @bsp, 2019/04/17 Battery & Charging porting */
+	case POWER_SUPPLY_PROP_CC_TO_CV_POINT:
+		oem_update_cc_cv_setpoint(&chip->fg, pval->intval);
+		break;
+	case POWER_SUPPLY_PROP_SET_ALLOW_READ_EXTERN_FG_IIC:
+		oneplus_set_allow_read_iic(&chip->fg, pval->intval);
+		break;
+	case POWER_SUPPLY_PROP_UPDATE_LCD_IS_OFF:
+		oneplus_set_lcd_off_status(&chip->fg, pval->intval);
+		break;
+
 	case POWER_SUPPLY_PROP_CHARGE_FULL:
 		if (chip->cl->active) {
 			pr_warn("Capacity learning active!\n");
@@ -4433,6 +4560,8 @@ static int fg_property_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_ESR_ACTUAL:
 	case POWER_SUPPLY_PROP_ESR_NOMINAL:
 	case POWER_SUPPLY_PROP_SOH:
+/* @bsp, 2019/04/17 Battery & Charging porting */
+	case POWER_SUPPLY_PROP_SET_ALLOW_READ_EXTERN_FG_IIC:
 	case POWER_SUPPLY_PROP_CLEAR_SOH:
 	case POWER_SUPPLY_PROP_BATT_AGE_LEVEL:
 	case POWER_SUPPLY_PROP_CALIBRATE:
@@ -4481,6 +4610,9 @@ static enum power_supply_property fg_psy_props[] = {
 	POWER_SUPPLY_PROP_POWER_AVG,
 	POWER_SUPPLY_PROP_SCALE_MODE_EN,
 	POWER_SUPPLY_PROP_CALIBRATE,
+/* @bsp, 2019/04/17 Battery & Charging porting */
+	POWER_SUPPLY_PROP_SET_ALLOW_READ_EXTERN_FG_IIC,
+	POWER_SUPPLY_PROP_BQ_SOC,
 };
 
 static const struct power_supply_desc fg_psy_desc = {
@@ -4603,7 +4735,6 @@ static int fg_parallel_current_en_cb(struct votable *votable, void *data,
 		pr_err("Error in writing to 0x%04x, rc=%d\n",
 			BATT_INFO_FG_CNV_CHAR_CFG(fg), rc);
 
-	vote(chip->mem_attn_irq_en_votable, MEM_ATTN_IRQ_VOTER, false, 0);
 	fg_dbg(fg, FG_STATUS, "Parallel current summing: %d\n", enable);
 
 	return rc;
@@ -4614,9 +4745,9 @@ static int fg_delta_bsoc_irq_en_cb(struct votable *votable, void *data,
 {
 	struct fg_dev *fg = data;
 
-	if (!fg->irqs[BSOC_DELTA_IRQ].irq)
+	if (!fg->irqs[BSOC_DELTA_IRQ].irq  || fg->delta_bsoc_irq_en == enable)
 		return 0;
-
+	fg->delta_bsoc_irq_en = enable;
 	if (enable) {
 		enable_irq(fg->irqs[BSOC_DELTA_IRQ].irq);
 		enable_irq_wake(fg->irqs[BSOC_DELTA_IRQ].irq);
@@ -4628,6 +4759,7 @@ static int fg_delta_bsoc_irq_en_cb(struct votable *votable, void *data,
 	return 0;
 }
 
+static bool esr_irq_is_en;
 static int fg_gen4_delta_esr_irq_en_cb(struct votable *votable, void *data,
 					int enable, const char *client)
 {
@@ -4637,11 +4769,17 @@ static int fg_gen4_delta_esr_irq_en_cb(struct votable *votable, void *data,
 		return 0;
 
 	if (enable) {
-		enable_irq(fg->irqs[ESR_DELTA_IRQ].irq);
-		enable_irq_wake(fg->irqs[ESR_DELTA_IRQ].irq);
+		if (!esr_irq_is_en) {
+			esr_irq_is_en = true;
+			enable_irq(fg->irqs[ESR_DELTA_IRQ].irq);
+			enable_irq_wake(fg->irqs[ESR_DELTA_IRQ].irq);
+		}
 	} else {
-		disable_irq_wake(fg->irqs[ESR_DELTA_IRQ].irq);
-		disable_irq_nosync(fg->irqs[ESR_DELTA_IRQ].irq);
+		if (esr_irq_is_en) {
+			esr_irq_is_en = false;
+			disable_irq_wake(fg->irqs[ESR_DELTA_IRQ].irq);
+			disable_irq_nosync(fg->irqs[ESR_DELTA_IRQ].irq);
+		}
 	}
 
 	return 0;
@@ -4844,6 +4982,139 @@ static int fg_gen4_esr_calib_config(struct fg_gen4_chip *chip)
 	return rc;
 }
 
+static int fg_gen4_init_ki_coeffts(struct fg_gen4_chip *chip)
+{
+	int rc;
+	u8 val;
+	struct fg_dev *fg = &chip->fg;
+
+	if (chip->dt.ki_coeff_low_chg != -EINVAL) {
+		fg_encode(fg->sp, FG_SRAM_KI_COEFF_LOW_CHG,
+			chip->dt.ki_coeff_low_chg, &val);
+		rc = fg_sram_write(fg,
+			fg->sp[FG_SRAM_KI_COEFF_LOW_CHG].addr_word,
+			fg->sp[FG_SRAM_KI_COEFF_LOW_CHG].addr_byte, &val,
+			fg->sp[FG_SRAM_KI_COEFF_LOW_CHG].len,
+			FG_IMA_DEFAULT);
+		if (rc < 0) {
+			pr_err("Error in writing ki_coeff_low_chg, rc=%d\n",
+				rc);
+			return rc;
+		}
+	}
+
+	if (chip->dt.ki_coeff_med_chg != -EINVAL) {
+		fg_encode(fg->sp, FG_SRAM_KI_COEFF_MED_CHG,
+			chip->dt.ki_coeff_med_chg, &val);
+		rc = fg_sram_write(fg,
+			fg->sp[FG_SRAM_KI_COEFF_MED_CHG].addr_word,
+			fg->sp[FG_SRAM_KI_COEFF_MED_CHG].addr_byte, &val,
+			fg->sp[FG_SRAM_KI_COEFF_MED_CHG].len,
+			FG_IMA_DEFAULT);
+		if (rc < 0) {
+			pr_err("Error in writing ki_coeff_med_chg, rc=%d\n",
+				rc);
+			return rc;
+		}
+	}
+
+	if (chip->dt.ki_coeff_hi_chg != -EINVAL) {
+		fg_encode(fg->sp, FG_SRAM_KI_COEFF_HI_CHG,
+			chip->dt.ki_coeff_hi_chg, &val);
+		rc = fg_sram_write(fg,
+			fg->sp[FG_SRAM_KI_COEFF_HI_CHG].addr_word,
+			fg->sp[FG_SRAM_KI_COEFF_HI_CHG].addr_byte, &val,
+			fg->sp[FG_SRAM_KI_COEFF_HI_CHG].len,
+			FG_IMA_DEFAULT);
+		if (rc < 0) {
+			pr_err("Error in writing ki_coeff_hi_chg, rc=%d\n", rc);
+			return rc;
+		}
+	}
+
+	if (chip->dt.ki_coeff_lo_med_chg_thr_ma != -EINVAL) {
+		fg_encode(fg->sp, FG_SRAM_KI_COEFF_LO_MED_CHG_THR,
+			chip->dt.ki_coeff_lo_med_chg_thr_ma, &val);
+		rc = fg_sram_write(fg,
+			fg->sp[FG_SRAM_KI_COEFF_LO_MED_CHG_THR].addr_word,
+			fg->sp[FG_SRAM_KI_COEFF_LO_MED_CHG_THR].addr_byte,
+			&val, fg->sp[FG_SRAM_KI_COEFF_LO_MED_CHG_THR].len,
+			FG_IMA_DEFAULT);
+		if (rc < 0) {
+			pr_err("Error in writing ki_coeff_lo_med_chg_thr_ma, rc=%d\n",
+				rc);
+			return rc;
+		}
+	}
+
+	if (chip->dt.ki_coeff_med_hi_chg_thr_ma != -EINVAL) {
+		fg_encode(fg->sp, FG_SRAM_KI_COEFF_MED_HI_CHG_THR,
+			chip->dt.ki_coeff_med_hi_chg_thr_ma, &val);
+		rc = fg_sram_write(fg,
+			fg->sp[FG_SRAM_KI_COEFF_MED_HI_CHG_THR].addr_word,
+			fg->sp[FG_SRAM_KI_COEFF_MED_HI_CHG_THR].addr_byte, &val,
+			fg->sp[FG_SRAM_KI_COEFF_MED_HI_CHG_THR].len,
+			FG_IMA_DEFAULT);
+		if (rc < 0) {
+			pr_err("Error in writing ki_coeff_med_hi_chg_thr_ma, rc=%d\n",
+				rc);
+			return rc;
+		}
+	}
+
+	if (chip->dt.ki_coeff_lo_med_dchg_thr_ma != -EINVAL) {
+		fg_encode(fg->sp, FG_SRAM_KI_COEFF_LO_MED_DCHG_THR,
+			chip->dt.ki_coeff_lo_med_dchg_thr_ma, &val);
+		rc = fg_sram_write(fg,
+			fg->sp[FG_SRAM_KI_COEFF_LO_MED_DCHG_THR].addr_word,
+			fg->sp[FG_SRAM_KI_COEFF_LO_MED_DCHG_THR].addr_byte,
+			&val, fg->sp[FG_SRAM_KI_COEFF_LO_MED_DCHG_THR].len,
+			FG_IMA_DEFAULT);
+		if (rc < 0) {
+			pr_err("Error in writing ki_coeff_lo_med_dchg_thr_ma, rc=%d\n",
+				rc);
+			return rc;
+		}
+	}
+
+	if (chip->dt.ki_coeff_med_hi_dchg_thr_ma != -EINVAL) {
+		fg_encode(fg->sp, FG_SRAM_KI_COEFF_MED_HI_DCHG_THR,
+			chip->dt.ki_coeff_med_hi_dchg_thr_ma, &val);
+		rc = fg_sram_write(fg,
+			fg->sp[FG_SRAM_KI_COEFF_MED_HI_DCHG_THR].addr_word,
+			fg->sp[FG_SRAM_KI_COEFF_MED_HI_DCHG_THR].addr_byte,
+			&val, fg->sp[FG_SRAM_KI_COEFF_MED_HI_DCHG_THR].len,
+			FG_IMA_DEFAULT);
+		if (rc < 0) {
+			pr_err("Error in writing ki_coeff_med_hi_dchg_thr_ma, rc=%d\n",
+				rc);
+			return rc;
+		}
+	}
+
+	if (chip->dt.ki_coeff_cutoff_gain != -EINVAL) {
+		fg_encode(fg->sp, FG_SRAM_KI_COEFF_CUTOFF,
+			  chip->dt.ki_coeff_cutoff_gain, &val);
+		rc = fg_sram_write(fg,
+			fg->sp[FG_SRAM_KI_COEFF_CUTOFF].addr_word,
+			fg->sp[FG_SRAM_KI_COEFF_CUTOFF].addr_byte, &val,
+			fg->sp[FG_SRAM_KI_COEFF_CUTOFF].len,
+			FG_IMA_DEFAULT);
+		if (rc < 0) {
+			pr_err("Error in writing ki_coeff_cutoff_gain, rc=%d\n",
+				rc);
+			return rc;
+		}
+	}
+
+	rc = fg_gen4_set_ki_coeff_dischg(fg, KI_COEFF_LOW_DISCHG_DEFAULT,
+		KI_COEFF_MED_DISCHG_DEFAULT, KI_COEFF_HI_DISCHG_DEFAULT);
+	if (rc < 0)
+		return rc;
+
+	return 0;
+}
+
 #define BATT_TEMP_HYST_MASK	GENMASK(3, 0)
 #define BATT_TEMP_DELTA_MASK	GENMASK(7, 4)
 #define BATT_TEMP_DELTA_SHIFT	4
@@ -5006,6 +5277,14 @@ static int fg_gen4_hw_init(struct fg_gen4_chip *chip)
 		return rc;
 	}
 
+/* @bsp, 2019/04/17 Battery & Charging porting */
+	rc = fg_masked_write(fg,
+			BATT_INFO_ESR_PULL_DN_CFG(fg), 0xFF, 0);
+	if (rc < 0) {
+		pr_err("Error in writing ESR PULL DN, rc=%d\n", rc);
+		return rc;
+	}
+
 	if (is_debug_batt_id(fg)) {
 		val = ESR_NO_PULL_DOWN;
 		rc = fg_masked_write(fg, BATT_INFO_ESR_PULL_DN_CFG(fg),
@@ -5044,64 +5323,9 @@ static int fg_gen4_hw_init(struct fg_gen4_chip *chip)
 		}
 	}
 
-	if (chip->dt.ki_coeff_low_chg != -EINVAL) {
-		fg_encode(fg->sp, FG_SRAM_KI_COEFF_LOW_CHG,
-			chip->dt.ki_coeff_low_chg, &val);
-		rc = fg_sram_write(fg,
-			fg->sp[FG_SRAM_KI_COEFF_LOW_CHG].addr_word,
-			fg->sp[FG_SRAM_KI_COEFF_LOW_CHG].addr_byte, &val,
-			fg->sp[FG_SRAM_KI_COEFF_LOW_CHG].len,
-			FG_IMA_DEFAULT);
-		if (rc < 0) {
-			pr_err("Error in writing ki_coeff_low_chg, rc=%d\n",
-				rc);
-			return rc;
-		}
-	}
-
-	if (chip->dt.ki_coeff_med_chg != -EINVAL) {
-		fg_encode(fg->sp, FG_SRAM_KI_COEFF_MED_CHG,
-			chip->dt.ki_coeff_med_chg, &val);
-		rc = fg_sram_write(fg,
-			fg->sp[FG_SRAM_KI_COEFF_MED_CHG].addr_word,
-			fg->sp[FG_SRAM_KI_COEFF_MED_CHG].addr_byte, &val,
-			fg->sp[FG_SRAM_KI_COEFF_MED_CHG].len,
-			FG_IMA_DEFAULT);
-		if (rc < 0) {
-			pr_err("Error in writing ki_coeff_med_chg, rc=%d\n",
-				rc);
-			return rc;
-		}
-	}
-
-	if (chip->dt.ki_coeff_hi_chg != -EINVAL) {
-		fg_encode(fg->sp, FG_SRAM_KI_COEFF_HI_CHG,
-			chip->dt.ki_coeff_hi_chg, &val);
-		rc = fg_sram_write(fg,
-			fg->sp[FG_SRAM_KI_COEFF_HI_CHG].addr_word,
-			fg->sp[FG_SRAM_KI_COEFF_HI_CHG].addr_byte, &val,
-			fg->sp[FG_SRAM_KI_COEFF_HI_CHG].len,
-			FG_IMA_DEFAULT);
-		if (rc < 0) {
-			pr_err("Error in writing ki_coeff_hi_chg, rc=%d\n", rc);
-			return rc;
-		}
-	}
-
-	if (chip->dt.ki_coeff_cutoff_gain != -EINVAL) {
-		fg_encode(fg->sp, FG_SRAM_KI_COEFF_CUTOFF,
-			  chip->dt.ki_coeff_cutoff_gain, &val);
-		rc = fg_sram_write(fg,
-			fg->sp[FG_SRAM_KI_COEFF_CUTOFF].addr_word,
-			fg->sp[FG_SRAM_KI_COEFF_CUTOFF].addr_byte, &val,
-			fg->sp[FG_SRAM_KI_COEFF_CUTOFF].len,
-			FG_IMA_DEFAULT);
-		if (rc < 0) {
-			pr_err("Error in writing ki_coeff_cutoff_gain, rc=%d\n",
-				rc);
-			return rc;
-		}
-	}
+	rc = fg_gen4_init_ki_coeffts(chip);
+	if (rc < 0)
+		return rc;
 
 	rc = fg_gen4_esr_calib_config(chip);
 	if (rc < 0)
@@ -5163,6 +5387,9 @@ static int fg_parse_ki_coefficients(struct fg_dev *fg)
 	struct device_node *node = fg->dev->of_node;
 	int rc, i;
 
+	chip->dt.ki_coeff_full_soc_dischg[0] = KI_COEFF_FULL_SOC_NORM_DEFAULT;
+	chip->dt.ki_coeff_full_soc_dischg[1] = KI_COEFF_FULL_SOC_LOW_DEFAULT;
+
 	if (of_find_property(node, "qcom,ki-coeff-full-dischg", NULL)) {
 		rc = fg_parse_dt_property_u32_array(node,
 			"qcom,ki-coeff-full-dischg",
@@ -5179,21 +5406,43 @@ static int fg_parse_ki_coefficients(struct fg_dev *fg)
 		}
 	}
 
-	chip->dt.ki_coeff_low_chg = -EINVAL;
+	chip->dt.ki_coeff_low_chg = 183;
 	of_property_read_u32(node, "qcom,ki-coeff-low-chg",
 		&chip->dt.ki_coeff_low_chg);
 
-	chip->dt.ki_coeff_med_chg = -EINVAL;
+	chip->dt.ki_coeff_med_chg = 62;
 	of_property_read_u32(node, "qcom,ki-coeff-med-chg",
 		&chip->dt.ki_coeff_med_chg);
 
-	chip->dt.ki_coeff_hi_chg = -EINVAL;
+	chip->dt.ki_coeff_hi_chg = 0;
 	of_property_read_u32(node, "qcom,ki-coeff-hi-chg",
 		&chip->dt.ki_coeff_hi_chg);
+
+	chip->dt.ki_coeff_lo_med_chg_thr_ma = 1000;
+	of_property_read_u32(node, "qcom,ki-coeff-chg-low-med-thresh-ma",
+		&chip->dt.ki_coeff_lo_med_chg_thr_ma);
+
+	chip->dt.ki_coeff_med_hi_chg_thr_ma = 1500;
+	of_property_read_u32(node, "qcom,ki-coeff-chg-med-hi-thresh-ma",
+		&chip->dt.ki_coeff_med_hi_chg_thr_ma);
+
+	chip->dt.ki_coeff_lo_med_dchg_thr_ma = 50;
+	of_property_read_u32(node, "qcom,ki-coeff-dischg-low-med-thresh-ma",
+		&chip->dt.ki_coeff_lo_med_dchg_thr_ma);
+
+	chip->dt.ki_coeff_med_hi_dchg_thr_ma = 100;
+	of_property_read_u32(node, "qcom,ki-coeff-dischg-med-hi-thresh-ma",
+		&chip->dt.ki_coeff_med_hi_dchg_thr_ma);
 
 	chip->dt.ki_coeff_cutoff_gain = -EINVAL;
 	of_property_read_u32(node, "qcom,ki-coeff-cutoff",
 		&chip->dt.ki_coeff_cutoff_gain);
+
+	for (i = 0; i < KI_COEFF_SOC_LEVELS; i++) {
+		chip->dt.ki_coeff_low_dischg[i] = KI_COEFF_LOW_DISCHG_DEFAULT;
+		chip->dt.ki_coeff_med_dischg[i] = KI_COEFF_MED_DISCHG_DEFAULT;
+		chip->dt.ki_coeff_hi_dischg[i] = KI_COEFF_HI_DISCHG_DEFAULT;
+	}
 
 	if (!of_find_property(node, "qcom,ki-coeff-soc-dischg", NULL) ||
 		(!of_find_property(node, "qcom,ki-coeff-low-dischg", NULL) &&
@@ -5539,6 +5788,11 @@ static int fg_gen4_parse_dt(struct fg_gen4_chip *chip)
 	chip->dt.force_load_profile = of_property_read_bool(node,
 					"qcom,fg-force-load-profile");
 
+/* @bsp, 2019/04/17 Battery & Charging porting */
+	fg->use_external_fg =
+	of_property_read_bool(node, "oem,use_external_fg");
+	pr_info("use_external_fg=%d\n", fg->use_external_fg);
+
 	rc = of_property_read_u32(node, "qcom,cl-start-capacity", &temp);
 	if (rc < 0)
 		chip->cl->dt.max_start_soc = DEFAULT_CL_START_SOC;
@@ -5690,6 +5944,10 @@ static void fg_gen4_cleanup(struct fg_gen4_chip *chip)
 {
 	struct fg_dev *fg = &chip->fg;
 
+/* @bsp, 20190417 Fix system crash */
+	if (fg->fg_psy)
+		power_supply_unregister(fg->fg_psy);
+
 	fg_unregister_interrupts(fg, chip, FG_GEN4_IRQ_MAX);
 
 	cancel_work(&fg->status_change_work);
@@ -5719,6 +5977,33 @@ static void fg_gen4_cleanup(struct fg_gen4_chip *chip)
 		destroy_votable(chip->mem_attn_irq_en_votable);
 
 	dev_set_drvdata(fg->dev, NULL);
+}
+
+/* @bsp, 2019/04/17 Battery & Charging porting */
+static void oem_update_cc_cv_setpoint(
+				struct fg_dev *chip, int cv_float_point)
+{
+	/* TODO: write CC_CV_SETPOINT_REG */
+}
+
+static void oneplus_set_allow_read_iic(struct fg_dev *chip,
+				bool status)
+{
+	if (chip->use_external_fg && external_fg
+			&& external_fg->set_allow_reading)
+		external_fg->set_allow_reading(status);
+	else
+		pr_info("set allow read extern fg iic fail\n");
+}
+
+static void oneplus_set_lcd_off_status(struct fg_dev *chip,
+				bool status)
+{
+	if (chip->use_external_fg && external_fg
+			&& external_fg->set_lcd_off_status)
+		external_fg->set_lcd_off_status(status);
+	else
+		pr_info("set lcd off status fail\n");
 }
 
 static void fg_gen4_post_init(struct fg_gen4_chip *chip)

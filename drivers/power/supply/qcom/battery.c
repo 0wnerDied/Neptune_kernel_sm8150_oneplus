@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2019 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -105,10 +105,8 @@ struct pl_data {
 	bool			cp_disabled;
 	int			taper_entry_fv;
 	int			main_fcc_max;
-	u32			float_voltage_uv;
 	/* debugfs directory */
 	struct dentry		*dfs_root;
-
 };
 
 struct pl_data *the_chip;
@@ -204,8 +202,7 @@ static int get_hvdcp3_icl_limit(struct pl_data *chip)
 
 	rc = power_supply_get_property(chip->usb_psy,
 				POWER_SUPPLY_PROP_REAL_TYPE, &pval);
-	if ((rc < 0) || (pval.intval != POWER_SUPPLY_TYPE_USB_HVDCP_3
-			&& pval.intval != POWER_SUPPLY_TYPE_USB_HVDCP_3P5))
+	if ((rc < 0) || (pval.intval != POWER_SUPPLY_TYPE_USB_HVDCP_3))
 		return target_icl;
 
 	/*
@@ -916,12 +913,17 @@ static int pl_fcc_vote_callback(struct votable *votable, void *data,
 	int master_fcc_ua = total_fcc_ua, slave_fcc_ua = 0;
 	int cp_fcc_ua = 0, rc = 0;
 	union power_supply_propval pval = {0, };
+	static int total_fcc_ua_pre;
 
 	if (total_fcc_ua < 0)
 		return 0;
 
 	if (!chip->main_psy)
 		return 0;
+	if (total_fcc_ua != total_fcc_ua_pre) {
+		pr_info("total_fcc_ua=%d\n", total_fcc_ua);
+		total_fcc_ua_pre = total_fcc_ua;
+	}
 
 	if (!chip->cp_disable_votable)
 		chip->cp_disable_votable = find_votable("CP_DISABLE");
@@ -1166,17 +1168,6 @@ out:
 	vote(chip->pl_awake_votable, FCC_STEPPER_VOTER, false, 0);
 }
 
-static bool is_batt_available(struct pl_data *chip)
-{
-	if (!chip->batt_psy)
-		chip->batt_psy = power_supply_get_by_name("battery");
-
-	if (!chip->batt_psy)
-		return false;
-
-	return true;
-}
-
 #define PARALLEL_FLOAT_VOLTAGE_DELTA_UV 50000
 static int pl_fv_vote_callback(struct votable *votable, void *data,
 			int fv_uv, const char *client)
@@ -1184,6 +1175,7 @@ static int pl_fv_vote_callback(struct votable *votable, void *data,
 	struct pl_data *chip = data;
 	union power_supply_propval pval = {0, };
 	int rc = 0;
+	static int fv_uv_pre;
 
 	if (fv_uv < 0)
 		return 0;
@@ -1192,7 +1184,10 @@ static int pl_fv_vote_callback(struct votable *votable, void *data,
 		return 0;
 
 	pval.intval = fv_uv;
-
+	if (fv_uv != fv_uv_pre) {
+		pr_info("fv_uv=%d\n", fv_uv);
+		fv_uv_pre = fv_uv;
+	}
 	rc = power_supply_set_property(chip->main_psy,
 			POWER_SUPPLY_PROP_VOLTAGE_MAX, &pval);
 	if (rc < 0) {
@@ -1209,31 +1204,6 @@ static int pl_fv_vote_callback(struct votable *votable, void *data,
 			return rc;
 		}
 	}
-
-	/*
-	 * check for termination at reduced float voltage and re-trigger
-	 * charging if new float voltage is above last FV.
-	 */
-	if ((chip->float_voltage_uv < fv_uv) && is_batt_available(chip)) {
-		rc = power_supply_get_property(chip->batt_psy,
-				POWER_SUPPLY_PROP_STATUS, &pval);
-		if (rc < 0) {
-			pr_err("Couldn't get battery status rc=%d\n", rc);
-		} else {
-			if (pval.intval == POWER_SUPPLY_STATUS_FULL) {
-				pr_debug("re-triggering charging\n");
-				pval.intval = 1;
-				rc = power_supply_set_property(chip->batt_psy,
-					POWER_SUPPLY_PROP_FORCE_RECHARGE,
-					&pval);
-				if (rc < 0)
-					pr_err("Couldn't set force recharge rc=%d\n",
-							rc);
-			}
-		}
-	}
-
-	chip->float_voltage_uv = fv_uv;
 
 	return 0;
 }
@@ -1325,6 +1295,17 @@ static void pl_disable_forever_work(struct work_struct *work)
 	/* Re-enable autonomous mode */
 	if (chip->hvdcp_hw_inov_dis_votable)
 		vote(chip->hvdcp_hw_inov_dis_votable, PL_VOTER, false, 0);
+}
+
+static bool is_batt_available(struct pl_data *chip)
+{
+	if (!chip->batt_psy)
+		chip->batt_psy = power_supply_get_by_name("battery");
+
+	if (!chip->batt_psy)
+		return false;
+
+	return true;
 }
 
 static int pl_disable_vote_callback(struct votable *votable,

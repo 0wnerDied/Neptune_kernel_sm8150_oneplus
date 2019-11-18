@@ -78,7 +78,6 @@ struct qg_dt {
 	bool			fvss_enable;
 	bool			multi_profile_load;
 	bool			tcss_enable;
-	bool			bass_enable;
 };
 
 struct qg_esr_data {
@@ -144,7 +143,6 @@ struct qpnp_qg {
 	bool			force_soc;
 	bool			fvss_active;
 	bool			tcss_active;
-	bool			bass_active;
 	int			charge_status;
 	int			charge_type;
 	int			chg_iterm_ma;
@@ -160,8 +158,6 @@ struct qpnp_qg {
 	int			ibat_tcss_entry;
 	int			soc_tcss;
 	int			tcss_entry_count;
-	int			max_fcc_limit_ma;
-	int			bsoc_bass_entry;
 	u32			fifo_done_count;
 	u32			wa_flags;
 	u32			seq_no;

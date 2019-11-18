@@ -92,6 +92,12 @@
 #include <linux/thread_info.h>
 #include <linux/cpufreq_times.h>
 
+// tedlin@ASTI 2019/06/12 add for CONFIG_HOUSTON
+#include <oneplus/houston/houston_helper.h>
+
+// tedlin@ASTI 2019/06/12 add for CONFIG_CONTROL_CENTER
+#include <oneplus/control_center/control_center_helper.h>
+
 #include <asm/pgtable.h>
 #include <asm/pgalloc.h>
 #include <linux/uaccess.h>
@@ -573,6 +579,13 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 	tsk->splice_pipe = NULL;
 	tsk->task_frag.page = NULL;
 	tsk->wake_q.next = NULL;
+#ifdef CONFIG_OPCHAIN
+	tsk->utask_tag = 0;
+	tsk->utask_tag_base = 0;
+	tsk->etask_claim = 0;
+	tsk->claim_cpu = -1;
+	tsk->utask_slave = 0;
+#endif
 
 	account_kernel_stack(tsk, 1);
 
@@ -1976,6 +1989,13 @@ static __latent_entropy struct task_struct *copy_process(
 	trace_task_newtask(p, clone_flags);
 	uprobe_copy_process(p, clone_flags);
 
+// tedlin@ASTI 2019/06/12 add for CONFIG_HOUSTON
+	if (likely(!IS_ERR(p))) {
+		ht_perf_event_init(p);
+		ht_rtg_init(p);
+// tedlin@ASTI 2019/06/12 add for CONFIG_CONTROL_CENTER
+		cc_tsk_init((void*) p);
+	}
 	return p;
 
 bad_fork_cancel_cgroup:

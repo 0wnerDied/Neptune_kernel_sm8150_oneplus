@@ -211,9 +211,13 @@ enum fg_sram_param_id {
 	FG_SRAM_KI_COEFF_LOW_DISCHG,
 	FG_SRAM_KI_COEFF_MED_DISCHG,
 	FG_SRAM_KI_COEFF_HI_DISCHG,
+	FG_SRAM_KI_COEFF_LO_MED_DCHG_THR,
+	FG_SRAM_KI_COEFF_MED_HI_DCHG_THR,
 	FG_SRAM_KI_COEFF_LOW_CHG,
 	FG_SRAM_KI_COEFF_MED_CHG,
 	FG_SRAM_KI_COEFF_HI_CHG,
+	FG_SRAM_KI_COEFF_LO_MED_CHG_THR,
+	FG_SRAM_KI_COEFF_MED_HI_CHG_THR,
 	FG_SRAM_KI_COEFF_FULL_SOC,
 	FG_SRAM_KI_COEFF_CUTOFF,
 	FG_SRAM_ESR_TIGHT_FILTER,
@@ -453,6 +457,9 @@ struct fg_dev {
 	bool			profile_available;
 	enum prof_load_status	profile_load_status;
 	bool			battery_missing;
+/* @bsp, 2018/07/14 Battery & Charging porting */
+	bool			use_external_fg;
+	bool			delta_bsoc_irq_en;
 	bool			fg_restarting;
 	bool			charge_full;
 	bool			recharge_soc_adjusted;

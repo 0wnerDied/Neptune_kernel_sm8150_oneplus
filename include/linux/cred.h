@@ -406,4 +406,22 @@ do {						\
 	*(_fsgid) = __cred->fsgid;		\
 } while(0)
 
+#ifdef CONFIG_ONEPLUS_FG_OPT
+static inline bool current_is_fg(void)
+{
+	int cur_uid;
+
+	cur_uid = current_uid().val;
+	if (cur_uid == -555)
+		return true;
+
+	return false;
+}
+#else
+static inline int current_is_fg(void)
+{
+	return 0;
+}
+#endif /*CONFIG_ONEPLUS_FG_OPT*/
+
 #endif /* _LINUX_CRED_H */
