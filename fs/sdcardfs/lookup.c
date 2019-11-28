@@ -20,6 +20,7 @@
 
 #define __FS_HAS_ENCRYPTION IS_ENABLED(CONFIG_FS_ENCRYPTION)
 #include <linux/fscrypt.h>
+#include <linux/iversion.h>
 #include "sdcardfs.h"
 #include "linux/delay.h"
 
@@ -123,7 +124,7 @@ struct inode *sdcardfs_iget(struct super_block *sb, struct inode *lower_inode, u
 	inode->i_ino = lower_inode->i_ino;
 	sdcardfs_set_lower_inode(inode, lower_inode);
 
-	inode->i_version++;
+	inode_inc_iversion(inode);
 
 	/* use different set of inode ops for symlinks & directories */
 	if (S_ISDIR(lower_inode->i_mode))
