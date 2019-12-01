@@ -13,7 +13,7 @@
 #include <uapi/linux/sched/types.h>
 
 enum {
-	SCREEN_OFF,
+	SCREEN_ON,
 	INPUT_BOOST,
 	MAX_BOOST
 };
@@ -55,7 +55,7 @@ static struct df_boost_drv df_boost_drv_g __read_mostly = {
 
 static void __devfreq_boost_kick(struct boost_dev *b)
 {
-	if (!READ_ONCE(b->df) || test_bit(SCREEN_OFF, &b->state))
+	if (!READ_ONCE(b->df) || !test_bit(SCREEN_ON, &b->state))
 		return;
 
 	set_bit(INPUT_BOOST, &b->state);
@@ -79,7 +79,7 @@ static void __devfreq_boost_kick_max(struct boost_dev *b,
 {
 	unsigned long boost_jiffies, curr_expires, new_expires;
 
-	if (!READ_ONCE(b->df) || test_bit(SCREEN_OFF, &b->state))
+	if (!READ_ONCE(b->df) || !test_bit(SCREEN_ON, &b->state))
 		return;
 
 	boost_jiffies = msecs_to_jiffies(duration_ms);
@@ -142,7 +142,7 @@ static void devfreq_update_boosts(struct boost_dev *b, unsigned long state)
 	struct devfreq *df = b->df;
 
 	mutex_lock(&df->lock);
-	if (state & BIT(SCREEN_OFF)) {
+	if (state & !BIT(SCREEN_ON)) {
 		df->min_freq = df->profile->freq_table[0];
 		df->max_boost = false;
 	} else {
@@ -199,12 +199,12 @@ static int msm_drm_notifier_cb(struct notifier_block *nb,
 	for (i = 0; i < DEVFREQ_MAX; i++) {
 		struct boost_dev *b = &d->devices[i];
 
-		if (*blank == MSM_DRM_BLANK_UNBLANK) {
-			clear_bit(SCREEN_OFF, &b->state);
+		if (*blank == MSM_DRM_BLANK_UNBLANK_CUST) {
+			set_bit(SCREEN_ON, &b->state);
 			__devfreq_boost_kick_max(b,
 				CONFIG_DEVFREQ_WAKE_BOOST_DURATION_MS);
-		} else {
-			set_bit(SCREEN_OFF, &b->state);
+		} else if (*blank == MSM_DRM_BLANK_POWERDOWN_CUST) {
+			clear_bit(SCREEN_ON, &b->state);
 			wake_up(&b->boost_waitq);
 		}
 	}
@@ -312,6 +312,7 @@ static int __init devfreq_boost_init(void)
 			pr_err("Failed to create kthread, err: %d\n", ret);
 			goto stop_kthreads;
 		}
+		set_bit(SCREEN_ON, &b->state);
 	}
 
 	devfreq_boost_input_handler.private = d;
