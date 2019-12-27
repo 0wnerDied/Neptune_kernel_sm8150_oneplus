@@ -11,6 +11,7 @@
 #include <linux/blktrace_api.h>
 #include <linux/blk-mq.h>
 #include <linux/blk-cgroup.h>
+#include <linux/binfmts.h>
 
 #include "blk.h"
 #include "blk-mq.h"
@@ -102,6 +103,9 @@ queue_ra_store(struct request_queue *q, const char *page, size_t count)
 {
 	unsigned long ra_kb;
 	ssize_t ret = queue_var_store(&ra_kb, page, count);
+
+	if (task_is_booster(current))
+		return ret;
 
 	if (ret < 0)
 		return ret;
