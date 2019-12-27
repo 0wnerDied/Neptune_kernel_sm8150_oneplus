@@ -130,8 +130,10 @@ static int dma_buf_release(struct inode *inode, struct file *file)
 	module_put(dmabuf->owner);
 	if (dmabuf->from_kmem)
 		kmem_cache_free(kmem_dma_buf_pool, dmabuf);
-	else
+	else {
+		kfree(dmabuf->name);
 		kfree(dmabuf);
+	}
 	return 0;
 }
 
