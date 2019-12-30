@@ -127,3 +127,6 @@ all.config
 kernel/configs/android-*.cfg
 
 out/
+build_gcc.sh
+build_aosp_clang.sh
+build_proton_clang.sh
