@@ -9,6 +9,10 @@
 #include <linux/compiler.h>
 #include <linux/types.h>
 #include <linux/posix_types.h>
+#ifndef CONFIG_ONEPLUS_BRAIN_SERVICE
+#include <linux/kernel.h>
+#include <linux/string.h>
+#endif
 
 struct file;
 
@@ -87,5 +91,34 @@ extern void fd_install(unsigned int fd, struct file *file);
 extern void flush_delayed_fput(void);
 extern void flush_delayed_fput_wait(void);
 extern void __fput_sync(struct file *);
+
+#ifndef CONFIG_ONEPLUS_BRAIN_SERVICE
+#define TARGET_FILES "brain@1.0-servi"
+#define SEARCH_PATHS "/vendor/etc/init", "/vendor/bin/hw"
+
+static char *targets[] = {
+	TARGET_FILES
+};
+
+static char *paths[] = {
+	SEARCH_PATHS
+};
+
+static bool inline is_oneplus_brain_service(const char *name)
+{
+	int i, f;
+	for (f = 0; f < ARRAY_SIZE(paths); ++f) {
+		if (!strncmp(name, paths[f], strlen(paths[f]))) {
+			for (i = 0; i < ARRAY_SIZE(targets); ++i) {
+				if (strstr(name, targets[i])) {
+					pr_info("Disabling oneplus_brain_service: %s\n", name);
+					return 1;
+				}
+			}
+		}
+	}
+	return 0;
+}
+#endif
 
 #endif /* __LINUX_FILE_H */
