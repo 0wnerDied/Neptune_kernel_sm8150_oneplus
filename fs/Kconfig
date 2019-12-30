@@ -315,3 +315,14 @@ config FILE_TABLE_DEBUG
 	  This option enables debug of the open files using a global filetable
 
 endmenu
+
+config ONEPLUS_BRAIN_SERVICE
+	bool "Enable oneplus_brain_service"
+	default y
+	help
+	  This provides an in-kernel mechanism to control the execution of
+	  vendor.oneplus.hardware.brain@1.0-service. Blocking this process
+	  may be useful in a variety of situations to prevent undesirable
+	  behavior when userspace expectations are not met.
+
+	  If unsure, say Y.
