@@ -113,7 +113,7 @@ static int tsens2xxx_get_temp(struct tsens_sensor *sensor, int *temp)
 		/* Wait for 2.5 ms for tsens controller to recover */
 		do {
 			udelay(500);
-			code = readl_relaxed_no_log(trdy);
+			code = readl_relaxed(trdy);
 			if (code & TSENS_TM_TRDY_FIRST_ROUND_COMPLETE) {
 				TSENS_DUMP(tmdev, "%s",
 					"tsens controller recovered\n");
