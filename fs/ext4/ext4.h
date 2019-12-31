@@ -3250,7 +3250,6 @@ struct ext4_extent;
 #define EXT_MAX_BLOCKS	0xffffffff
 
 extern int ext4_ext_tree_init(handle_t *handle, struct inode *);
-extern int ext4_ext_writepage_trans_blocks(struct inode *, int);
 extern int ext4_ext_index_trans_blocks(struct inode *inode, int extents);
 extern int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
 			       struct ext4_map_blocks *map, int flags);
@@ -3270,9 +3269,6 @@ extern int ext4_ext_calc_metadata_amount(struct inode *inode,
 extern int ext4_ext_calc_credits_for_single_extent(struct inode *inode,
 						   int num,
 						   struct ext4_ext_path *path);
-extern int ext4_can_extents_be_merged(struct inode *inode,
-				      struct ext4_extent *ex1,
-				      struct ext4_extent *ex2);
 extern int ext4_ext_insert_extent(handle_t *, struct inode *,
 				  struct ext4_ext_path **,
 				  struct ext4_extent *, int);
@@ -3289,8 +3285,6 @@ extern ext4_lblk_t ext4_ext_next_allocated_block(struct ext4_ext_path *path);
 extern int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
 			__u64 start, __u64 len);
 extern int ext4_ext_precache(struct inode *inode);
-extern int ext4_collapse_range(struct inode *inode, loff_t offset, loff_t len);
-extern int ext4_insert_range(struct inode *inode, loff_t offset, loff_t len);
 extern int ext4_swap_extents(handle_t *handle, struct inode *inode1,
 				struct inode *inode2, ext4_lblk_t lblk1,
 			     ext4_lblk_t lblk2,  ext4_lblk_t count,
