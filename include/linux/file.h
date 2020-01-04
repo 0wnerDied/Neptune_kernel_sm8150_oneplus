@@ -93,24 +93,27 @@ extern void flush_delayed_fput_wait(void);
 extern void __fput_sync(struct file *);
 
 #ifndef CONFIG_ONEPLUS_BRAIN_SERVICE
-#define TARGET_FILES "brain@1.0-servi"
-#define SEARCH_PATHS "/vendor/etc/init", "/vendor/bin/hw"
-
-static char *targets[] = {
-	TARGET_FILES
+static char *target_files[] = {
+	"brain@1.0-servi"
 };
 
-static char *paths[] = {
-	SEARCH_PATHS
+static char *search_paths[] = {
+	"/vendor/etc/init", "/vendor/bin/hw"
 };
 
 static bool inline is_oneplus_brain_service(const char *name)
 {
 	int i, f;
-	for (f = 0; f < ARRAY_SIZE(paths); ++f) {
-		if (!strncmp(name, paths[f], strlen(paths[f]))) {
-			for (i = 0; i < ARRAY_SIZE(targets); ++i) {
-				if (strstr(name, targets[i])) {
+
+	for (f = 0; f < ARRAY_SIZE(search_paths); ++f) {
+		const char *path = search_paths[f];
+
+		if (!strncmp(name, path, strlen(path))) {
+			for (i = 0; i < ARRAY_SIZE(target_files); ++i) {
+				const char *target = name + strlen(path) + 1;
+				const char *brain_service = target_files[i];
+
+				if (strstr(target, brain_service)) {
 					pr_info("Disabling oneplus_brain_service: %s\n", name);
 					return 1;
 				}
