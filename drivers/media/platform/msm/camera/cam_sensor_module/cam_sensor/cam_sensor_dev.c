@@ -188,8 +188,8 @@ static int cam_sensor_subdev_close(struct v4l2_subdev *sd,
 	}
 
 	mutex_lock(&(s_ctrl->cam_sensor_mutex));
-    if(!is_ftm_current_test)
-    	cam_sensor_shutdown(s_ctrl);
+	if(!is_ftm_current_test)
+		cam_sensor_shutdown(s_ctrl);
 	mutex_unlock(&(s_ctrl->cam_sensor_mutex));
 
 	return 0;
