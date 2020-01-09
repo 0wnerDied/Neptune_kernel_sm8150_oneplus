@@ -9011,6 +9011,8 @@ reinit:
 	/* set the state as operational after switching to desired gear */
 	hba->ufshcd_state = UFSHCD_STATE_OPERATIONAL;
 
+	ufshcd_set_auto_hibern8_timer(hba);
+
 	/*
 	 * If we are in error handling context or in power management callbacks
 	 * context, no need to scan the host
@@ -9048,8 +9050,6 @@ reinit:
 		scsi_scan_host(hba->host);
 		pm_runtime_put_sync(hba->dev);
 	}
-
-	ufshcd_set_auto_hibern8_timer(hba);
 
 out:
 	if (ret) {
