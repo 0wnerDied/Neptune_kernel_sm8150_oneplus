@@ -139,7 +139,7 @@ static int adm_get_parameters[MAX_COPPS_PER_PORT * ADM_GET_PARAMETER_LENGTH];
 static int adm_module_topo_list[MAX_COPPS_PER_PORT *
 				ADM_GET_TOPO_MODULE_INSTANCE_LIST_LENGTH];
 static struct mutex dts_srs_lock;
-static int adm_session[AFE_MAX_PORTS];
+static int *adm_session;
 
 void msm_dts_srs_acquire_lock(void)
 {
@@ -151,13 +151,14 @@ void msm_dts_srs_release_lock(void)
 	mutex_unlock(&dts_srs_lock);
 }
 
-void adm_reset_session_type(void)
+void adm_alloc_types(void)
 {
-    int i;
-    for( i = 0; i < AFE_MAX_PORTS; i++)
-    {
-        adm_session[i] = 0;
-    }
+	adm_session = kzalloc(AFE_MAX_PORTS, GFP_KERNEL);
+}
+
+void adm_free_types(void)
+{
+	kfree(adm_session);
 }
 /**
  * adm_set_session_type -
@@ -5179,7 +5180,7 @@ int __init adm_init(void)
 	this_adm.sourceTrackingData.memmap.kvaddr = NULL;
 	this_adm.sourceTrackingData.memmap.paddr = 0;
 	this_adm.sourceTrackingData.apr_cmd_status = -1;
-    adm_reset_session_type();
+    adm_alloc_types();
 	return 0;
 }
 
@@ -5187,5 +5188,7 @@ void adm_exit(void)
 {
 	if (this_adm.apr)
 		adm_reset_data();
+
+	adm_free_types();
 	adm_delete_cal_data();
 }
