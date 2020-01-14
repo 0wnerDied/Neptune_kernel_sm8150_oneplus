@@ -16,7 +16,7 @@
 		qcom,resource-name = "smpa";
 		qcom,resource-id = <1>;
 		qcom,regulator-type = <1>;
-		qcom,hpm-min-load = <100000>;
+		qcom,hpm-min-load = <400000>;
 		status = "disabled";
 
 		regulator-s1 {
@@ -32,7 +32,7 @@
 		qcom,resource-name = "smpa";
 		qcom,resource-id = <2>;
 		qcom,regulator-type = <1>;
-		qcom,hpm-min-load = <100000>;
+		qcom,hpm-min-load = <400000>;
 		status = "disabled";
 
 		regulator-s2 {
@@ -96,7 +96,7 @@
 		qcom,resource-name = "smpa";
 		qcom,resource-id = <6>;
 		qcom,regulator-type = <1>;
-		qcom,hpm-min-load = <100000>;
+		qcom,hpm-min-load = <400000>;
 		status = "disabled";
 
 		regulator-s6 {
