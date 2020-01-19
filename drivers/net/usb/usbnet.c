@@ -2312,7 +2312,7 @@ static int __init usbnet_init(void)
 			ipc_log_context_create(IPC_LOG_NUM_PAGES,
 					       netdev_names[i], 0);
 		if (!usbnet_ipc_log_ctxt[i])
-			pr_err("%s: Error getting ipc_log_ctxt\n", __func__);
+			pr_debug("%s: Error getting ipc_log_ctxt\n", __func__);
 	}
 
 	return 0;
