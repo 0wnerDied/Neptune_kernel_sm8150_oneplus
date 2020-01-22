@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -402,26 +402,38 @@ int diag_md_copy_to_user(char __user *buf, int *pret, size_t buf_size,
 
 			task_s = get_pid_task(pid_struct, PIDTYPE_PID);
 			if (task_s) {
-
-				/* Copy the length of data being passed */
-				err = copy_to_user(buf + ret,
-						(void *)&(entry->len),
-						sizeof(int));
-				if (err) {
-					put_task_struct(task_s);
-					goto drop_data;
+				spin_lock_irqsave(&ch->lock, flags);
+				entry = &ch->tbl[j];
+				if (entry->len <= 0 || entry->buf == NULL) {
+					spin_unlock_irqrestore(&ch->lock,
+						flags);
+					continue;
 				}
-				ret += sizeof(int);
+				spin_unlock_irqrestore(&ch->lock,
+						flags);
+				/* Copy the length of data being passed */
+				if (entry->len) {
+					err = copy_to_user(buf + ret,
+							(void *)&(entry->len),
+							sizeof(int));
+					if (err) {
+						put_task_struct(task_s);
+						goto drop_data;
+					}
+					ret += sizeof(int);
+				}
 
 				/* Copy the actual data being passed */
-				err = copy_to_user(buf + ret,
-						(void *)entry->buf,
-						entry->len);
-				if (err) {
-					put_task_struct(task_s);
-					goto drop_data;
+				if (entry->buf) {
+					err = copy_to_user(buf + ret,
+							(void *)entry->buf,
+							entry->len);
+					if (err) {
+						put_task_struct(task_s);
+						goto drop_data;
+					}
+					ret += entry->len;
 				}
-				ret += entry->len;
 				put_task_struct(task_s);
 			}
 
@@ -433,6 +445,11 @@ int diag_md_copy_to_user(char __user *buf, int *pret, size_t buf_size,
 			num_data++;
 drop_data:
 			spin_lock_irqsave(&ch->lock, flags);
+			entry = &ch->tbl[j];
+			if (entry->len <= 0 || entry->buf == NULL) {
+				spin_unlock_irqrestore(&ch->lock, flags);
+				continue;
+			}
 			if (ch->ops && ch->ops->write_done)
 				ch->ops->write_done(entry->buf, entry->len,
 						    entry->ctx,
