@@ -2031,7 +2031,7 @@ static ssize_t stmvl53l1_calib_data_read(struct file *filp,
 
 	mutex_lock(&data->work_mutex);
 
-	vl53l1_dbgmsg("off = %lld / count = %d", off, count);
+	vl53l1_dbgmsg("off = %lld / count = %ld", off, count);
 
 	/* sanity check */
 	if (off < 0 || off >= sizeof(VL53L1_CalibrationData_t))
@@ -2076,7 +2076,7 @@ static ssize_t stmvl53l1_calib_data_write(struct file *filp,
 
 	mutex_lock(&data->work_mutex);
 
-	vl53l1_dbgmsg("off = %lld / count = %d", off, count);
+	vl53l1_dbgmsg("off = %lld / count = %ld", off, count);
 
 	if (data->enable_sensor) {
 		rc = -EBUSY;
@@ -2132,7 +2132,7 @@ static ssize_t stmvl53l1_zone_calib_data_read(struct file *filp,
 
 	mutex_lock(&data->work_mutex);
 
-	vl53l1_dbgmsg("off = %lld / count = %d", off, count);
+	vl53l1_dbgmsg("off = %lld / count = %ld", off, count);
 
 	/* sanity check */
 	if (off < 0 || off >= sizeof(stmvl531_zone_calibration_data_t))
@@ -2179,7 +2179,7 @@ static ssize_t stmvl53l1_zone_calib_data_write(struct file *filp,
 
 	mutex_lock(&data->work_mutex);
 
-	vl53l1_dbgmsg("off = %lld / count = %d", off, count);
+	vl53l1_dbgmsg("off = %lld / count = %ld", off, count);
 
 	/* implementation if quite fragile. We suppose successive access. We
 	 * trigger set on last byte write if amount is exact.

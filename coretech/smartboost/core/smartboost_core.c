@@ -630,7 +630,7 @@ static void smart_boost_reclaim_by_uid(uid_t uid)
 
 	nr_reclaimed = coretech_reclaim_pagelist(&page_list, NULL, NULL);
 
-	pr_err("clean uid(%d) pagecache:%d\n", uid, nr_reclaimed);
+	pr_err("clean uid(%d) pagecache:%ld\n", uid, nr_reclaimed);
 }
 
 static ssize_t page_hot_count_read(struct file *file, char __user *buf,

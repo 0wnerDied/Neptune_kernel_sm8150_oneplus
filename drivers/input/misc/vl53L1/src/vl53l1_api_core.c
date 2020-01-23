@@ -368,7 +368,7 @@ VL53L1_Error VL53L1_data_init(
 
 
 
-	if (status == VL53L1_ERROR_NONE)
+    if (status == VL53L1_ERROR_NONE)
 		status = VL53L1_set_preset_mode(
 			Dev,
 			pdev->preset_mode,

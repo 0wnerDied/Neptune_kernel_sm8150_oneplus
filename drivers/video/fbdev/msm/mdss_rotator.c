@@ -2725,7 +2725,7 @@ static int mdss_rotator_get_dt_vreg_data(struct device *dev,
 			mp->vreg_config[i].load[DSS_REG_MODE_ENABLE],
 			mp->vreg_config[i].load[DSS_REG_MODE_DISABLE]);
 	}
-	return rc;
+	return 0;
 
 error:
 	if (mp->vreg_config) {

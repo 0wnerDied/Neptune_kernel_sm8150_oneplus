@@ -174,7 +174,7 @@ void aigov_dump(int cpu, unsigned long util, unsigned long aig_util, unsigned lo
 		aigov_get_boost_hint(4),
 		aigov_get_boost_hint(7));
 
-	aigov_logv("cpu%d: orig: %llu, aig: %llu: extra: %llu\n",
+	aigov_logv("cpu%d: orig: %lu, aig: %lu: extra: %lu\n",
 		cpu, util, aig_util, extra_util);
 }
 
