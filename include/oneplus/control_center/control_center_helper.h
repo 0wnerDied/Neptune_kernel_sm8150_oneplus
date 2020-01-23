@@ -48,9 +48,14 @@ extern bool cc_is_ddrfreq_related(const char* name);
 #else
 static inline void cc_tsk_init(void* task) {};
 static inline void cc_tsk_free(void* task) {};
-
-extern u64 cc_cpu_find_ddr(int cpu) { return 0; }
-extern bool cc_is_ddrfreq_related(const char* name) { return false; }
+static inline u64 cc_cpu_find_ddr(int cpu)
+{
+	return 0;
+}
+static inline bool cc_is_ddrfreq_related(const char* name)
+{
+	return false;
+}
 #endif
 
 #endif
