@@ -7390,9 +7390,13 @@ static inline bool task_fits_max(struct task_struct *p, int cpu)
 		return true;
 
 	if (is_min_capacity_cpu(cpu)) {
+#ifdef CONFIG_SCHED_WALT
 		if (task_boost_policy(p) == SCHED_BOOST_ON_BIG ||
 			task_boost > 0 ||
 			schedtune_task_boost(p) > 0)
+#else
+		if (task_boost > 0 || schedtune_task_boost(p) > 0)
+#endif
 			return false;
 	} else { /* mid cap cpu */
 		if (task_boost > 1)
@@ -7417,7 +7421,11 @@ static bool is_packing_eligible(struct task_struct *p, int target_cpu,
 {
 	unsigned long tutil, estimated_capacity;
 
+#ifdef CONFIG_SCHED_WALT
 	if (task_placement_boost_enabled(p) || fbt_env->need_idle || boosted)
+#else
+	if (fbt_env->need_idle || boosted)
+#endif
 		return false;
 
 	if (best_idle_cstate == -1)
@@ -7863,12 +7871,14 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 		 */
 		if (!prefer_idle && !boosted &&
 			(target_cpu != -1 || best_idle_cpu != -1) &&
-			(fbt_env->placement_boost == SCHED_BOOST_NONE ||
 #ifdef CONFIG_SCHED_WALT
+			(fbt_env->placement_boost == SCHED_BOOST_NONE ||
 			sched_boost() != FULL_THROTTLE_BOOST ||
-#endif
 			(fbt_env->placement_boost == SCHED_BOOST_ON_BIG &&
 				!next_group_higher_cap)))
+#else
+			!next_group_higher_cap)
+#endif
 			break;
 
 		/*
@@ -8221,7 +8231,11 @@ static int find_energy_efficient_cpu(struct sched_domain *sd,
 	struct cpumask *rtg_target = find_rtg_target(p);
 	struct find_best_target_env fbt_env;
 	bool need_idle = wake_to_idle(p);
+#ifdef CONFIG_SCHED_WALT
 	int placement_boost = task_boost_policy(p);
+#else
+	int placement_boost = -1;
+#endif
 	u64 start_t = 0;
 	int next_cpu = -1, backup_cpu = -1;
 	int boosted = (schedtune_task_boost(p) > 0 || per_task_boost(p) > 0);
@@ -8308,7 +8322,9 @@ static int find_energy_efficient_cpu(struct sched_domain *sd,
 		eenv->max_cpu_count = EAS_CPU_BKP + 1;
 
 		fbt_env.rtg_target = rtg_target;
+#ifdef CONFIG_SCHED_WALT
 		fbt_env.placement_boost = placement_boost;
+#endif
 		fbt_env.need_idle = need_idle;
 		fbt_env.skip_cpu = is_many_wakeup(sibling_count_hint) ?
 				   cpu : -1;
@@ -8327,8 +8343,11 @@ static int find_energy_efficient_cpu(struct sched_domain *sd,
 		if (unlikely(!walt_disabled && sysctl_sched_use_walt_cpu_util) &&
 		    p->state == TASK_WAKING)
 			delta = task_util(p);
-#endif
+
 		if (task_placement_boost_enabled(p) || need_idle || boosted ||
+#else
+		if (need_idle || boosted ||
+#endif
 		    (rtg_target && (!cpumask_test_cpu(prev_cpu, rtg_target) ||
 		    cpumask_test_cpu(target_cpu, rtg_target))) ||
 		    __cpu_overutilized(prev_cpu, delta) ||
