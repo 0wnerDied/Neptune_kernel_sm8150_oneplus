@@ -9,6 +9,7 @@
 #include <linux/msm_drm_notify.h>
 #include <linux/input.h>
 #include <linux/kthread.h>
+#include <linux/sched/sysctl.h>
 #include <linux/slab.h>
 #include <uapi/linux/sched/types.h>
 
@@ -56,6 +57,9 @@ static struct df_boost_drv df_boost_drv_g __read_mostly = {
 static void __devfreq_boost_kick(struct boost_dev *b)
 {
 	if (!READ_ONCE(b->df) || !test_bit(SCREEN_ON, &b->state))
+		return;
+
+	if (!sysctl_sched_boost)
 		return;
 
 	set_bit(INPUT_BOOST, &b->state);
