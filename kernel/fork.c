@@ -2096,6 +2096,7 @@ long _do_fork(unsigned long clone_flags,
 	if (task_is_zygote(current)) {
 		cpu_input_boost_kick_max(app_launch_boost_duration);
 		devfreq_boost_kick_max(DEVFREQ_MSM_LLCCBW_DDR, app_launch_boost_duration);
+		devfreq_boost_kick_max(DEVFREQ_MSM_CPU_LLCCBW, app_launch_boost_duration);
 	}
 
 	/*

@@ -343,6 +343,9 @@ int devfreq_add_devbw(struct device *dev)
 	if (!strcmp(dev_name(dev), "soc:qcom,cpu-llcc-ddr-bw"))
 		devfreq_register_boost_device(DEVFREQ_MSM_LLCCBW_DDR, d->df);
 
+	if (!strcmp(dev_name(dev), "soc:qcom,cpu-cpu-llcc-bw"))
+		devfreq_register_boost_device(DEVFREQ_MSM_CPU_LLCCBW, d->df);
+
 	if (cpubw_flag) {
 		cpubw_flag = false;
 		qos_request_value.max_state = p->max_state;
