@@ -51,6 +51,7 @@
 #include <asm/system_misc.h>
 #include <asm/sysreg.h>
 #include <trace/events/exception.h>
+#include <linux/workqueue.h>
 
 /* Save pt_regs ptr to get panic info for display in xbl mode */
 void *panic_info = NULL;
@@ -121,6 +122,9 @@ void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 	if (!tsk)
 		tsk = current;
 
+	if (tsk->state == TASK_DEAD)
+		return;
+
 	if (!try_get_task_stack(tsk))
 		return;
 
@@ -158,6 +162,11 @@ void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 			|| cur_fp != thread_saved_fp(tsk))) {
 			printk("The task:%s had been rescheduled!\n",
 				tsk->comm);
+			break;
+		}
+		/* do not dump_backtrace current task on other cpu, frame is the last info */
+		if (tsk != current && tsk->on_cpu == 1) {
+			printk("The task:%s is running on other cpu currently!\n", tsk->comm);
 			break;
 		}
 		/* skip until specified stack frame */
