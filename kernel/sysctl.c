@@ -310,9 +310,6 @@ static int min_extfrag_threshold;
 static int max_extfrag_threshold = 1000;
 #endif
 
-static int sysctl_fg_io_opt = 0;
-static int vm_breath_period = 0;
-static int vm_breath_priority = 0;
 static struct ctl_table kern_table[] = {
 	{
 		.procname	= "sched_child_runs_first",
@@ -454,14 +451,6 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0644,
 		.proc_handler	= sched_updown_migrate_handler,
 	},
-/*dylanchang, 2019/4/30, add foreground task io opt*/
-{
-		.procname	= "fg_io_opt",
-		.data		= &sysctl_fg_io_opt,
-		.maxlen		= sizeof(int),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
-},
 	{
 		.procname	= "sched_downmigrate",
 		.data		= &sysctl_sched_capacity_margin_down,
@@ -1584,21 +1573,6 @@ static struct ctl_table vm_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
 		.extra2		= &one_hundred,
-	},
-	{
-		.procname	= "breath_period",
-		.data		= &vm_breath_period,
-		.maxlen		= sizeof(vm_breath_period),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec_minmax,
-		.extra1		= &zero,
-	},
-	{
-		.procname	= "breath_priority",
-		.data		= &vm_breath_priority,
-		.maxlen		= sizeof(vm_breath_priority),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
 	},
 	{
 		.procname       = "want_old_faultaround_pte",

@@ -149,9 +149,6 @@ enum zone_stat_item {
 #if IS_ENABLED(CONFIG_ZSMALLOC)
 	NR_ZSPAGES,		/* allocated in zsmalloc */
 #endif
-#ifdef CONFIG_ONEPLUS_HEALTHINFO
-	NR_IONCACHE_PAGES,
-#endif
 	NR_FREE_CMA_PAGES,
 	NR_VM_ZONE_STAT_ITEMS };
 

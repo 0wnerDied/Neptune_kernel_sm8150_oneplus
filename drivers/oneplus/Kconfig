@@ -8,6 +8,3 @@ config OEM_BOOT_MODE
 config WB_KERNEL_LOG
 	tristate "reserve kernel log to partition driver"
 	default n
-
-source "drivers/oneplus/coretech/Kconfig"
-source "drivers/oneplus/oneplus_healthinfo/Kconfig"

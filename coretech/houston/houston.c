@@ -20,20 +20,12 @@
 #include <linux/workqueue.h>
 #include <linux/clk.h>
 
-#ifdef CONFIG_AIGOV
-#include <linux/oem/aigov.h>
-#endif
-
 #include "../drivers/gpu/msm/kgsl.h"
 #include "../drivers/gpu/msm/kgsl_pwrctrl.h"
 
 #include <oneplus/houston/houston_helper.h>
 
 #include <linux/smp.h>
-
-#ifdef CONFIG_OPCHAIN
-#include <../coretech/uxcore/opchain_helper.h>
-#endif
 
 #ifdef CONFIG_CONTROL_CENTER
 #include <linux/oem/control_center.h>

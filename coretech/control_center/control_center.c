@@ -15,12 +15,6 @@
 #include <trace/events/power.h>
 #include <linux/oem/control_center.h>
 #include <linux/oem/houston.h>
-#include <linux/oem/aigov.h>
-
-#ifdef CONFIG_OPCHAIN
-#include <../coretech/uxcore/opchain_helper.h>
-#include <../coretech/uxcore/opchain_define.h>
-#endif
 
 /* time measurement */
 #define CC_TIME_START(start) { \
@@ -259,23 +253,6 @@ static void cc_adjust_cpufreq(struct cc_command* cc)
 
 	if (!cc_cpu_boost_enable)
 		return;
-
-#ifdef CONFIG_AIGOV
-	if (aigov_hooked()) {
-		switch (cc->category) {
-		case CC_CTL_CATEGORY_CLUS_0_FREQ: clus = 0; break;
-		case CC_CTL_CATEGORY_CLUS_1_FREQ: clus = 1; break;
-		case CC_CTL_CATEGORY_CLUS_2_FREQ: clus = 2; break;
-		}
-		if (cc->type == CC_CTL_TYPE_RESET ||
-			cc->type == CC_CTL_TYPE_RESET_NONBLOCK) {
-			aigov_set_cpufreq(cc_get_cpu_idx(clus), 0);
-		} else {
-			aigov_set_cpufreq(cc_get_cpu_idx(clus), cc->params[1]);
-		}
-		return;
-	}
-#endif
 
 	if (cc_is_nonblock(cc))
 		return;
@@ -518,31 +495,7 @@ static void cc_adjust_ddr_lock_freq(struct cc_command *cc)
 
 static void cc_adjust_sched(struct cc_command *cc)
 {
-
-#ifdef CONFIG_OPCHAIN
-	struct task_struct *task = NULL;
-	pid_t pid = cc->params[0];
-#endif
-
-	if (cc_is_nonblock(cc))
 		return;
-
-#ifdef CONFIG_OPCHAIN
-	if (cc->type == CC_CTL_TYPE_RESET) {
-		opc_set_boost(0);
-		return;
-	}
-
-	rcu_read_lock();
-	task = find_task_by_vpid(pid);
-	if (task) {
-		cc_logv("set task %s %d to prime core\n", task->comm, task->pid);
-		task->etask_claim = UT_PERF_TOP;
-		opc_set_boost(1);
-	} else
-		cc_logw("can't find task %d\n", pid);
-	rcu_read_unlock();
-#endif
 }
 
 void cc_process(struct cc_command* cc)

@@ -3241,42 +3241,6 @@ static int proc_pid_personality(struct seq_file *m, struct pid_namespace *ns,
 	return err;
 }
 
-#ifdef CONFIG_LIVEPATCH
-static int proc_pid_patch_state(struct seq_file *m, struct pid_namespace *ns,
-				struct pid *pid, struct task_struct *task)
-{
-	seq_printf(m, "%d\n", task->patch_state);
-	return 0;
-}
-#endif /* CONFIG_LIVEPATCH */
-
-static ssize_t
-null_ops_write(struct file *file, const char __user *buf,
-	size_t count, loff_t *offset)
-{
-	return count;
-}
-
-static int null_ops_show(struct seq_file *m, void *v)
-{
-	seq_printf(m, "0\n");
-
-	return 0;
-}
-
-static int null_ops_open(struct inode *inode, struct file *filp)
-{
-	return single_open(filp, null_ops_show, inode);
-}
-
-static const struct file_operations null_ops = {
-	.open           = null_ops_open,
-	.read           = seq_read,
-	.write          = null_ops_write,
-	.llseek         = seq_lseek,
-	.release        = single_release,
-};
-
 /*
  * Thread groups
  */
@@ -3400,8 +3364,6 @@ static const struct pid_entry tgid_base_stuff[] = {
 #ifdef CONFIG_CPU_FREQ_TIMES
 	ONE("time_in_state", 0444, proc_time_in_state_show),
 #endif
-	REG("memplus_type", 0666, null_ops),
-	REG("page_hot_count", 0666, null_ops),
 };
 
 static int proc_tgid_base_readdir(struct file *file, struct dir_context *ctx)

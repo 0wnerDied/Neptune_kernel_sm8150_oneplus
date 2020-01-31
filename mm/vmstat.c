@@ -1050,9 +1050,6 @@ const char * const vmstat_text[] = {
 #if IS_ENABLED(CONFIG_ZSMALLOC)
 	"nr_zspages",
 #endif
-#ifdef CONFIG_ONEPLUS_HEALTHINFO
-	"nr_ioncache_pages",
-#endif
 	"nr_free_cma",
 
 	/* enum numa_stat_item counters */
