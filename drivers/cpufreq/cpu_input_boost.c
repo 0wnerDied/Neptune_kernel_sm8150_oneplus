@@ -12,7 +12,6 @@
 #include <linux/moduleparam.h>
 #include <linux/msm_drm_notify.h>
 #include <linux/sched.h>
-#include <linux/sched/sysctl.h>
 #include <linux/slab.h>
 #include <linux/version.h>
 
@@ -161,9 +160,6 @@ static void update_online_cpu_policy(void)
 static void __cpu_input_boost_kick(struct boost_drv *b)
 {
 	if (!test_bit(SCREEN_ON, &b->state))
-		return;
-
-	if (!sysctl_sched_boost)
 		return;
 
 	set_bit(INPUT_BOOST, &b->state);
