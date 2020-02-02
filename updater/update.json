@@ -1,11 +1,11 @@
 {
   "kernel": {
-    "name": "Weeb Kernel - Hentai Edition",
-    "version": "v1.0rc1",
-    "link": "https://github.com/idkwhoiam322/weeb_kernel_oneplus_sm8150/releases/download/1.0-rc1/Hentai-perf-v1.0rc1.zip",
-    "changelog_url": "https://raw.githubusercontent.com/idkwhoiam322/weeb_kernel_oneplus_sm8150/staging/updater/changelog",
-    "date": "2020-01-10",
-    "sha1": "d223bac4591a7af94d893212815290690e5b3466"
+    "name": "Weeb Kernel - C2 Release",
+    "version": "v1.0-C2",
+    "link": "https://github.com/idkwhoiam322/weeb_kernel_oneplus_sm8150/releases/download/1.0-C2/Weeb-Kernel-v1.0-C2.zip",
+    "changelog_url": "https://raw.githubusercontent.com/idkwhoiam322/weeb_kernel_oneplus_sm8150/staging/updater/changelog.md",
+    "date": "2020-02-02",
+    "sha1": "18e7d85b6b2cda07b0e1e84612c38bb0b1ca5790"
   },
   "support": {
     "link": "https://t.me/weebkernelchat"
