@@ -653,8 +653,4 @@ static inline bool inetdev_valid_mtu(unsigned int mtu)
 	return likely(mtu >= IPV4_MIN_MTU);
 }
 
-#ifdef CONFIG_WIREGUARD
-#undef totalram_pages
-#endif
-
 #endif	/* _IP_H */
