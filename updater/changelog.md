@@ -1,12 +1,12 @@
 ## Build Information
 ```
 Kernel: Weeb Kernel
-Type: STABLE
+Type: BETA
 Device: OnePlus 7/T/Pro/5G
 Compiler: GCC
-Branch: master
-HEAD: 65ce97e1d647e
-Build Number: v1.0-C2
+Branch: staging
+HEAD: fa9b29f6fe6c8
+Build Number: r44
 ```
 
 ## JSONs for OTA
@@ -18,30 +18,15 @@ https://raw.githubusercontent.com/idkwhoiam322/weeb_kernel_oneplus_sm8150/stagin
 
 ## Changelog
 ```
-Initial Release!
-- Cleanly based over latest CAF tag with minimal OnePlus changes
--- RAM Boost MUST be disabled
-- Merged latest LTS subversion tag
-- BBR as the default TCP network congestion control
-- vDSO 32 patches to improve 32-bit performance
-- vmalloc patches backported from mainline
-- UFS optimizations
-- Latest CFQ I/O scheduler
-- Removed VLAs treewide
-- Removed RTB logging
-- Block userspace from messing with cpufreq completely
-- cpu_input_boost driver by kerneltoast to handle cpu boosting
-- devfreq_boost driver by kerneltoast to handle devfreq boosting
-- Use userspace LMKD alongside PSI
-- Use full PELT with sched_boost added ( but all its influences removed )
-  to satisfy userspace
-- kcal support
-- wireguard support
-- clean up and optimize some OnePlus changes
-- Upstream KGSL and qseecom to latest CAF
-- Import several optimizations from Pixel 4
-- Don't boost cpu/task utilization by default with schedtune.boost
--- This behaviour is only when schedtune.boost is set to 2
--- Tasks are still biased to big cluster by default for top-app
-- force some kernel threads to big cluster
+Changelog for r44:
+[ since 1.0-C2 ]
+- Revert perf_critical patchset in favour of significantly better idle drain at the cost of jitter but not really any significant loss in performance
+- Several CAF updates treewide
+- Several Sultan rice treewide that I didn't want to add till first release
+- Disable DEBUG_FS
+- Reverse mac address provided by firmware [ Seems to help with some folks not having WiFi with qcacld inline ]
+- Add haptic level adjustment [ Hot garbage btw, adding it cuz user request ]
+- Some mm patches from mainline
+-- Some additional fixups to the above backported by @ celtare21 aka Kuran Kaname
+- missed an mm revert so it's there now ^^'
 ```
