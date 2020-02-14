@@ -3928,11 +3928,11 @@ static int __init init_f2fs_fs(void)
 	err = f2fs_init_bioset();
 	if (err)
 		goto free_bio_enrty_cache;
-	f2fs_init_rapid_gc();
-
 	err = f2fs_init_compress_mempool();
 	if (err)
 		goto free_bioset;
+	f2fs_init_rapid_gc();
+	
 	return 0;
 free_bioset:
 	f2fs_destroy_bioset();
