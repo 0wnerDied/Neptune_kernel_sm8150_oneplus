@@ -1355,6 +1355,8 @@ choice
 	  Image.gz to be used for final image creation.
 	  The image will built in arch/arm64/boot/IMAGE-NAME-dtb
 
+	config IMG_LZ4_DTB
+		bool "Image.lz4-dtb"
 	config IMG_GZ_DTB
 		bool "Image.gz-dtb"
 	config IMG_DTB
@@ -1364,6 +1366,7 @@ endchoice
 config BUILD_ARM64_APPENDED_KERNEL_IMAGE_NAME
 	string
 	depends on BUILD_ARM64_APPENDED_DTB_IMAGE
+	default "Image.lz4-dtb" if IMG_LZ4_DTB
 	default "Image.gz-dtb" if IMG_GZ_DTB
 	default "Image-dtb" if IMG_DTB
 
@@ -1376,10 +1379,16 @@ config BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES
 
 choice
 	prompt "Kernel compression method"
-	default BUILD_ARM64_KERNEL_COMPRESSION_GZIP
+	default BUILD_ARM64_KERNEL_COMPRESSION_LZ4
 	help
 	  Allows choice between gzip compressed or uncompressed
 	  kernel image
+
+config BUILD_ARM64_KERNEL_COMPRESSION_LZ4
+        bool "Build compressed kernel image"
+        help
+          Build a kernel image using lz4
+          compression with concatenated dtb.
 
 config BUILD_ARM64_KERNEL_COMPRESSION_GZIP
 	bool "Build compressed kernel image"
