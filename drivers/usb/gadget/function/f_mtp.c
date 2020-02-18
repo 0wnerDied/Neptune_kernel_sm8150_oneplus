@@ -1052,6 +1052,10 @@ static void receive_file_work(struct work_struct *data)
 	pm_qos_update_request(&big_plus_cpu_mtp_freq, MAX_CPUFREQ);
 
 	mutex_lock(&dev->read_mutex);
+	if (dev->state == STATE_OFFLINE) {
+		r = -EIO;
+		goto fail;
+	}
 	while (count > 0 || write_req) {
 		if (count > 0) {
 			/* queue a request */
@@ -1134,6 +1138,7 @@ static void receive_file_work(struct work_struct *data)
 			read_req = NULL;
 		}
 	}
+fail:
 	mutex_unlock(&dev->read_mutex);
 
 	queue_delayed_work(cpu_freq_qos_queue, &cpu_freq_qos_work,
