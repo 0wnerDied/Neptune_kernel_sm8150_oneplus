@@ -1941,7 +1941,7 @@ u64 sched_ktime_clock(void);
 #else
 static inline u64 sched_ktime_clock(void)
 {
-	return 0;
+	return sched_clock();
 }
 #endif
 
