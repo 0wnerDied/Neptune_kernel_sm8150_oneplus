@@ -1878,7 +1878,7 @@ static int smblib_awake_vote_callback(struct votable *votable, void *data,
 /* @bsp, 2019/04/17 Battery & Charging porting */
 	pr_info("set awake=%d\n", awake);
 	if (awake)
-		pm_stay_awake(chg->dev);
+		pm_wakeup_event(chg->dev, 500);
 	else
 		pm_relax(chg->dev);
 
