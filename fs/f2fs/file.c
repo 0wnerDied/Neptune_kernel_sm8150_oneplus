@@ -3268,6 +3268,21 @@ static int f2fs_ioc_resize_fs(struct file *filp, unsigned long arg)
 	return ret;
 }
 
+static int f2fs_get_compress_blocks(struct file *filp, unsigned long arg)
+{
+	struct inode *inode = file_inode(filp);
+	__u64 blocks;
+
+	if (!f2fs_sb_has_compression(F2FS_I_SB(inode)))
+		return -EOPNOTSUPP;
+
+	if (!f2fs_compressed_file(inode))
+		return -EINVAL;
+
+	blocks = F2FS_I(inode)->i_compr_blocks;
+	return put_user(blocks, (u64 __user *)arg);
+}
+
 long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	if (unlikely(f2fs_cp_error(F2FS_I_SB(file_inode(filp)))))
@@ -3328,6 +3343,8 @@ long f2fs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		return f2fs_ioc_precache_extents(filp, arg);
 	case F2FS_IOC_RESIZE_FS:
 		return f2fs_ioc_resize_fs(filp, arg);
+	case F2FS_IOC_GET_COMPRESS_BLOCKS:
+		return f2fs_get_compress_blocks(filp, arg);
 	default:
 		return -ENOTTY;
 	}
@@ -3475,6 +3492,7 @@ long f2fs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case F2FS_IOC_SET_PIN_FILE:
 	case F2FS_IOC_PRECACHE_EXTENTS:
 	case F2FS_IOC_RESIZE_FS:
+	case F2FS_IOC_GET_COMPRESS_BLOCKS:
 		break;
 	default:
 		return -ENOIOCTLCMD;
