@@ -259,9 +259,7 @@ int tsens_tm_probe(struct platform_device *pdev)
 {
 	struct tsens_device *tmdev = NULL;
 	int rc;
-#ifdef CONFIG_IPC_LOGGING
 	char tsens_name[40];
-#endif
 
 	if (!(pdev->dev.of_node))
 		return -ENODEV;
