@@ -181,4 +181,3 @@ void binder_alloc_copy_from_buffer(struct binder_alloc *alloc,
 				   size_t bytes);
 
 #endif /* _LINUX_BINDER_ALLOC_H */
-
