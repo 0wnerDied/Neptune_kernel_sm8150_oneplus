@@ -40,7 +40,6 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
-#include <linux/rwlock.h>
 #include <linux/zpool.h>
 
 /*
