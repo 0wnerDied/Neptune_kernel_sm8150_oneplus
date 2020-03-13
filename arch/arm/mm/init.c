@@ -577,7 +577,9 @@ void __init mem_init(void)
 	 * be detected at build time already.
 	 */
 #ifdef CONFIG_MMU
+#ifndef CONFIG_MODULES_USE_VMALLOC
 	BUILD_BUG_ON(TASK_SIZE				> MODULES_VADDR);
+#endif
 	BUG_ON(TASK_SIZE 				> MODULES_VADDR);
 #endif
 
