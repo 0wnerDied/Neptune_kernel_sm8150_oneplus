@@ -1,3 +1,2 @@
 obj-y += stub/ audio/
 header-y += stub/include/uapi/ audio/include/uapi/
-subdir-ccflags-y += -Os
