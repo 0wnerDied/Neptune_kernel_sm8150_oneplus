@@ -159,6 +159,16 @@ void adm_reset_session_type(void)
         adm_session[i] = 0;
     }
 }
+
+struct adm_tuple {
+	struct list_head list;
+	int port_id;
+	int session_type;
+};
+
+static LIST_HEAD(adm_port_ids);
+static DEFINE_SPINLOCK(adm_port_lock);
+
 /**
  * adm_set_session_type -
  *        validate given port id
@@ -169,13 +179,50 @@ void adm_reset_session_type(void)
  */
 void adm_set_session_type(int port_id, int session_type)
 {
-    adm_session[port_id] = session_type;
+	if (port_id < AFE_MAX_PORTS) {
+		adm_session[port_id] = session_type;
+	} else {
+		struct adm_tuple *t;
+
+		spin_lock(&adm_port_lock);
+		list_for_each_entry(t, &adm_port_ids, list) {
+			if (t->port_id == port_id) {
+				t->session_type = session_type;
+				spin_unlock(&adm_port_lock);
+				return;
+			}
+		}
+		spin_unlock(&adm_port_lock);
+
+		t = kmalloc(sizeof(*t), GFP_KERNEL | __GFP_NOFAIL);
+		t->port_id = port_id;
+		t->session_type = session_type;
+
+		spin_lock(&adm_port_lock);
+		list_add(&t->list, &adm_port_ids);
+		spin_unlock(&adm_port_lock);
+	}
 }
 EXPORT_SYMBOL(adm_set_session_type);
 
 int adm_get_session_type(int port_id)
 {
-    return adm_session[port_id];
+	int session_type = 0;
+	struct adm_tuple *t;
+
+	if (port_id < AFE_MAX_PORTS)
+		return adm_session[port_id];
+
+	spin_lock(&adm_port_lock);
+	list_for_each_entry(t, &adm_port_ids, list) {
+		if (t->port_id == port_id) {
+			session_type = t->session_type;
+			break;
+		}
+	}
+	spin_unlock(&adm_port_lock);
+
+	return session_type;
 }
 
 /**
