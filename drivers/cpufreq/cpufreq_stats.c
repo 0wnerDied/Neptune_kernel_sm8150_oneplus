@@ -28,7 +28,6 @@ struct cpufreq_stats {
 static int cpufreq_stats_update(struct cpufreq_stats *stats)
 {
 	unsigned long long cur_time = get_jiffies_64();
-	unsigned long flags;
 
 	atomic64_add(cur_time - stats->last_time,
 		     &stats->time_in_state[stats->last_index]);
