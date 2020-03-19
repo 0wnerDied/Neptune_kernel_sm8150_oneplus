@@ -7447,10 +7447,8 @@ static int start_cpu(struct task_struct *p, bool boosted,
 		return rd->max_cap_orig_cpu;
 	}
 
-	if (sync_boost) {
-		if (rd->mid_cap_orig_cpu != -1)
-			return rd->mid_cap_orig_cpu;
-	}
+	if (sync_boost && rd->mid_cap_orig_cpu != -1)
+		return rd->mid_cap_orig_cpu;
 
 	/* A task always fits on its rtg_target */
 	if (rtg_target) {
@@ -8242,11 +8240,8 @@ static int find_energy_efficient_cpu(struct sched_domain *sd,
 		goto out;
 	}
 
-	if (use_sync_boost) {
+	if (use_sync_boost)
 		sync_boost = sync && cpu >= cpu_rq(cpu)->rd->mid_cap_orig_cpu;
-	} else {
-		sync_boost = false;
-	}
 
 	/* prepopulate energy diff environment */
 	eenv = get_eenv(p, prev_cpu);
