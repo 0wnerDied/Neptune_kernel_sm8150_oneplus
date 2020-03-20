@@ -1,9 +1,15 @@
 # SMI230-Sensor-Config
 
 ##	Data Synchronization
-SMI230 is a system-in-package inertial measurement unit which offers accurate acceleration and angular rate measurements. Due to system-in-package approach (two sensors in single package), the gyroscope and acceleration data is acquired in a non-synchronized manner. However, as described in the TCD synchronization between accelerometer and gyroscope can be achieved.
+Due to system-in-package approach of SMI230 (two sensors in single package), 
+the gyroscope and acceleration data is acquired in a non-synchronized manner. 
+However, synchronization between accelerometer and gyroscope can be achieved. 
+Please refer to the technical customer documentation for further information. 
+The synchronization feature is enabled via sensor configuration file.
 
-_Note: The synchronization feature is enable via sensor configuration file._
+_Note: The sensor configuration file is retrieved from BMI08x v1.2.0 available on 
+[github](https://github.com/BoschSensortec/BMI08x-Sensor-API/releases/tag/bmi08x_v1.2.0)._
+
 
 ## License
 

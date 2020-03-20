@@ -1,0 +1,34 @@
+menuconfig INPUT_SMI230
+	bool "Bosch Sensor SMI230"
+	help
+	  if you choose this option, a list of SMI230 features will be displayed.
+
+	  If unsure, say N.
+
+choice
+    prompt "Select communication interface"
+    depends on INPUT_SMI230
+
+    config SMI230_SPI
+	bool "Enable SPI connection (NOT yet supported)"
+	depends on SPI_MASTER
+    config SMI230_I2C
+	bool "Enable I2C connection"
+	depends on I2C
+endchoice
+
+if INPUT_SMI230
+
+config SMI230_DRIVER
+	tristate "SMI230 all in one driver"
+	depends on (I2C || SPI_MASTER) && SYSFS
+	help
+	 This driver combines acc and gyro together, i2c supported only
+
+config BOSCH_DRIVER_LOG_FUNC
+	tristate "Smart log function support"
+	depends on (I2C || SPI_MASTER) && SYSFS
+	help
+	 If you say yes here, you get support for smart log function in Bosch sensor driver.
+
+endif

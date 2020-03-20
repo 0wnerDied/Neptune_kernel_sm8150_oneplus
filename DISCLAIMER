@@ -1,0 +1,27 @@
+﻿The following terms apply to the Software (as defined below), however any open source software licenses applicable to the Software or parts of it shall prevail in respect of such Software or parts.
+
+Description of the Software:
+
+The software modules within this repository (hereinafter called "Software") and any information on application-sheets (hereinafter called "Information") is provided free of charge for the sole purpose to support your application
+work. 
+This means, the Software is merely an experimental software, not tested in the field and only intended for inspiration for further development and testing. 
+
+The Software is specifically designed for the use with Bosch sensor SMI230 by personnel who have special experience and training. Do not use this Software if you do not have the proper experience or training. 
+The Software shall only be used for the intended use and within the target markets as defined in the respective technical customer documentation of the SMI230 of Robert Bosch GmbH. 
+
+Liability:
+
+This Software is provided as is and without any expressed or
+implied warranties, including without limitation, the implied warranties of
+merchantability and fitness for a particular purpose.
+
+Bosch and their representatives and agents deny any liability for
+the functional impairment of this Software in terms of fitness, performance
+and safety. Bosch and their representatives and agents shall not be
+liable for any direct or indirect damages or injury, except as otherwise
+stipulated in mandatory applicable law.
+
+The Information provided is believed to be accurate and reliable. Bosch assumes 
+no responsibility for the consequences of use of such Information nor for any 
+infringement of patents or other rights of third parties which may result from its use.
+
