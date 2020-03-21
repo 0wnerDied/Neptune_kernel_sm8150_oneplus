@@ -1488,12 +1488,16 @@ void f2fs_decompress_end_io(struct page **rpages,
 		if (!rpage)
 			continue;
 
-		if (err || PageError(rpage)) {
-			ClearPageUptodate(rpage);
-			ClearPageError(rpage);
-		} else {
-			SetPageError(rpage);
-		}
+		if (err || PageError(rpage))
+			goto clear_uptodate;
+
+			SetPageUptodate(rpage);
+			goto unlock;
+
+clear_uptodate:
+		ClearPageUptodate(rpage);
+		ClearPageError(rpage);
+unlock:
 		unlock_page(rpage);
 	}
 }
