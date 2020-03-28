@@ -52,7 +52,7 @@ bool f2fs_is_compressed_page(struct page *page)
 }
 
 static void f2fs_set_compressed_page(struct page *page,
-		struct inode *inode, pgoff_t index, void *data, refcount_t *r)
+		struct inode *inode, pgoff_t index, void *data)
 {
 	SetPagePrivate(page);
 	set_page_private(page, (unsigned long)data);
@@ -60,8 +60,6 @@ static void f2fs_set_compressed_page(struct page *page,
 	/* i_crypto_info and iv index */
 	page->index = index;
 	page->mapping = inode->i_mapping;
-	if (r)
-		refcount_inc(r);
 }
 
 static void f2fs_put_compressed_page(struct page *page)
@@ -881,7 +879,7 @@ static int f2fs_write_compressed_pages(struct compress_ctx *cc,
 
 	cic->magic = F2FS_COMPRESSED_PAGE_MAGIC;
 	cic->inode = inode;
-	refcount_set(&cic->ref, 1);
+	refcount_set(&cic->ref, cc->nr_cpages);
 	cic->rpages = f2fs_kzalloc(sbi, sizeof(struct page *) <<
 			cc->log_cluster_size, GFP_NOFS);
 	if (!cic->rpages)
@@ -891,8 +889,7 @@ static int f2fs_write_compressed_pages(struct compress_ctx *cc,
 
 	for (i = 0; i < cc->nr_cpages; i++) {
 		f2fs_set_compressed_page(cc->cpages[i], inode,
-					cc->rpages[i + 1]->index,
-					cic, i ? &cic->ref : NULL);
+					cc->rpages[i + 1]->index, cic);
 		fio.compressed_page = cc->cpages[i];
 		if (fio.encrypted) {
 			fio.page = cc->rpages[i + 1];
@@ -1143,7 +1140,7 @@ struct decompress_io_ctx *f2fs_alloc_dic(struct compress_ctx *cc)
 
 	dic->magic = F2FS_COMPRESSED_PAGE_MAGIC;
 	dic->inode = cc->inode;
-	refcount_set(&dic->ref, 1);
+	refcount_set(&dic->ref, cc->nr_cpages);
 	dic->cluster_idx = cc->cluster_idx;
 	dic->cluster_size = cc->cluster_size;
 	dic->log_cluster_size = cc->log_cluster_size;
@@ -1167,8 +1164,7 @@ struct decompress_io_ctx *f2fs_alloc_dic(struct compress_ctx *cc)
 			goto out_free;
 
 		f2fs_set_compressed_page(page, cc->inode,
-					start_idx + i + 1,
-					dic, i ? &dic->ref : NULL);
+					start_idx + i + 1, dic);
 		dic->cpages[i] = page;
 	}
 
