@@ -534,9 +534,11 @@ int msm_vidc_qbuf(void *instance, struct v4l2_buffer *b)
 	}
 	mutex_lock(&q->lock);
 
-	for (i = 0; i < b->length; i++) {
-		b->m.planes[i].m.fd = b->m.planes[i].reserved[0];
-		b->m.planes[i].data_offset = b->m.planes[i].reserved[1];
+	if (b->memory == V4L2_MEMORY_USERPTR) {
+		for (i = 0; i < b->length; i++) {
+			b->m.planes[i].m.fd = b->m.planes[i].reserved[0];
+			b->m.planes[i].data_offset = b->m.planes[i].reserved[1];
+		}
 	}
 
 	/* Compression ratio is valid only for Encoder YUV buffers. */
@@ -597,9 +599,11 @@ int msm_vidc_dqbuf(void *instance, struct v4l2_buffer *b)
 		return rc;
 	}
 
-	for (i = 0; i < b->length; i++) {
-		b->m.planes[i].reserved[0] = b->m.planes[i].m.fd;
-		b->m.planes[i].reserved[1] = b->m.planes[i].data_offset;
+	if (b->memory == V4L2_MEMORY_USERPTR) {
+		for (i = 0; i < b->length; i++) {
+			b->m.planes[i].reserved[0] = b->m.planes[i].m.fd;
+			b->m.planes[i].reserved[1] = b->m.planes[i].data_offset;
+		}
 	}
 
 	if (inst->session_type == MSM_VIDC_DECODER &&
@@ -718,9 +722,32 @@ static void vidc_put_userptr(void *buf_priv)
 {
 }
 
+static void *vidc_attach_dmabuf(struct device *dev, struct dma_buf *dbuf,
+		unsigned long size, enum dma_data_direction dma_dir)
+{
+	return (void *)0xdeadbeef;
+}
+
+static void vidc_detach_dmabuf(void *buf_priv)
+{
+}
+
+static int vidc_map_dmabuf(void *buf_priv)
+{
+	return 0;
+}
+
+static void vidc_unmap_dmabuf(void *buf_priv)
+{
+}
+
 static const struct vb2_mem_ops msm_vidc_vb2_mem_ops = {
 	.get_userptr = vidc_get_userptr,
 	.put_userptr = vidc_put_userptr,
+	.attach_dmabuf = vidc_attach_dmabuf,
+	.detach_dmabuf = vidc_detach_dmabuf,
+	.map_dmabuf = vidc_map_dmabuf,
+	.unmap_dmabuf = vidc_unmap_dmabuf,
 };
 
 static void msm_vidc_cleanup_buffer(struct vb2_buffer *vb)
@@ -1547,7 +1574,7 @@ static inline int vb2_bufq_init(struct msm_vidc_inst *inst,
 	}
 
 	q->type = type;
-	q->io_modes = VB2_MMAP | VB2_USERPTR;
+	q->io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
 	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 	q->ops = &msm_vidc_vb2q_ops;
 
