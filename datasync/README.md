@@ -7,7 +7,7 @@ However, synchronization between accelerometer and gyroscope can be achieved.
 Please refer to the technical customer documentation for further information. 
 The synchronization feature is enabled via sensor configuration file.
 
-_Note: The sensor configuration file is retrieved from BMI08x v1.2.0 available on 
+_Note: The sensor configuration file is following BMI08x available on 
 [github](https://github.com/BoschSensortec/BMI08x-Sensor-API/releases/tag/bmi08x_v1.2.0)._
 
 

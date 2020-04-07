@@ -6,11 +6,14 @@ menuconfig INPUT_SMI230
 	  If unsure, say N.
 
 choice
-    prompt "Select communication interface"
-    depends on INPUT_SMI230
+	prompt "Select communication interface"
+	depends on INPUT_SMI230
+	help
+	  Note: SPI and I2C are not supported at the same time, that is to say:
+	  Choose either SPI or I2C to build the driver.
 
     config SMI230_SPI
-	bool "Enable SPI connection (NOT yet supported)"
+	bool "Enable SPI connection"
 	depends on SPI_MASTER
     config SMI230_I2C
 	bool "Enable I2C connection"
@@ -30,5 +33,11 @@ config BOSCH_DRIVER_LOG_FUNC
 	depends on (I2C || SPI_MASTER) && SYSFS
 	help
 	 If you say yes here, you get support for smart log function in Bosch sensor driver.
+
+config SMI230_MAX_BUFFER_LEN
+	int "configue read buffer size"
+	default "16"
+	help
+	  Unless using FIFO, 16 is big enough for normal cases. Do not change this value if not sure.
 
 endif

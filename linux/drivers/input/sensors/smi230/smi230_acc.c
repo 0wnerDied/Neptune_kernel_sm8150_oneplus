@@ -53,6 +53,7 @@
 
 /**\name        Header files
  ****************************************************************************/
+#include <linux/bug.h>
 #include "smi230.h"
 
 /****************************************************************************/
@@ -576,8 +577,12 @@ int8_t smi230_acc_write_feature_config(uint8_t reg_addr, const uint16_t *reg_dat
 
     int8_t rslt;
     uint16_t read_length = (reg_addr * 2) + (len * 2);
-    uint8_t feature_data[read_length];
     int i;
+    uint8_t feature_data[CONFIG_SMI230_MAX_BUFFER_LEN];
+
+    if (WARN(read_length > CONFIG_SMI230_MAX_BUFFER_LEN, "SMI230 buffer overflow\n")) {
+        return SMI230_E_COM_FAIL;
+    }
 
     /* Check for null pointer in the device structure*/
     rslt = null_ptr_check(dev);
@@ -1551,7 +1556,11 @@ static int8_t get_regs(uint8_t reg_addr, uint8_t *reg_data, uint16_t len, const 
     int8_t rslt;
     uint16_t index;
     uint16_t temp_len = len + dev->dummy_byte;
-    uint8_t temp_buff[temp_len];
+    uint8_t temp_buff[CONFIG_SMI230_MAX_BUFFER_LEN];
+
+    if (WARN(temp_len > CONFIG_SMI230_MAX_BUFFER_LEN, "SMI230 buffer overflow\n")) {
+        return SMI230_E_COM_FAIL;
+    }
 
     if (dev->intf == SMI230_SPI_INTF)
     {

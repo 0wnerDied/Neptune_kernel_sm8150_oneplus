@@ -15,27 +15,32 @@ However, synchronization between accelerometer and gyroscope can be achieved:
 The software modules in this repository are provided as reference for SMI230 users and shall demonstrate exemplarily the usage of the following features
 - data synchronization.
 
-_Note: The sensor driver utilizes sensor api, which is derived from BMI08x sensor api available on [github](https://github.com/BoschSensortec/BMI08x-Sensor-API/releases/tag/bmi08x_v1.4.4)._
+_Note: The sensor driver utilizes sensor api, which is following BMI08x sensor api available on [github](https://github.com/BoschSensortec/BMI08x-Sensor-API/releases/tag/bmi08x_v1.4.4)._
+
+_Note: The data synchronization feature utilizes sensor configuration, which is following BMI08x sensor configuration available on [github](https://github.com/BoschSensortec/BMI08x-Sensor-API/releases/tag/bmi08x_v1.2.0)._
 
 ## License <a name=License></a>
 See [LICENSE](LICENSE.md) file
 
 ## Sensor interfaces <a name=interfaces></a>
 * I2C
+* SPI
 
 ## Architecture <a name=Architecture></a>
 ```
-              User space
-----------------------------------------------
-             |          |
-           sysfs       dev
-             \          /
-           input-subsystem
-	          |
-i2c_bus <-- smi230_driver --> sensor_API
-                  |
-----------------------------------------------
-               Hardware
+                  User space
+-------------------------------------------------------
+                 |          |
+               sysfs       dev
+                 \          /
+               input-subsystem
+	             |
+sensor_API <-- smi230_driver --> smi230_SPI/I2C_driver
+                                           |
+                                      SPI/I2C_bus
+                                           |
+-------------------------------------------------------
+                  Hardware
 ```
 ## Operation examples <a name=examples></a>
 1. Userspace
