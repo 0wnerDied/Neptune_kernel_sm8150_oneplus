@@ -2252,11 +2252,8 @@ int drm_mode_atomic_ioctl(struct drm_device *dev,
 
 	/* Do cib and db frame boosts only when sched_boost is active */
 	if (!(arg->flags & DRM_MODE_ATOMIC_TEST_ONLY) &&
-		sysctl_sched_boost) {
+		sysctl_sched_boost)
 		cpu_input_boost_kick();
-		devfreq_boost_kick(DEVFREQ_MSM_LLCCBW_DDR);
-		devfreq_boost_kick(DEVFREQ_MSM_CPU_LLCCBW);
-	}
 
 	drm_modeset_acquire_init(&ctx, 0);
 
