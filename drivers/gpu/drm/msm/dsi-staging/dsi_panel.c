@@ -978,7 +978,7 @@ int dsi_panel_op_set_hbm_mode(struct dsi_panel *panel, int level)
 			goto error;
 		} else {
 			rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_HBM_OFF);
-			printk(KERN_ERR
+			printk(KERN_DEBUG
 			       "When HBM OFF -->hbm_backight = %d panel->bl_config.bl_level =%d\n",
 			       panel->hbm_backlight, panel->bl_config.bl_level);
 			rc = dsi_panel_update_backlight(panel,
