@@ -59,6 +59,9 @@
 /* Indicate backport support for DH IE creation/update*/
 #define CFG80211_EXTERNAL_DH_UPDATE_SUPPORT 1
 
+/* Indicate backport support for 6GHz band */
+#define CFG80211_6GHZ_BAND_SUPPORTED 1
+
 /* Indicate backport support for supported AKM advertisement per interface*/
 #define CFG80211_IFTYPE_AKM_SUITES_SUPPORT 1
 
