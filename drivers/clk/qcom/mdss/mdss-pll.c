@@ -191,6 +191,9 @@ static int mdss_pll_clock_register(struct platform_device *pdev,
 	case MDSS_HDMI_PLL_28LPM:
 		rc = hdmi_pll_clock_register_28lpm(pdev, pll_res);
 		break;
+	case MDSS_DSI_PLL_12NM:
+		rc = dsi_pll_clock_register_12nm(pdev, pll_res);
+		break;
 	case MDSS_UNKNOWN_PLL:
 	default:
 		rc = -EINVAL;
@@ -423,6 +426,7 @@ static const struct of_device_id mdss_pll_dt_match[] = {
 	{.compatible = "qcom,mdss_dp_pll_10nm"},
 	{.compatible = "qcom,mdss_dsi_pll_7nm"},
 	{.compatible = "qcom,mdss_dsi_pll_7nm_v2"},
+	{.compatible = "qcom,mdss_dsi_pll_12nm"},
 	{}
 };
 
