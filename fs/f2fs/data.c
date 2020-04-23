@@ -2170,7 +2170,8 @@ submit_and_realloc:
 							&dic->ref)) {
 					f2fs_decompress_end_io(dic->rpages,
 							cc->cluster_size, true);
-				f2fs_free_dic(dic);
+					f2fs_free_dic(dic);
+				}
 				f2fs_put_dnode(&dn);
 				*bio_ret = NULL;
 				return ret;
