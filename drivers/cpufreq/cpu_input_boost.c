@@ -11,7 +11,6 @@
 #include <linux/kthread.h>
 #include <linux/moduleparam.h>
 #include <linux/msm_drm_notify.h>
-#include <linux/sched.h>
 #include <linux/sched/sysctl.h>
 #include <linux/slab.h>
 #include <linux/version.h>
@@ -267,7 +266,6 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 	if (!test_bit(SCREEN_ON, &b->state)) {
 		policy->min = get_idle_freq(policy);
 		sysctl_sched_energy_aware = 1;
-		disable_schedtune_boost("top-app", true);
 		return NOTIFY_OK;
 	}
 
@@ -308,7 +306,6 @@ static int msm_drm_notifier_cb(struct notifier_block *nb, unsigned long action,
 	if (*blank == MSM_DRM_BLANK_UNBLANK_CUST) {
 		set_bit(SCREEN_ON, &b->state);
 		__cpu_input_boost_kick_max(b, wake_boost_duration);
-		disable_schedtune_boost("top-app", false);
 	} else if (*blank == MSM_DRM_BLANK_POWERDOWN_CUST) {
 		clear_bit(SCREEN_ON, &b->state);
 		wake_up(&b->boost_waitq);
