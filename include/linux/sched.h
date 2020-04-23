@@ -31,6 +31,15 @@
 // tedlin@ASTI 2019/06/12 add for CONFIG_CONTROL_CENTER
 #include <oneplus/control_center/control_center_helper.h>
 
+#ifdef CONFIG_SCHED_TUNE
+int set_prefer_high_cap(char *st_name, bool enable_prefer_high_cap);
+#else
+static inline int set_prefer_high_cap(char *st_name, bool enable_prefer_high_cap)
+{
+	return 0;
+}
+#endif
+
 /* task_struct member predeclarations (sorted alphabetically): */
 struct audit_context;
 struct backing_dev_info;

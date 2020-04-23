@@ -15,6 +15,10 @@
 bool schedtune_initialized = false;
 extern struct reciprocal_value schedtune_spc_rdiv;
 
+static DEFINE_MUTEX(set_prefer_high_cap_mutex);
+static struct schedtune *getSchedtune(char *st_name);
+int set_prefer_high_cap(char *st_name, bool enable_prefer_high_cap);
+
 /*
  * EAS scheduler tunables for task groups.
  */
@@ -836,6 +840,41 @@ schedtune_init_cgroups(void)
 		BOOSTGROUPS_COUNT);
 
 	schedtune_initialized = true;
+}
+
+static struct schedtune *getSchedtune(char *st_name)
+{
+	int idx;
+
+	for (idx = 1; idx < BOOSTGROUPS_COUNT; ++idx) {
+		char name_buf[NAME_MAX + 1];
+		struct schedtune *st = allocated_group[idx];
+
+		if (!st) {
+			pr_warn("SCHEDTUNE: Could not find %s\n", st_name);
+			break;
+		}
+
+		cgroup_name(st->css.cgroup, name_buf, sizeof(name_buf));
+		if (strncmp(name_buf, st_name, strlen(st_name)) == 0)
+			return st;
+	}
+
+	return NULL;
+}
+
+int set_prefer_high_cap(char *st_name, bool enable_prefer_high_cap)
+{
+	struct schedtune *st = getSchedtune(st_name);
+
+	if (!st)
+		return -EINVAL;
+
+	mutex_lock(&set_prefer_high_cap_mutex);
+	prefer_high_cap_write(&st->css, NULL, enable_prefer_high_cap);
+	mutex_unlock(&set_prefer_high_cap_mutex);
+
+	return 0;
 }
 
 /*
