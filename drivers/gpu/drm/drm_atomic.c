@@ -32,7 +32,6 @@
 #include <drm/drm_print.h>
 #include <linux/sync_file.h>
 #include <linux/cpu_input_boost.h>
-#include <linux/devfreq_boost.h>
 #include <linux/sched/sysctl.h>
 
 #include "drm_crtc_internal.h"
