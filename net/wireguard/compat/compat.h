@@ -955,7 +955,7 @@ static inline int skb_ensure_writable(struct sk_buff *skb, int write_len)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 1, 0)
 #include <net/netfilter/nf_nat_core.h>
 #endif
-static inline void icmp_ndo_send(struct sk_buff *skb_in, int type, int code, __be32 info)
+static inline void __compat_icmp_ndo_send(struct sk_buff *skb_in, int type, int code, __be32 info)
 {
 	struct sk_buff *cloned_skb = NULL;
 	enum ip_conntrack_info ctinfo;
@@ -984,7 +984,7 @@ static inline void icmp_ndo_send(struct sk_buff *skb_in, int type, int code, __b
 out:
 	consume_skb(cloned_skb);
 }
-static inline void icmpv6_ndo_send(struct sk_buff *skb_in, u8 type, u8 code, __u32 info)
+static inline void __compat_icmpv6_ndo_send(struct sk_buff *skb_in, u8 type, u8 code, __u32 info)
 {
 	struct sk_buff *cloned_skb = NULL;
 	enum ip_conntrack_info ctinfo;
@@ -1014,9 +1014,11 @@ out:
 	consume_skb(cloned_skb);
 }
 #else
-#define icmp_ndo_send icmp_send
-#define icmpv6_ndo_send icmpv6_send
+#define __compat_icmp_ndo_send icmp_send
+#define __compat_icmpv6_ndo_send icmpv6_send
 #endif
+#define icmp_ndo_send __compat_icmp_ndo_send
+#define icmpv6_ndo_send __compat_icmpv6_ndo_send
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0)
@@ -1025,6 +1027,7 @@ out:
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 29) || (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 14))
 #include <linux/skbuff.h>
+#include <net/sch_generic.h>
 static inline void skb_reset_redirect(struct sk_buff *skb)
 {
 #ifdef CONFIG_NET_SCHED
