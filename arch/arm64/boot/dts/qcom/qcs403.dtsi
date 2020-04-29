@@ -91,7 +91,7 @@
 
 &reserved_mem {
 	linux,cma {
-		size = <0 0x400000>;
+		status = "disabled";
 	};
 };
 
