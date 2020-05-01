@@ -15,7 +15,7 @@ if [ -e arch/arm64/boot/Image.gz ] ; then
 	rm NeptuneKernel-$VERSION.zip 2>/dev/null
 	rm -rf kernelzip 2>/dev/null
 	mkdir kernelzip
-	cp -rp ./anykernel/* kernelzip/
+	cp -rp /home/zhulitao/anykernel/* kernelzip/
 	find arch/arm64/boot/dts -name '*.dtb' -exec cat {} + > kernelzip/dtb
 	cd kernelzip/
 	7z a -mx9 NeptuneKernel-$VERSION-tmp.zip *
