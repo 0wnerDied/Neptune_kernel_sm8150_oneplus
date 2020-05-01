@@ -593,8 +593,7 @@ static int parse_options(struct super_block *sb, char *options)
 
 			if (!name)
 				return -ENOMEM;
-			if (strlen(name) == 8 &&
-					!strncmp(name, "adaptive", 8)) {
+			if (!strcmp(name, "adaptive")) {
 				if (f2fs_sb_has_blkzoned(sbi)) {
 					f2fs_warn(sbi, "adaptive mode is not allowed with zoned block device feature");
 					kvfree(name);
@@ -727,14 +726,11 @@ static int parse_options(struct super_block *sb, char *options)
 			name = match_strdup(&args[0]);
 			if (!name)
 				return -ENOMEM;
-			if (strlen(name) == 10 &&
-					!strncmp(name, "user-based", 10)) {
+			if (!strcmp(name, "user-based")) {
 				F2FS_OPTION(sbi).whint_mode = WHINT_MODE_USER;
-			} else if (strlen(name) == 3 &&
-					!strncmp(name, "off", 3)) {
+			} else if (!strcmp(name, "off")) {
 				F2FS_OPTION(sbi).whint_mode = WHINT_MODE_OFF;
-			} else if (strlen(name) == 8 &&
-					!strncmp(name, "fs-based", 8)) {
+			} else if (!strcmp(name, "fs-based")) {
 				F2FS_OPTION(sbi).whint_mode = WHINT_MODE_FS;
 			} else {
 				kvfree(name);
@@ -747,11 +743,9 @@ static int parse_options(struct super_block *sb, char *options)
 			if (!name)
 				return -ENOMEM;
 
-			if (strlen(name) == 7 &&
-					!strncmp(name, "default", 7)) {
+			if (!strcmp(name, "default")) {
 				F2FS_OPTION(sbi).alloc_mode = ALLOC_MODE_DEFAULT;
-			} else if (strlen(name) == 5 &&
-					!strncmp(name, "reuse", 5)) {
+			} else if (!strcmp(name, "reuse")) {
 				F2FS_OPTION(sbi).alloc_mode = ALLOC_MODE_REUSE;
 			} else {
 				kvfree(name);
@@ -763,14 +757,11 @@ static int parse_options(struct super_block *sb, char *options)
 			name = match_strdup(&args[0]);
 			if (!name)
 				return -ENOMEM;
-			if (strlen(name) == 5 &&
-					!strncmp(name, "posix", 5)) {
+			if (!strcmp(name, "posix")) {
 				F2FS_OPTION(sbi).fsync_mode = FSYNC_MODE_POSIX;
-			} else if (strlen(name) == 6 &&
-					!strncmp(name, "strict", 6)) {
+			} else if (!strcmp(name, "strict")) {
 				F2FS_OPTION(sbi).fsync_mode = FSYNC_MODE_STRICT;
-			} else if (strlen(name) == 9 &&
-					!strncmp(name, "nobarrier", 9)) {
+			} else if (!strcmp(name, "nobarrier")) {
 				F2FS_OPTION(sbi).fsync_mode =
 							FSYNC_MODE_NOBARRIER;
 			} else {
@@ -825,11 +816,10 @@ static int parse_options(struct super_block *sb, char *options)
 			name = match_strdup(&args[0]);
 			if (!name)
 				return -ENOMEM;
-			if (strlen(name) == 3 && !strcmp(name, "lzo")) {
+			if (!strcmp(name, "lzo")) {
 				F2FS_OPTION(sbi).compress_algorithm =
 								COMPRESS_LZO;
-			} else if (strlen(name) == 3 &&
-					!strcmp(name, "lz4")) {
+			} else if (!strcmp(name, "lz4")) {
 				F2FS_OPTION(sbi).compress_algorithm =
 								COMPRESS_LZ4;
 			} else if (!strcmp(name, "zstd")) {
