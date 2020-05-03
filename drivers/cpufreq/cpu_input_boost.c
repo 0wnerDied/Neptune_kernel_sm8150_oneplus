@@ -12,7 +12,6 @@
 #include <linux/moduleparam.h>
 #include <linux/msm_drm_notify.h>
 #include <linux/sched.h>
-#include <linux/sched/sysctl.h>
 #include <linux/slab.h>
 #include <linux/version.h>
 
@@ -272,7 +271,6 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 
 	/* Boost CPU to max frequency for max boost */
 	if (test_bit(MAX_BOOST, &b->state)) {
-		sysctl_sched_energy_aware = 0;
 		policy->min = get_max_boost_freq(policy);
 		return NOTIFY_OK;
 	}
@@ -285,8 +283,6 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 		policy->min = get_input_boost_freq(policy);
 	else
 		policy->min = get_min_freq(policy);
-
-	sysctl_sched_energy_aware = 1;
 
 	return NOTIFY_OK;
 }
