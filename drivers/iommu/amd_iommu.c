@@ -2959,6 +2959,7 @@ static int init_reserved_iova_ranges(void)
 	}
 
 	return 0;
+	domain_flush_complete(domain);
 }
 
 int __init amd_iommu_init_api(void)
