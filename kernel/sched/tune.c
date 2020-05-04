@@ -652,7 +652,7 @@ static int prefer_high_cap_write_wrapper(struct cgroup_subsys_state *css,
 	if (task_is_booster(current))
 		return 0;
 
-	return prefer_high_cap_write(css, cft, prefer_high_cap);
+	prefer_high_cap_write(css, cft, prefer_high_cap);
 }
 #endif
 
@@ -723,7 +723,7 @@ static void write_default_values(struct cgroup_subsys_state *css)
 		{ "background",	0, 0, 0, 0, 0 },
 		{ "foreground",	0, 1, 0, 0, 0 },
 		{ "rt",		0, 0, 0, 0, 0 },
-		{ "top-app",	0, 1, 0, 0, 1 },
+		{ "top-app",	1, 1, 0, 0, 1 },
 	};
 	int i;
 
