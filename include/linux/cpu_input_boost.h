@@ -6,10 +6,14 @@
 #define _CPU_INPUT_BOOST_H_
 
 #ifdef CONFIG_CPU_INPUT_BOOST
+void cpu_input_boost_kick_ufs(unsigned int duration_ms);
 void cpu_input_boost_kick(void);
 void cpu_input_boost_kick_max(unsigned int duration_ms);
 extern unsigned short app_launch_boost_duration;
 #else
+void cpu_input_boost_kick_ufs(unsigned int duration_ms)
+{
+}
 static inline void cpu_input_boost_kick(void)
 {
 }
