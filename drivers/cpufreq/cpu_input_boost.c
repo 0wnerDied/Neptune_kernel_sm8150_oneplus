@@ -14,8 +14,6 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/version.h>
-#include <linux/cpu_input_boost.h>
-#include <linux/power_hal.h>
 
 /* The sched_param struct is located elsewhere in newer kernels */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
@@ -42,7 +40,6 @@ static unsigned int cpu_freq_min_prime __read_mostly =
 	CONFIG_CPU_FREQ_MIN_PERFP;
 static unsigned int cpu_freq_idle_little __read_mostly =
 	CONFIG_CPU_FREQ_IDLE_LP;
-static bool ufs_boost __read_mostly = 1;
 
 static unsigned short wake_boost_duration __read_mostly =
 	CONFIG_WAKE_BOOST_DURATION_MS;
@@ -63,20 +60,15 @@ module_param(cpu_freq_idle_little, uint, 0644);
 module_param(wake_boost_duration, short, 0644);
 module_param(app_launch_boost_duration, short, 0644);
 
-module_param(ufs_boost, bool, 0644);
-
 enum {
 	SCREEN_ON,
 	INPUT_BOOST,
-	MAX_BOOST,
-	UFS_BOOST
+	MAX_BOOST
 };
 
 struct boost_drv {
-	struct workqueue_struct *wq_ufs;
 	struct delayed_work input_unboost;
 	struct delayed_work max_unboost;
-	struct delayed_work ufs_unboost;
 	struct notifier_block cpu_notif;
 	struct notifier_block msm_drm_notif;
 	wait_queue_head_t boost_waitq;
@@ -86,7 +78,6 @@ struct boost_drv {
 
 static void input_unboost_worker(struct work_struct *work);
 static void max_unboost_worker(struct work_struct *work);
-static void ufs_unboost_worker(struct work_struct *work);
 
 static struct boost_drv boost_drv_g __read_mostly = {
 	.input_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.input_unboost,
@@ -94,8 +85,6 @@ static struct boost_drv boost_drv_g __read_mostly = {
 	.max_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.max_unboost,
 						  max_unboost_worker, 0),
 	.boost_waitq = __WAIT_QUEUE_HEAD_INITIALIZER(boost_drv_g.boost_waitq)
-	.ufs_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.ufs_unboost,
-						  ufs_unboost_worker, 0),
 };
 
 static unsigned int get_input_boost_freq(struct cpufreq_policy *policy)
@@ -218,32 +207,6 @@ void cpu_input_boost_kick_max(unsigned int duration_ms)
 	__cpu_input_boost_kick_max(b, duration_ms);
 }
 
-static void __cpu_input_boost_kick_ufs(struct boost_drv *b,
-				       unsigned int duration_ms)
-{
-	if (!mod_delayed_work(b->wq_ufs, &b->ufs_unboost,
-			msecs_to_jiffies(duration_ms))) {
-		if (!test_bit(UFS_BOOST, &b->cpu_state)) {
-			set_bit(UFS_BOOST, &b->cpu_state);
-		}
-	}
-}
-
-
-void cpu_input_boost_kick_ufs(unsigned int duration_ms)
-{
-	unsigned long boost_jiffies = msecs_to_jiffies(duration_ms);
-	struct boost_drv *b = &boost_drv_g;
-
-	if (duration_ms == 0)
-		return;
-
-	if (!test_bit(SCREEN_ON, &b->cpu_state))
-		return;
-
-	__cpu_input_boost_kick_ufs(b, duration_ms);
-}
-
 static void input_unboost_worker(struct work_struct *work)
 {
 	struct boost_drv *b = container_of(to_delayed_work(work),
@@ -260,26 +223,6 @@ static void max_unboost_worker(struct work_struct *work)
 
 	clear_bit(MAX_BOOST, &b->state);
 	wake_up(&b->boost_waitq);
-}
-
-static void ufs_unboost_worker(struct work_struct *work)
-{
-	struct boost_drv *b = container_of(to_delayed_work(work),
-					   typeof(*b), ufs_unboost);
-
-	clear_bit(UFS_BOOST, &b->cpu_state);
-}
-
-update_ufs_boost(struct boost_drv *b) {
-	if (ufs_boost) {
-		if (test_bit(UFS_BOOST, &b->cpu_state)) {
-			//set_ufshcd_hibern8_enable_status(0);
-			set_ufshcd_clkgate_enable_status(0);
-		} else {
-			//set_ufshcd_hibern8_enable_status(1);
-			set_ufshcd_clkgate_enable_status(1);
-		}
-	}
 }
 
 static int cpu_boost_thread(void *data)
@@ -305,7 +248,6 @@ static int cpu_boost_thread(void *data)
 
 		old_state = curr_state;
 		update_online_cpu_policy();
-		update_ufs_boost(b);
 	}
 
 	return 0;
@@ -460,13 +402,6 @@ static int __init cpu_input_boost_init(void)
 	set_bit(SCREEN_ON, &b->state);
 
 	b->cpu_notif.notifier_call = cpu_notifier_cb;
-
-	b->wq_ufs = alloc_workqueue("cpu_input_boost_wq_ufs", WQ_POWER_EFFICIENT, 0);
-	if (!b->wq_ufs) {
-		ret = -ENOMEM;
-		return ret;
-	}
-	
 	ret = cpufreq_register_notifier(&b->cpu_notif, CPUFREQ_POLICY_NOTIFIER);
 	if (ret) {
 		pr_err("Failed to register cpufreq notifier, err: %d\n", ret);
