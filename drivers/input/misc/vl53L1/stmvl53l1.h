@@ -45,11 +45,7 @@
 /**
  * IPP adapt
  */
-#ifdef DEBUG
-#	define IPP_PRINT(...) printk(__VA_ARGS__)
-#else
 #	define IPP_PRINT(...) (void)0
-#endif
 
 #include "stmvl53l1_ipp.h"
 #include "stmvl53l1_if.h"
@@ -83,30 +79,11 @@
 /** @ingroup vl53l1_mod_dbg
  * @{
  */
-#if 1
-#define DEBUG	1
-#endif
-#if 1
-#define FORCE_CONSOLE_DEBUG
-#endif
+#define DEBUG	0
 
 extern int stmvl53l1_enable_debug;
 
-#ifdef DEBUG
-#	ifdef FORCE_CONSOLE_DEBUG
-#define vl53l1_dbgmsg(str, ...) do { \
-	if (stmvl53l1_enable_debug) \
-		pr_info("%s: " str, __func__, ##__VA_ARGS__); \
-} while (0)
-#	else
-#define vl53l1_dbgmsg(str, ...) do { \
-	if (stmvl53l1_enable_debug) \
-		pr_debug("%s: " str, __func__, ##__VA_ARGS__); \
-} while (0)
-#	endif
-#else
-#	define vl53l1_dbgmsg(...) (void)0
-#endif
+#define vl53l1_dbgmsg(...) (void)0
 
 /**
  * set to 0 1 activate or not debug from work (data interrupt/polling)
@@ -146,7 +123,7 @@ extern int stmvl53l1_enable_debug;
 /** if set to 1 enable ipp execution timing (if debug enabled)
  * @ingroup vl53l1_mod_dbg
  */
-#define IPP_LOG_TIMING	1
+#define IPP_LOG_TIMING 0
 
 struct ipp_data_t {
 	struct ipp_work_t work;
