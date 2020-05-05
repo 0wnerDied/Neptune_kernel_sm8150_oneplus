@@ -93,9 +93,9 @@ static struct boost_drv boost_drv_g __read_mostly = {
 						    input_unboost_worker, 0),
 	.max_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.max_unboost,
 						  max_unboost_worker, 0),
-	.boost_waitq = __WAIT_QUEUE_HEAD_INITIALIZER(boost_drv_g.boost_waitq),
+	.boost_waitq = __WAIT_QUEUE_HEAD_INITIALIZER(boost_drv_g.boost_waitq)
 	.ufs_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.ufs_unboost,
-						  ufs_unboost_worker, 0)
+						  ufs_unboost_worker, 0),
 };
 
 static unsigned int get_input_boost_freq(struct cpufreq_policy *policy)
@@ -223,8 +223,8 @@ static void __cpu_input_boost_kick_ufs(struct boost_drv *b,
 {
 	if (!mod_delayed_work(b->wq_ufs, &b->ufs_unboost,
 			msecs_to_jiffies(duration_ms))) {
-		if (!test_bit(UFS_BOOST, &b->state)) {
-			set_bit(UFS_BOOST, &b->state);
+		if (!test_bit(UFS_BOOST, &b->cpu_state)) {
+			set_bit(UFS_BOOST, &b->cpu_state);
 		}
 	}
 }
@@ -238,7 +238,7 @@ void cpu_input_boost_kick_ufs(unsigned int duration_ms)
 	if (duration_ms == 0)
 		return;
 
-	if (!test_bit(SCREEN_ON, &b->state))
+	if (!test_bit(SCREEN_ON, &b->cpu_state))
 		return;
 
 	__cpu_input_boost_kick_ufs(b, duration_ms);
@@ -267,12 +267,12 @@ static void ufs_unboost_worker(struct work_struct *work)
 	struct boost_drv *b = container_of(to_delayed_work(work),
 					   typeof(*b), ufs_unboost);
 
-	clear_bit(UFS_BOOST, &b->state);
+	clear_bit(UFS_BOOST, &b->cpu_state);
 }
 
 update_ufs_boost(struct boost_drv *b) {
 	if (ufs_boost) {
-		if (test_bit(UFS_BOOST, &b->state)) {
+		if (test_bit(UFS_BOOST, &b->cpu_state)) {
 			//set_ufshcd_hibern8_enable_status(0);
 			set_ufshcd_clkgate_enable_status(0);
 		} else {
