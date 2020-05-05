@@ -50,7 +50,7 @@
 #include "ufs-qcom.h"
 #include <linux/power_hal.h>
 
-struct Scsi_Host *ph_host;
+strust Scsi_Host *ph_host;
 
 #ifdef CONFIG_DEBUG_FS
 
