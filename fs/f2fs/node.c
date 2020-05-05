@@ -2235,7 +2235,6 @@ static int scan_nat_page(struct f2fs_sb_info *sbi,
 			break;
 
 		blk_addr = le32_to_cpu(nat_blk->entries[i].block_addr);
-
 		if (blk_addr == NEW_ADDR)
 			return -EINVAL;
 
