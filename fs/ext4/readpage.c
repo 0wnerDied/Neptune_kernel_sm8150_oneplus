@@ -259,8 +259,7 @@ int ext4_mpage_readpages(struct address_space *mapping,
 			bio->bi_end_io = mpage_end_io;
 			bio->bi_private = ctx;
 			bio_set_op_attrs(bio, REQ_OP_READ,
-					 (is_readahead ? REQ_RAHEAD : 0) |
-					 (ctx ? REQ_NOENCRYPT : 0));
+					 ctx ? REQ_NOENCRYPT : 0);
 		}
 
 		length = first_hole << blkbits;
