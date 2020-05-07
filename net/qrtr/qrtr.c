@@ -1976,13 +1976,9 @@ static int __init qrtr_proto_init(void)
 
 	rtnl_register(PF_QIPCRTR, RTM_NEWADDR, qrtr_addr_doit, NULL, 0);
 
-<<<<<<< HEAD
-	return 0;
-=======
 	qrtr_backup_init();
 
 	return rc;
->>>>>>> 6af3f6295a51... net: qrtr: Add backup skb pool
 }
 postcore_initcall(qrtr_proto_init);
 
