@@ -3111,8 +3111,6 @@ static QDF_STATUS send_scan_chan_list_cmd_tlv(wmi_unified_t wmi_handle,
 			       (wmi_scan_chan_list_cmd_fixed_param));
 
 	cmd->num_scan_chans = chan_list->num_scan_chans;
-	if (chan_list->max_bw_support_present)
-		cmd->flags |= CHANNEL_MAX_BANDWIDTH_VALID;
 
 	WMITLV_SET_HDR((buf_ptr + sizeof(wmi_scan_chan_list_cmd_fixed_param)),
 		       WMITLV_TAG_ARRAY_STRUC,
