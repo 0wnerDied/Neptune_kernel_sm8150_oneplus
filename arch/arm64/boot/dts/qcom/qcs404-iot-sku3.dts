@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -94,4 +94,12 @@
 			};
 		};
 	};
+};
+
+&cdsp_fw_mem {
+	reg = <0x0 0x88600000 0x0 0x600000>;
+};
+
+&wlan_msa_mem {
+	reg = <0x0 0x88C00000 0x0 0x100000>;
 };
