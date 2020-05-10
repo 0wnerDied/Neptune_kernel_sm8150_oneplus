@@ -227,7 +227,7 @@ static void max_unboost_worker(struct work_struct *work)
 }
 
 update_input_boost(struct boost_drv *b){
-	if (input_boost) {
+	if (input_boost_freq_big && input_boost_freq_little && input_boost_freq_prime) {
 		if (test_bit(INPUT_BOOST, &b->state)){
 			set_ufshcd_clkgate_enable_status(0);
 		} else {
