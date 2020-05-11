@@ -14,7 +14,6 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/version.h>
-#include <linux/power_hal.h>
 
 /* The sched_param struct is located elsewhere in newer kernels */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
@@ -226,16 +225,6 @@ static void max_unboost_worker(struct work_struct *work)
 	wake_up(&b->boost_waitq);
 }
 
-update_input_boost(struct boost_drv *b){
-	if (input_boost) {
-		if (test_bit(INPUT_BOOST, &b->state)){
-			set_ufshcd_clkgate_enable_status(0);
-		} else {
-			set_ufshcd_clkgate_enable_status(1);
-		}
-	 }
-}
-
 static int cpu_boost_thread(void *data)
 {
 	static const struct sched_param sched_max_rt_prio = {
@@ -259,7 +248,6 @@ static int cpu_boost_thread(void *data)
 
 		old_state = curr_state;
 		update_online_cpu_policy();
-		update_input_boost(b);
 	}
 
 	return 0;
