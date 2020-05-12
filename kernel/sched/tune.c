@@ -652,7 +652,7 @@ static int prefer_high_cap_write_wrapper(struct cgroup_subsys_state *css,
 	if (task_is_booster(current))
 		return 0;
 
-	return prefer_high_cap_write(css, cft, prefer_high_cap);
+	prefer_high_cap_write(css, cft, prefer_high_cap);
 }
 #endif
 
