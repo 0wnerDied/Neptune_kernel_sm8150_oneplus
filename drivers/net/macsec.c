@@ -3536,6 +3536,8 @@ static int macsec_newlink(struct net *net, struct net_device *dev,
 	rx_handler_func_t *rx_handler;
 	u8 icv_len = DEFAULT_ICV_LEN;
 	struct net_device *real_dev;
+	struct macsec_context ctx;
+	const struct macsec_ops *ops;
 	int err, mtu;
 	sci_t sci;
 
