@@ -1315,19 +1315,19 @@ int diag_send_peripheral_buffering_mode(struct diag_buffering_mode_t *params)
 
 	if ((peripheral < 0) ||
 		peripheral >= NUM_PERIPHERALS) {
-		pr_err("diag: In %s, invalid peripheral %d\n", __func__,
+		pr_debug("diag: In %s, invalid peripheral %d\n", __func__,
 		       peripheral);
 		return -EINVAL;
 	}
 
 	if (!driver->buffering_flag[params->peripheral]) {
-		pr_err("diag: In %s, buffering flag not set for %d\n", __func__,
+		pr_debug("diag: In %s, buffering flag not set for %d\n", __func__,
 		       params->peripheral);
 		return -EINVAL;
 	}
 
 	if (!driver->feature[peripheral].peripheral_buffering) {
-		pr_err("diag: In %s, peripheral %d doesn't support buffering\n",
+		pr_debug("diag: In %s, peripheral %d doesn't support buffering\n",
 		       __func__, peripheral);
 		return -EIO;
 	}
@@ -1341,7 +1341,7 @@ int diag_send_peripheral_buffering_mode(struct diag_buffering_mode_t *params)
 		mode = MODE_NONREALTIME;
 		break;
 	default:
-		pr_err("diag: In %s, invalid tx mode %d\n", __func__,
+		pr_debug("diag: In %s, invalid tx mode %d\n", __func__,
 		       params->mode);
 		return -EINVAL;
 	}
