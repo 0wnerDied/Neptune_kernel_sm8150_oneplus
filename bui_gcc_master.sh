@@ -3,7 +3,7 @@
 VERSION="$(cat version)"
 
 if [[ "${1}" != "skip" ]] ; then
-	./build_clean.sh
+	./bui_gcc_clean.sh
 fi
 
 ./bui_gcc_kernel.sh || exit 1

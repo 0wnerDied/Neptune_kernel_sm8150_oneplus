@@ -9,7 +9,7 @@ echo
 echo "Setting defconfig"
 echo
 
-make weeb_defconfig
+make weeb_gcc_defconfig
 
 echo
 echo "Compiling kernel"
