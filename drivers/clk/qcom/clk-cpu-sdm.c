@@ -37,6 +37,15 @@ static DEFINE_VDD_REGULATORS(vdd_hf_pll, VDD_HF_PLL_NUM, 2, vdd_hf_levels);
 static DEFINE_VDD_REGS_INIT(vdd_cpu_c1, 1);
 static DEFINE_VDD_REGS_INIT(vdd_cpu_cci, 1);
 
+struct cpu_clk {
+	u32 cpu_reg_mask;
+	cpumask_t cpumask;
+	bool hw_low_power_ctrl;
+	struct pm_qos_request req;
+	struct latency_level latency_lvl;
+	s32 cpu_latency_no_l2_pc_us;
+};
+
 enum apcs_mux_clk_parent {
 	P_BI_TCXO_AO,
 	P_GPLL0_AO_OUT_MAIN,
@@ -65,13 +74,49 @@ static const char *const apcs_mux_clk_parent_name1[] = {
 	"gpll0_ao_out_main",
 };
 
+static struct cpu_clk apcs_c1_clk = {
+	.cpu_reg_mask = 0x3,
+	.latency_lvl = {
+		.affinity_level = LPM_AFF_LVL_L2,
+		.reset_level = LPM_RESET_LVL_GDHS,
+		.level_name = "perf",
+	},
+	.cpu_latency_no_l2_pc_us = 300,
+};
+
+static void do_nothing(void *unused) { }
+
 static int cpucc_clk_set_rate_and_parent(struct clk_hw *hw, unsigned long rate,
 						unsigned long prate, u8 index)
 {
+	int ret;
+	bool hw_low_ctrl;
+
 	struct clk_regmap_mux_div *cpuclk = to_clk_regmap_mux_div(hw);
 
-	return __mux_div_set_src_div(cpuclk, cpuclk->parent_map[index].cfg,
+	struct cpu_clk *cpu_c1_clk = &apcs_c1_clk;
+
+	hw_low_ctrl = cpu_c1_clk->hw_low_power_ctrl;
+
+	if (hw_low_ctrl) {
+		memset(&cpu_c1_clk->req, 0, sizeof(cpu_c1_clk->req));
+		cpumask_copy(&cpu_c1_clk->req.cpus_affine,
+				(const struct cpumask *)&cpu_c1_clk->cpumask);
+		cpu_c1_clk->req.type = PM_QOS_REQ_AFFINE_CORES;
+		pm_qos_add_request(&cpu_c1_clk->req, PM_QOS_CPU_DMA_LATENCY,
+				cpu_c1_clk->cpu_latency_no_l2_pc_us - 1);
+		smp_call_function_any(&cpu_c1_clk->cpumask, do_nothing,
+				NULL, 1);
+	}
+
+	ret =  __mux_div_set_src_div(cpuclk, cpuclk->parent_map[index].cfg,
 					cpuclk->div);
+
+	if (hw_low_ctrl)
+		pm_qos_remove_request(&cpu_c1_clk->req);
+
+	return ret;
+
 }
 
 static int cpucc_clk_set_parent(struct clk_hw *hw, u8 index)
@@ -778,6 +823,11 @@ static int cpucc_driver_probe(struct platform_device *pdev)
 	}
 	put_online_cpus();
 
+	for_each_possible_cpu(cpu)
+		cpumask_set_cpu(cpu, &apcs_c1_clk.cpumask);
+
+	apcs_c1_clk.hw_low_power_ctrl = true;
+
 	register_pm_notifier(&clock_pm_notifier);
 
 	cpucc_clk_populate_opp_table(pdev);
@@ -881,6 +931,26 @@ static int __init cpu_clock_init(void)
 	return 0;
 }
 early_initcall(cpu_clock_init);
+
+static int __init clock_cpu_lpm_get_latency(void)
+{
+	int rc;
+	struct device_node *ofnode = of_find_compatible_node(NULL, NULL,
+					"qcom,cpu-clock-sdm429");
+
+	if (!ofnode)
+		return 0;
+
+	rc = lpm_get_latency(&apcs_c1_clk.latency_lvl,
+			&apcs_c1_clk.cpu_latency_no_l2_pc_us);
+	if (rc < 0)
+		pr_err("Failed to get the L2 PC value for perf\n");
+	pr_debug("Latency for perf cluster %d\n",
+			apcs_c1_clk.cpu_latency_no_l2_pc_us);
+
+	return rc;
+}
+late_initcall_sync(clock_cpu_lpm_get_latency);
 
 MODULE_ALIAS("platform:cpu");
 MODULE_DESCRIPTION("SDM CPU clock Driver");
