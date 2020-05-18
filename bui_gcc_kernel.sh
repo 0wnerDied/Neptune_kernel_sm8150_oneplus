@@ -15,4 +15,4 @@ echo
 echo "Compiling kernel"
 echo 
 
-make "$@" || exit 1
+make -j$(nproc --all) || exit 1
