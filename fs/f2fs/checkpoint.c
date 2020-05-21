@@ -1163,7 +1163,10 @@ static int block_operations(struct f2fs_sb_info *sbi)
 		.nr_to_write = LONG_MAX,
 		.for_reclaim = 0,
 	};
+	struct blk_plug plug;
 	int err = 0, cnt = 0;
+
+	blk_start_plug(&plug);
 
 retry_flush_quotas:
 	f2fs_lock_all(sbi);
@@ -1192,7 +1195,7 @@ retry_flush_dents:
 		f2fs_unlock_all(sbi);
 		err = f2fs_sync_dirty_inodes(sbi, DIR_INODE);
 		if (err)
-			return err;
+			goto out;
 		cond_resched();
 		goto retry_flush_quotas;
 	}
@@ -1208,7 +1211,7 @@ retry_flush_dents:
 		f2fs_unlock_all(sbi);
 		err = f2fs_sync_inode_meta(sbi);
 		if (err)
-			return err;
+			goto out;
 		cond_resched();
 		goto retry_flush_quotas;
 	}
@@ -1224,7 +1227,7 @@ retry_flush_nodes:
 		if (err) {
 			up_write(&sbi->node_change);
 			f2fs_unlock_all(sbi);
-			return err;
+			goto out;
 		}
 		cond_resched();
 		goto retry_flush_nodes;
@@ -1236,6 +1239,8 @@ retry_flush_nodes:
 	 */
 	__prepare_cp_block(sbi);
 	up_write(&sbi->node_change);
+out:
+	blk_finish_plug(&plug);
 	return err;
 }
 
