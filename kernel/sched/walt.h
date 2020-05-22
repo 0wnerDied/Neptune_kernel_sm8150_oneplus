@@ -156,9 +156,7 @@ extern void init_new_task_load(struct task_struct *p);
 extern void mark_task_starting(struct task_struct *p);
 extern void set_window_start(struct rq *rq);
 void account_irqtime(int cpu, struct task_struct *curr, u64 delta,
-		     u64 wallclock);
-void walt_fixup_cumulative_runnable_avg(struct rq *rq, struct task_struct *p,
-					u64 new_task_load);
+                                  u64 wallclock);
 extern bool do_pl_notif(struct rq *rq);
 
 #define SCHED_HIGH_IRQ_TIMEOUT 3
@@ -316,9 +314,7 @@ static inline void walt_enable_frequency_aggregation(bool enable)
 #else /* CONFIG_SCHED_WALT */
 
 static inline void walt_sched_init_rq(struct rq *rq) { }
-static inline void walt_fixup_cumulative_runnable_avg(struct rq *rq,
-						      struct task_struct *p,
-						      u64 new_task_load) { }
+
 static inline void walt_rotate_work_init(void) { }
 static inline void walt_rotation_checkpoint(int nr_big) { }
 static inline void walt_update_last_enqueue(struct task_struct *p) { }

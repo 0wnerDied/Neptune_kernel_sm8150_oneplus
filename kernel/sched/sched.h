@@ -1749,9 +1749,6 @@ struct sched_class {
 	void (*fixup_walt_sched_stats)(struct rq *rq, struct task_struct *p,
 				       u16 updated_demand_scaled,
 				       u16 updated_pred_demand_scaled);
-	void (*fixup_cumulative_runnable_avg)(struct rq *rq,
-					      struct task_struct *task,
-					      u64 new_task_load);
 #endif
 };
 
@@ -1977,7 +1974,10 @@ static inline int hrtick_enabled(struct rq *rq)
 #ifdef CONFIG_SCHED_WALT
 u64 sched_ktime_clock(void);
 #else
-#define sched_ktime_clock ktime_get_ns
+static inline u64 sched_ktime_clock(void)
+{
+	return sched_clock();
+}
 #endif
 
 #ifdef CONFIG_SMP
