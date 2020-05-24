@@ -33,7 +33,7 @@ static int __init audio_q6_init(void)
 	avtimer_init();
 	msm_mdf_init();
 	elliptic_driver_init();
-#if CONFIG_VOIVE_MHI
+#if CONFIG_VOICE_MHI
 	voice_mhi_init();
 #endif
 	return 0;
