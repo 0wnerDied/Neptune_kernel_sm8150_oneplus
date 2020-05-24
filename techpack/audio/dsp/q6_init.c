@@ -33,7 +33,9 @@ static int __init audio_q6_init(void)
 	avtimer_init();
 	msm_mdf_init();
 	elliptic_driver_init();
+#if CONFIG_VOIVE_MHI
 	voice_mhi_init();
+#endif
 	return 0;
 }
 
@@ -54,7 +56,9 @@ static void __exit audio_q6_exit(void)
 	audio_cal_exit();
 	adsp_err_exit();
 	elliptic_driver_exit();
+#if CONFIG_VOICE_MHI
 	voice_mhi_exit();
+#endif
 }
 
 module_init(audio_q6_init);
