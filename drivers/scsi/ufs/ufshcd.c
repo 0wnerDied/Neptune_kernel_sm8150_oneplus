@@ -2569,8 +2569,8 @@ static void ufshcd_init_clk_gating(struct ufs_hba *hba)
 	gating->delay_ms_pwr_save = UFSHCD_CLK_GATING_DELAY_MS_PWR_SAVE;
 	gating->delay_ms_perf = UFSHCD_CLK_GATING_DELAY_MS_PERF;
 
-	/* start with performance mode */
-	gating->delay_ms = gating->delay_ms_perf;
+	/* start with power-save mode */
+	gating->delay_ms = gating->delay_ms_pwr_save;
 
 	if (!ufshcd_is_clkscaling_supported(hba))
 		goto scaling_not_supported;
