@@ -1076,11 +1076,13 @@ static int diag_send_raw_data_remote(int proc, void *buf, int len,
 	int max_len = 0;
 	uint8_t retry_count = 0;
 	uint8_t max_retries = 50;
-	uint16_t payload = 0;
+	uint16_t payload_len = 0;
 	struct diag_send_desc_type send = { NULL, NULL, DIAG_STATE_START, 0 };
 	struct diag_hdlc_dest_type enc = { NULL, NULL, 0 };
 	int bridge_index = proc - 1;
-	uint8_t hdlc_disabled = 0;
+	unsigned char non_hdlc_header[NON_HDLC_HEADER_SIZE] = {
+	CONTROL_CHAR, NON_HDLC_VERSION, 0, 0 };
+	unsigned char end_byte[1] = { CONTROL_CHAR };
 
 	if (!buf)
 		return -EINVAL;
@@ -1105,39 +1107,6 @@ static int diag_send_raw_data_remote(int proc, void *buf, int len,
 
 	if (driver->hdlc_encode_buf_len != 0)
 		return -EAGAIN;
-	mutex_lock(&driver->hdlc_disable_mutex);
-	hdlc_disabled = driver->p_hdlc_disabled[APPS_DATA];
-	mutex_unlock(&driver->hdlc_disable_mutex);
-	if (hdlc_disabled) {
-		if (len < 4) {
-			pr_err("diag: In %s, invalid len: %d of non_hdlc pkt",
-			__func__, len);
-			return -EBADMSG;
-		}
-		payload = *(uint16_t *)(buf + 2);
-		if (payload > DIAG_MAX_HDLC_BUF_SIZE) {
-			pr_err("diag: Dropping packet, payload size is %d\n",
-				payload);
-			return -EBADMSG;
-		}
-		driver->hdlc_encode_buf_len = payload;
-		/*
-		 * Adding 5 bytes for start (1 byte), version (1 byte),
-		 * payload (2 bytes) and end (1 byte)
-		 */
-		if (len == (payload + 5)) {
-			/*
-			 * Adding 4 bytes for start (1 byte), version (1 byte)
-			 * and payload (2 bytes)
-			 */
-			memcpy(driver->hdlc_encode_buf, buf + 4, payload);
-			goto send_data;
-		} else {
-			pr_err("diag: In %s, invalid len: %d of non_hdlc pkt",
-			__func__, len);
-			return -EBADMSG;
-		}
-	}
 
 	if (hdlc_flag) {
 		if (len > DIAG_MAX_HDLC_BUF_SIZE) {
@@ -1150,28 +1119,47 @@ static int diag_send_raw_data_remote(int proc, void *buf, int len,
 		goto send_data;
 	}
 
-	/*
-	 * The worst case length will be twice as the incoming packet length.
-	 * Add 3 bytes for CRC bytes (2 bytes) and delimiter (1 byte)
-	 */
-	max_len = (2 * len) + 3;
-	if (max_len > DIAG_MAX_HDLC_BUF_SIZE) {
-		pr_err("diag: Dropping packet, HDLC encoded packet payload size crosses buffer limit. Current payload size %d\n",
-		       max_len);
-		return -EBADMSG;
+	if (driver->proc_hdlc_disabled[proc]) {
+		/*
+		 * Adding 4 bytes for start (1 byte), version (1 byte)
+		 * and payload (2 bytes)
+		 */
+		payload_len = len;
+		memcpy(non_hdlc_header+2, &payload_len, 2);
+		memcpy(driver->hdlc_encode_buf,
+			non_hdlc_header, NON_HDLC_HEADER_SIZE);
+		memcpy(driver->hdlc_encode_buf +
+			NON_HDLC_HEADER_SIZE, buf, len);
+		memcpy((driver->hdlc_encode_buf +
+			NON_HDLC_HEADER_SIZE + len), end_byte, 1);
+		driver->hdlc_encode_buf_len =
+			len + NON_HDLC_HEADER_SIZE + 1;
+		goto send_data;
+	} else {
+		/*
+		 * The worst case length will be twice as the incoming packet
+		 * length.
+		 * Add 3 bytes for CRC bytes (2 bytes) and delimiter (1 byte)
+		 */
+		max_len = (2 * len) + 3;
+		if (max_len > DIAG_MAX_HDLC_BUF_SIZE) {
+			pr_err("diag: Dropping packet, HDLC encoded packet payload size crosses buffer limit. Current payload size %d\n",
+				   max_len);
+			return -EBADMSG;
+		}
+
+		/* Perform HDLC encoding on incoming data */
+		send.state = DIAG_STATE_START;
+		send.pkt = (void *)(buf);
+		send.last = (void *)(buf + len - 1);
+		send.terminate = 1;
+
+		enc.dest = driver->hdlc_encode_buf;
+		enc.dest_last = (void *)(driver->hdlc_encode_buf + max_len - 1);
+		diag_hdlc_encode(&send, &enc);
+		driver->hdlc_encode_buf_len = (int)(enc.dest -
+			(void *)driver->hdlc_encode_buf);
 	}
-
-	/* Perform HDLC encoding on incoming data */
-	send.state = DIAG_STATE_START;
-	send.pkt = (void *)(buf);
-	send.last = (void *)(buf + len - 1);
-	send.terminate = 1;
-
-	enc.dest = driver->hdlc_encode_buf;
-	enc.dest_last = (void *)(driver->hdlc_encode_buf + max_len - 1);
-	diag_hdlc_encode(&send, &enc);
-	driver->hdlc_encode_buf_len = (int)(enc.dest -
-					(void *)driver->hdlc_encode_buf);
 
 send_data:
 	err = diagfwd_bridge_write(bridge_index, driver->hdlc_encode_buf,
@@ -2345,10 +2333,13 @@ static int diag_ioctl_hdlc_toggle(unsigned long ioarg)
 	mutex_lock(&driver->hdlc_disable_mutex);
 	mutex_lock(&driver->md_session_lock);
 	session_info = diag_md_session_get_pid(current->tgid);
-	if (session_info)
+	if (session_info) {
 		session_info->hdlc_disabled = hdlc_support;
-	else
+		driver->proc_hdlc_disabled[DIAG_LOCAL_PROC] =
+			hdlc_support;
+	} else {
 		driver->hdlc_disabled = hdlc_support;
+	}
 
 	peripheral =
 		diag_md_session_match_pid_peripheral(DIAG_LOCAL_PROC,
@@ -2774,6 +2765,8 @@ long diagchar_compat_ioctl(struct file *filp,
 	struct diag_logging_mode_param_t mode_param;
 	struct diag_con_all_param_t con_param;
 	struct diag_query_pid_t pid_query;
+	uint8_t hdlc_support, i;
+	struct diag_md_session_t *session_info = NULL;
 
 	switch (iocmd) {
 	case DIAG_IOCTL_COMMAND_REG:
@@ -2918,6 +2911,19 @@ long diagchar_compat_ioctl(struct file *filp,
 		else
 			result = 0;
 		break;
+	case DIAG_IOCTL_MDM_HDLC_TOGGLE:
+		if (copy_from_user(&hdlc_support, (void __user *)ioarg,
+				   sizeof(uint8_t)))
+			return -EFAULT;
+		mutex_lock(&driver->md_session_lock);
+		session_info = diag_md_session_get_pid(current->tgid);
+		if (session_info) {
+			for (i = DIAG_LOCAL_PROC + 1; i < NUM_DIAG_MD_DEV; i++)
+				driver->proc_hdlc_disabled[i] = hdlc_support;
+		}
+		mutex_unlock(&driver->md_session_lock);
+		result = 0;
+		break;
 	}
 	return result;
 }
@@ -2934,6 +2940,8 @@ long diagchar_ioctl(struct file *filp,
 	struct diag_logging_mode_param_t mode_param;
 	struct diag_con_all_param_t con_param;
 	struct diag_query_pid_t pid_query;
+	uint8_t hdlc_support, i;
+	struct diag_md_session_t *session_info = NULL;
 
 	switch (iocmd) {
 	case DIAG_IOCTL_COMMAND_REG:
@@ -3078,6 +3086,19 @@ long diagchar_ioctl(struct file *filp,
 			result = -EFAULT;
 		else
 			result = 0;
+		break;
+	case DIAG_IOCTL_MDM_HDLC_TOGGLE:
+		if (copy_from_user(&hdlc_support, (void __user *)ioarg,
+				   sizeof(uint8_t)))
+			return -EFAULT;
+		mutex_lock(&driver->md_session_lock);
+		session_info = diag_md_session_get_pid(current->tgid);
+		if (session_info) {
+			for (i = DIAG_LOCAL_PROC + 1; i < NUM_DIAG_MD_DEV; i++)
+				driver->proc_hdlc_disabled[i] = hdlc_support;
+		}
+		mutex_unlock(&driver->md_session_lock);
+		result = 0;
 		break;
 	}
 	return result;
