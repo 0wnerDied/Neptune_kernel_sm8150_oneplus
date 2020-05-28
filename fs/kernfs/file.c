@@ -275,7 +275,7 @@ static ssize_t kernfs_fop_write(struct file *file, const char __user *user_buf,
 {
 	struct kernfs_open_file *of = kernfs_of(file);
 	const struct kernfs_ops *ops;
-	char buf_onstack[SZ_1K];
+	char buf_onstack[SZ_4K + 1] __aligned(sizeof(long));
 	ssize_t len;
 	char *buf;
 
