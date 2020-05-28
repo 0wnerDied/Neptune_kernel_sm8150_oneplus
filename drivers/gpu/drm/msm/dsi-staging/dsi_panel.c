@@ -901,7 +901,7 @@ static int dsi_panel_update_backlight(struct dsi_panel *panel,
 	/*xiaoxiaohuan@OnePlus.MultiMediaService,2018/08/04, add for fingerprint*/
 	if (panel->is_hbm_enabled) {
 		hbm_finger_print = true;
-		pr_err("HBM is enabled\n");
+		pr_debug("HBM is enabled\n");
 		return 0;
 	}
 
@@ -5251,7 +5251,7 @@ int dsi_panel_set_hbm_brightness(struct dsi_panel *panel, int level)
 
 	if (panel->is_hbm_enabled) {
 		hbm_finger_print = true;
-		pr_err("HBM is enabled\n");
+		pr_debug("HBM is enabled\n");
 		return 0;
 	}
 
