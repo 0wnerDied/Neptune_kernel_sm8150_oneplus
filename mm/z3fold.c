@@ -41,6 +41,7 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/zpool.h>
+#include <linux/kmemleak.h>
 
 /*
  * NCHUNKS_ORDER determines the internal allocation granularity, effectively
@@ -213,6 +214,8 @@ static inline struct z3fold_buddy_slots *alloc_slots(struct z3fold_pool *pool,
 				 (gfp & ~(__GFP_HIGHMEM | __GFP_MOVABLE)));
 
 	if (slots) {
+		/* It will be freed separately in free_handle(). */
+		kmemleak_not_leak(slots);
 		memset(slots->slot, 0, sizeof(slots->slot));
 		slots->pool = (unsigned long)pool;
 		rwlock_init(&slots->lock);
