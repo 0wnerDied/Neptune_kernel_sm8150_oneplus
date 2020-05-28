@@ -292,7 +292,7 @@ void mcu_en_gpio_set(int value)
 
 void usb_sw_gpio_set(int value)
 {
-	pr_info("set usb_sw_gpio=%d\n", value);
+	pr_debug("set usb_sw_gpio=%d\n", value);
 	if (!gpio_is_valid(fastchg_di->usb_sw_1_gpio)
 		&& !gpio_is_valid(fastchg_di->usb_sw_2_gpio)) {
 		pr_err("gpio is invalid\n");
