@@ -238,6 +238,7 @@ static void do_idle(void)
 	 * then setting need_resched is guaranteed to cause the CPU to
 	 * reschedule.
 	 */
+    int cpu;
 
 	__current_set_polling();
 	tick_nohz_idle_enter();
@@ -245,7 +246,7 @@ static void do_idle(void)
 	while (!need_resched()) {
 		check_pgt_cache();
 		rmb();
-        int cpu = smp_processor_id(); 
+        cpu = smp_processor_id(); 
 
 		if (cpu_is_offline(cpu)) {
 			tick_nohz_idle_stop_tick_protected();
