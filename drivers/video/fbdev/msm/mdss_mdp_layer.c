@@ -733,6 +733,13 @@ static struct mdss_fence *__create_fence(struct msm_fb_data_type *mfd,
 		return ERR_PTR(-EPERM);
 	}
 
+	if (fence_type == MDSS_MDP_RETIRE_FENCE)
+		snprintf(fence_name, sizeof(fence_name), "fb%d_retire",
+			mfd->index);
+	else
+		snprintf(fence_name, sizeof(fence_name), "fb%d_release",
+			mfd->index);
+
 	if ((fence_type == MDSS_MDP_RETIRE_FENCE) &&
 		(mfd->panel.type == MIPI_CMD_PANEL)) {
 		if (sync_pt_data->timeline_retire) {
@@ -740,7 +747,7 @@ static struct mdss_fence *__create_fence(struct msm_fb_data_type *mfd,
 				mdp5_data->retire_cnt++;
 			sync_fence = mdss_fb_sync_get_fence(
 				sync_pt_data->timeline_retire,
-				"", value);
+				fence_name, value);
 		} else {
 			return ERR_PTR(-EPERM);
 		}
@@ -748,15 +755,16 @@ static struct mdss_fence *__create_fence(struct msm_fb_data_type *mfd,
 		if (fence_type == MDSS_MDP_RETIRE_FENCE)
 			sync_fence = mdss_fb_sync_get_fence(
 						sync_pt_data->timeline_retire,
-						"", value);
+						fence_name, value);
 		else
 			sync_fence = mdss_fb_sync_get_fence(
 						sync_pt_data->timeline,
-						"", value);
+						fence_name, value);
+
 	}
 
 	if (IS_ERR_OR_NULL(sync_fence)) {
-		pr_err("%s: unable to retrieve release fence\n", __func__);
+		pr_err("%s: unable to retrieve release fence\n", fence_name);
 		goto end;
 	}
 
