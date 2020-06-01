@@ -1082,15 +1082,40 @@ static int f2fs_d_compare(const struct dentry *dentry, unsigned int len,
 {
 	struct qstr qstr = {.name = str, .len = len };
 	const struct dentry *parent = READ_ONCE(dentry->d_parent);
-	const struct inode *inode = READ_ONCE(parent->d_inode);
+	const struct inode *dir = READ_ONCE(parent->d_inode);
+	const struct f2fs_sb_info *sbi = F2FS_SB(dentry->d_sb);
+	struct qstr entry = QSTR_INIT(str, len);
+	char strbuf[DNAME_INLINE_LEN];
+	int res;
 
-	if (!inode || !IS_CASEFOLDED(inode)) {
-		if (len != name->len)
-			return -1;
-		return memcmp(str, name->name, len);
+	if (!dir || !IS_CASEFOLDED(dir))
+		goto fallback;
+
+	/*
+	 * If the dentry name is stored in-line, then it may be concurrently
+	 * modified by a rename.  If this happens, the VFS will eventually retry
+	 * the lookup, so it doesn't matter what ->d_compare() returns.
+	 * However, it's unsafe to call utf8_strncasecmp() with an unstable
+	 * string.  Therefore, we have to copy the name into a temporary buffer.
+	 */
+	if (len <= DNAME_INLINE_LEN - 1) {
+		memcpy(strbuf, str, len);
+		strbuf[len] = 0;
+		entry.name = strbuf;
+		/* prevent compiler from optimizing out the temporary buffer */
+		barrier();
 	}
 
-	return f2fs_ci_compare(inode, name, &qstr, false);
+	res = utf8_strncasecmp(sbi->s_encoding, name, &entry);
+	if (res >= 0)
+		return res;
+
+	if (f2fs_has_strict_mode(sbi))
+		return -EINVAL;
+fallback:
+	if (len != name->len)
+		return 1;
+	return !!memcmp(str, name->name, len);
 }
 
 static int f2fs_d_hash(const struct dentry *dentry, struct qstr *str)
