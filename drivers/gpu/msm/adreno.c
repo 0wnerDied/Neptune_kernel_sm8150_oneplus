@@ -4222,7 +4222,7 @@ static int __kgsl_3d_init(void *arg)
 static int __init kgsl_3d_init(void)
 {
 	struct task_struct *kgsl_3d_init_task =
-		kthread_run_perf_critical(__kgsl_3d_init, NULL, "kgsl_3d_init");
+		kthread_run(__kgsl_3d_init, NULL, "kgsl_3d_init");
 	if (IS_ERR(kgsl_3d_init_task))
 		return PTR_ERR(kgsl_3d_init_task);
 	else
