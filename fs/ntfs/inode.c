@@ -28,6 +28,7 @@
 #include <linux/quotaops.h>
 #include <linux/slab.h>
 #include <linux/log2.h>
+#include <linux/iversion.h>
 
 #include "aops.h"
 #include "attrib.h"
@@ -565,7 +566,7 @@ static int ntfs_read_locked_inode(struct inode *vi)
 	 * This is for checking whether an inode has changed w.r.t. a file so
 	 * that the file can be updated if necessary (compare with f_version).
 	 */
-	vi->i_version = 1;
+	inode_set_iversion(vi, 1);
 
 	vi->i_uid = vol->uid;
 	vi->i_gid = vol->gid;
