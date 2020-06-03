@@ -831,7 +831,7 @@ static inline void __free_one_page(struct page *page,
 		int migratetype)
 {
 	unsigned long combined_pfn;
-	unsigned long uninitialized_var(buddy_pfn);
+	unsigned long buddy_pfn;
 	struct page *buddy;
 	unsigned int max_order;
 

@@ -2211,7 +2211,7 @@ static int apply_to_pte_range(struct mm_struct *mm, pmd_t *pmd,
 	pte_t *pte;
 	int err;
 	pgtable_t token;
-	spinlock_t *uninitialized_var(ptl);
+	spinlock_t *ptl;
 
 	pte = (mm == &init_mm) ?
 		pte_alloc_kernel(pmd, addr) :

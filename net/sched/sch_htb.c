@@ -596,7 +596,7 @@ static void htb_enqueue_tail(struct sk_buff *skb, struct Qdisc *sch,
 static int htb_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 		       struct sk_buff **to_free)
 {
-	int uninitialized_var(ret);
+	int ret;
 	struct htb_sched *q = qdisc_priv(sch);
 	struct htb_class *cl = htb_classify(skb, sch, &ret);
 
