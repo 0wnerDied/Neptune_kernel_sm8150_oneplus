@@ -198,6 +198,10 @@ echo 1 > /dev/stune/foreground/schedtune.prefer_idle
 echo 1 > /dev/stune/top-app/schedtune.prefer_idle
 echo 1 > /dev/stune/top-app/schedtune.boost
 
+# Remove unused swapfile
+rm -f /data/vendor/swap/swapfile 2>/dev/null
+sync
+
 # Set zRAM disksize
 swapoff /dev/block/zram0
 echo 1 > /sys/block/zram0/reset
