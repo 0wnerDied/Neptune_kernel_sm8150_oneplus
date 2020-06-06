@@ -190,6 +190,7 @@ echo 200 > /dev/blkio/background/blkio.weight
 echo 10 > /proc/sys/vm/dirty_background_ratio
 echo 3000 > /proc/sys/vm/dirty_expire_centisecs
 echo 0 > /proc/sys/vm/page-cluster
+echo 32768 > /proc/sys/vm/min_free_kbytes
 
 # stune
 echo 0 > /dev/stune/schedtune.prefer_idle
