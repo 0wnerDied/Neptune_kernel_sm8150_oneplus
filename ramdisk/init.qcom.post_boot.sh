@@ -186,6 +186,11 @@ echo 0 > /dev/blkio/background/blkio.group_idle
 echo 1000 > /dev/blkio/blkio.weight
 echo 200 > /dev/blkio/background/blkio.weight
 
+# VM
+echo 10 > /proc/sys/vm/dirty_background_ratio
+echo 3000 > /proc/sys/vm/dirty_expire_centisecs
+echo 0 > /proc/sys/vm/page-cluster
+
 # stune
 echo 0 > /dev/stune/schedtune.prefer_idle
 echo 0 > /dev/stune/schedtune.boost
