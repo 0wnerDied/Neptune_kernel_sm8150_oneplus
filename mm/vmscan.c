@@ -155,9 +155,9 @@ struct scan_control {
 #endif
 
 /*
- * From 0 .. 70.  Higher means more swappy.
+ * From 0 .. 200.  Higher means more swappy.
  */
-int vm_swappiness = 70;
+int vm_swappiness = 150;
 /*
  * The total number of pages which are beyond the high watermark within all
  * zones.
