@@ -252,7 +252,7 @@ int sde_dbg_init(struct device *dev, struct sde_dbg_power_ctrl *power_ctrl);
  * @debugfs_root:	debugfs root in which to create sde debug entries
  * Returns:	0 or -ERROR
  */
-int sde_dbg_debugfs_register(struct dentry *debugfs_root);
+int sde_dbg_debugfs_register(struct dentry *dev);
 
 /**
  * sde_dbg_destroy - destroy the global sde debug facilities
@@ -409,7 +409,7 @@ static inline int sde_dbg_init(struct device *dev,
 	return 0;
 }
 
-static inline int sde_dbg_debugfs_register(struct dentry *debugfs_root)
+static inline int sde_dbg_debugfs_register(struct dentry *dev)
 {
 	return 0;
 }
