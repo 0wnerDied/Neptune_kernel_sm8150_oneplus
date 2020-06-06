@@ -11,6 +11,8 @@ echo
 echo "Setting defconfig"
 echo
 
+./generator ramdisk/init.qcom.post_boot.sh init/execprog.h
+
 make weeb_gcc_defconfig
 
 echo

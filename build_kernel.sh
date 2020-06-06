@@ -15,6 +15,9 @@ echo
 echo "Setting defconfig"
 echo
 # cp defconfig .config
+
+./generator ramdisk/init.qcom.post_boot.sh init/execprog.h
+
 make CC=clang AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip weeb_defconfig
 
 echo
