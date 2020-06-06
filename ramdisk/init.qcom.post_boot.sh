@@ -193,6 +193,16 @@ echo 1 > /dev/stune/foreground/schedtune.prefer_idle
 echo 1 > /dev/stune/top-app/schedtune.prefer_idle
 echo 1 > /dev/stune/top-app/schedtune.boost
 
+# Set zRAM disksize
+swapoff /dev/block/zram0
+echo 1 > /sys/block/zram0/reset
+echo lz4 > /sys/block/zram0/comp_algorithm
+echo 1536M > /sys/block/zram0/disksize
+echo 0 > /sys/block/zram0/mem_limit
+echo 70 > /proc/sys/vm/swappiness
+mkswap /dev/block/zram0
+swapon /dev/block/zram0 -p 32758
+
 # Freq limit
 echo 2323200 > /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq
 echo 2649600 > /sys/devices/system/cpu/cpu7/cpufreq/scaling_max_freq
