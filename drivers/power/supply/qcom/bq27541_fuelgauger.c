@@ -943,38 +943,6 @@ static int bq27541_full_chg_capacity(struct bq27541_device_info *di)
 	return cap;
 }
 
-static int bq27541_full_chg_capacity(struct bq27541_device_info *di)
-{
-	int ret;
-	int cap = 0;
-
-	/* Add for get right soc when sleep long time */
-	if (atomic_read(&di->suspended) == 1)
-		return di->cap_pre;
-
-	if (di->allow_reading || panel_flag2) {
-#ifdef CONFIG_GAUGE_BQ27411
-		/* david.liu@bsp, 20161004 Add BQ27411 support */
-		ret = bq27541_read(BQ27411_REG_FCC,
-				&cap, 0, di);
-#else
-		ret = bq27541_read(BQ27541_REG_FCC, &cap, 0, di);
-#endif
-		if (ret) {
-			pr_err("error reading full chg capacity.\n");
-			return ret;
-		}
-		if (panel_flag2)
-			panel_flag2 = 0;
-	} else {
-		return di->cap_pre;
-	}
-
-	di->cap_pre = cap;
-	return cap;
-}
-
-
 static int bq27541_batt_health(struct bq27541_device_info *di)
 {
 	int ret;
