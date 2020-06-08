@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -2982,14 +2982,19 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 	}
 
 	if ((topology == VPM_TX_SM_ECNS_V2_COPP_TOPOLOGY) ||
-	    (topology == VPM_TX_DM_FLUENCE_COPP_TOPOLOGY) ||
-	    (topology == VPM_TX_DM_RFECNS_COPP_TOPOLOGY)||
 	    (topology == VPM_TX_DM_FLUENCE_EF_COPP_TOPOLOGY)) {
 		if ((rate != ADM_CMD_COPP_OPEN_SAMPLE_RATE_8K) &&
 		    (rate != ADM_CMD_COPP_OPEN_SAMPLE_RATE_16K) &&
 		    (rate != ADM_CMD_COPP_OPEN_SAMPLE_RATE_32K) &&
 		    (rate != ADM_CMD_COPP_OPEN_SAMPLE_RATE_48K))
-		rate = 16000;
+			rate = 16000;
+	}
+	if ((topology == VPM_TX_DM_FLUENCE_COPP_TOPOLOGY) ||
+	    (topology == VPM_TX_DM_RFECNS_COPP_TOPOLOGY)) {
+		if ((rate != ADM_CMD_COPP_OPEN_SAMPLE_RATE_8K) &&
+		    (rate != ADM_CMD_COPP_OPEN_SAMPLE_RATE_16K) &&
+		    (rate != ADM_CMD_COPP_OPEN_SAMPLE_RATE_32K))
+			rate = 16000;
 	}
 
 	if (topology == FFECNS_TOPOLOGY) {
@@ -5139,7 +5144,7 @@ int adm_get_source_tracking(int port_id, int copp_idx,
 	 */
 	param_hdr.param_size =
 		sizeof(struct adm_param_fluence_sourcetracking_t) +
-		sizeof(union param_hdrs);
+		sizeof(struct param_hdr_v3);
 
 	/*
 	 * Retrieving parameters out of band, so no need to provide a buffer for
@@ -5168,7 +5173,7 @@ int adm_get_source_tracking(int port_id, int copp_idx,
 	source_tracking_params =
 		(struct adm_param_fluence_sourcetracking_t
 			 *) (this_adm.sourceTrackingData.memmap.kvaddr +
-			     sizeof(struct param_hdr_v1));
+			     sizeof(struct param_hdr_v3));
 	for (i = 0; i < MAX_SECTORS; i++) {
 		sourceTrackingData->vad[i] = source_tracking_params->vad[i];
 		pr_debug("%s: vad[%d] = %d\n",
