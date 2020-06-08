@@ -217,4 +217,19 @@ swapon /dev/block/zram0 -p 32758
 echo 2323200 > /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq
 echo 2649600 > /sys/devices/system/cpu/cpu7/cpufreq/scaling_max_freq
 
+# Disable OP Shit things after boot
+
+while $(dumpsys window policy | grep mlsShowing | awk -F= '{print $2}'); do
+sleep 1
+done
+
+resetprop ctl.stop oneplus_brain_service
+resetprop ctl.stop charger_logkit
+resetprop ctl.stop oemlogkit
+resetprop ctl.stop opdiagnose
+resetprop ctl.stop OPDiagdataCopy
+resetprop persist.sys.ohpd.flags 0
+resetprop persist.sys.ohpd.kcheck false
+resetprop persist.vendor.sys.memplus.enable 0
+
 exit 0
