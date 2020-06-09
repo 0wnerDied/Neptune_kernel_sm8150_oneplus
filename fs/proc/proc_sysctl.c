@@ -593,6 +593,10 @@ static ssize_t proc_sys_call_handler(struct file *filp, void __user *buf,
 	if (!table->proc_handler)
 		goto out;
 
+	/* don't even try if the size is too large */
+	if (count > KMALLOC_MAX_SIZE)
+		return -ENOMEM;
+
 	/* careful: calling conventions are nasty here */
 	res = count;
 	error = table->proc_handler(table, write, buf, &res, ppos);
