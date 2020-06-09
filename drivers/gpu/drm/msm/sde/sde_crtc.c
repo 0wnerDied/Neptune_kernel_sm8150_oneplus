@@ -5786,9 +5786,9 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 		display->panel->dim_status = false;
 
 	if (fppressed_index > 0 || fp_mode == 1) {
-		cpu_input_boost_kick_max(750);
-		devfreq_boost_kick_max(DEVFREQ_MSM_LLCCBW_DDR, 750);
-		devfreq_boost_kick_max(DEVFREQ_MSM_CPU_LLCCBW, 750);
+		cpu_input_boost_kick_max(400);
+		devfreq_boost_kick_max(DEVFREQ_MSM_LLCCBW_DDR, 400);
+		devfreq_boost_kick_max(DEVFREQ_MSM_CPU_LLCCBW, 400);
 	}
 
 	if(aod_index <0){
