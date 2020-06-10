@@ -31,8 +31,6 @@
 #include <drm/drm_mode.h>
 #include <drm/drm_print.h>
 #include <linux/sync_file.h>
-#include <linux/cpu_input_boost.h>
-#include <linux/sched/sysctl.h>
 
 #include "drm_crtc_internal.h"
 
@@ -2248,11 +2246,6 @@ int drm_mode_atomic_ioctl(struct drm_device *dev,
 	if ((arg->flags & DRM_MODE_ATOMIC_TEST_ONLY) &&
 			(arg->flags & DRM_MODE_PAGE_FLIP_EVENT))
 		return -EINVAL;
-
-	/* Do cib and db frame boosts only when sched_boost is active */
-	if (!(arg->flags & DRM_MODE_ATOMIC_TEST_ONLY) &&
-		sysctl_sched_boost)
-		cpu_input_boost_kick();
 
 	drm_modeset_acquire_init(&ctx, 0);
 
