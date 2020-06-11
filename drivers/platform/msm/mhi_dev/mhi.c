@@ -454,10 +454,11 @@ static int mhi_dev_flush_transfer_completion_events(struct mhi_dev *mhi,
 	struct event_req *flush_ereq;
 
 	/*
-	 * Channel got closed with transfers pending
+	 * Channel got stopped or closed with transfers pending
 	 * Do not send completion events to host
 	 */
-	if (ch->state == MHI_DEV_CH_CLOSED) {
+	if (ch->state == MHI_DEV_CH_CLOSED ||
+		ch->state == MHI_DEV_CH_STOPPED) {
 		mhi_log(MHI_MSG_DBG, "Ch %d closed with %d writes pending\n",
 			ch->ch_id, ch->pend_wr_count + 1);
 		return -ENODEV;
@@ -1331,12 +1332,11 @@ static int mhi_hwc_chcmd(struct mhi_dev *mhi, uint chid,
 	case MHI_DEV_RING_EL_START:
 		connect_params.channel_id = chid;
 		connect_params.sys.skip_ep_cfg = true;
-		if (chid == MHI_CLIENT_ADPL_IN)
-			connect_params.sys.client = IPA_CLIENT_MHI_DPL_CONS;
-		else if ((chid % 2) == 0x0)
-			connect_params.sys.client = IPA_CLIENT_MHI_PROD;
-		else
-			connect_params.sys.client = IPA_CLIENT_MHI_CONS;
+
+		if (chid > HW_CHANNEL_END) {
+			pr_err("Channel DB for %d not enabled\n", chid);
+			return -EINVAL;
+		}
 
 		rc = ipa_mhi_connect_pipe(&connect_params,
 			&mhi->ipa_clnt_hndl[chid-HW_CHANNEL_BASE]);
@@ -1550,6 +1550,10 @@ static void mhi_dev_trigger_cb(enum mhi_client_channel ch_id)
 {
 	struct mhi_dev_ready_cb_info *info;
 	enum mhi_ctrl_info state_data;
+
+	/* Currently no clients register for HW channel notify */
+	if (ch_id >= MHI_MAX_SOFTWARE_CHANNELS)
+		return;
 
 	list_for_each_entry(info, &mhi_ctx->client_cb_list, list)
 		if (info->cb && info->cb_data.channel == ch_id) {
@@ -2049,7 +2053,7 @@ static void mhi_update_state_info_all(enum mhi_ctrl_info info)
 	struct mhi_dev_client_cb_reason reason;
 
 	mhi_ctx->ctrl_info = info;
-	for (i = 0; i < MHI_MAX_CHANNELS; ++i) {
+	for (i = 0; i < MHI_MAX_SOFTWARE_CHANNELS; ++i) {
 		channel_state_info[i].ctrl_info = info;
 		/* Notify kernel clients */
 		mhi_dev_trigger_cb(i);
@@ -2149,12 +2153,14 @@ static void mhi_dev_transfer_completion_cb(void *mreq)
 			req->len, DMA_FROM_DEVICE);
 
 	/*
-	 * Channel got closed with transfers pending
+	 * Channel got stopped or closed with transfers pending
 	 * Do not trigger callback or send cmpl to host
 	 */
-	if (ch->state == MHI_DEV_CH_CLOSED) {
-		mhi_log(MHI_MSG_DBG, "Ch %d closed with %d writes pending\n",
-				ch->ch_id, ch->pend_wr_count + 1);
+	if (ch->state == MHI_DEV_CH_CLOSED ||
+		ch->state == MHI_DEV_CH_STOPPED) {
+		mhi_log(MHI_MSG_DBG,
+			"Ch %d not in started state, %d writes pending\n",
+			ch->ch_id, ch->pend_wr_count + 1);
 		return;
 	}
 
@@ -3001,6 +3007,7 @@ int mhi_dev_write_channel(struct mhi_req *wreq)
 	size_t bytes_written = 0;
 	uint32_t tre_len = 0, suspend_wait_timeout = 0;
 	bool async_wr_sched = false;
+	enum mhi_ctrl_info info;
 
 	if (WARN_ON(!wreq || !wreq->client || !wreq->buf)) {
 		pr_err("%s: invalid parameters\n", __func__);
@@ -3048,6 +3055,14 @@ int mhi_dev_write_channel(struct mhi_req *wreq)
 	ring = ch->ring;
 
 	mutex_lock(&ch->ch_lock);
+
+	rc = mhi_ctrl_state_info(ch->ch_id, &info);
+	if (rc || (info != MHI_STATE_CONNECTED)) {
+		mhi_log(MHI_MSG_ERROR, "Channel %d not started by host\n",
+				ch->ch_id);
+		mutex_unlock(&ch->ch_lock);
+		return -ENODEV;
+	}
 
 	ch->pend_wr_count++;
 	if (ch->state == MHI_DEV_CH_STOPPED) {
@@ -3275,7 +3290,8 @@ static void mhi_dev_enable(struct work_struct *work)
 		return;
 	}
 
-	while (state != MHI_DEV_M0_STATE && max_cnt < MHI_SUSPEND_TIMEOUT) {
+	while (state != MHI_DEV_M0_STATE &&
+		((max_cnt < MHI_SUSPEND_TIMEOUT) || mhi->no_m0_timeout)) {
 		/* Wait for Host to set the M0 state */
 		msleep(MHI_SUSPEND_MIN);
 		rc = mhi_dev_mmio_get_mhi_state(mhi, &state, &mhi_reset);
@@ -3350,7 +3366,7 @@ int mhi_register_state_cb(void (*mhi_state_cb)
 	if (WARN_ON(!mhi_ctx))
 		return -ENXIO;
 
-	if (channel > MHI_MAX_CHANNELS) {
+	if (channel >= MHI_MAX_SOFTWARE_CHANNELS) {
 		pr_err("Invalid channel :%d\n", channel);
 		return -EINVAL;
 	}
@@ -3390,6 +3406,10 @@ static void mhi_update_state_info_ch(uint32_t ch_id, enum mhi_ctrl_info info)
 {
 	struct mhi_dev_client_cb_reason reason;
 
+	/* Currently no clients register for HW channel notify */
+	if (ch_id >= MHI_MAX_SOFTWARE_CHANNELS)
+		return;
+
 	channel_state_info[ch_id].ctrl_info = info;
 	if (ch_id == MHI_CLIENT_QMI_OUT || ch_id == MHI_CLIENT_QMI_IN) {
 		/* For legacy reasons for QTI client */
@@ -3409,7 +3429,7 @@ int mhi_ctrl_state_info(uint32_t idx, uint32_t *info)
 	if (idx == MHI_DEV_UEVENT_CTRL)
 		*info = mhi_ctx->ctrl_info;
 	else
-		if (idx < MHI_MAX_CHANNELS)
+		if (idx < MHI_MAX_SOFTWARE_CHANNELS)
 			*info = channel_state_info[idx].ctrl_info;
 		else
 			return -EINVAL;
@@ -3531,6 +3551,12 @@ static int get_device_tree_data(struct platform_device *pdev)
 	/* Hold a wakelock until completion of M0 */
 	pm_stay_awake(mhi->dev);
 	atomic_set(&mhi->mhi_dev_wake, 1);
+
+	mhi->enable_m2 = of_property_read_bool((&pdev->dev)->of_node,
+				"qcom,enable-m2");
+
+	mhi->no_m0_timeout = of_property_read_bool((&pdev->dev)->of_node,
+		"qcom,no-m0-timeout");
 
 	mhi_log(MHI_MSG_VERBOSE, "acquiring wakelock\n");
 

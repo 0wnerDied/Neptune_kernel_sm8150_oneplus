@@ -669,6 +669,8 @@ struct st_data {
 	char *name;
 	int boost;
 	bool prefer_idle;
+	bool colocate;
+	bool no_override;
 };
 
 static void write_default_values(struct cgroup_subsys_state *css)

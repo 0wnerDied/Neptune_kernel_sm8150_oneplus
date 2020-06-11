@@ -1280,7 +1280,6 @@ static int __arm_smmu_tlb_sync(struct arm_smmu_device *smmu,
 			void __iomem *sync, void __iomem *status)
 {
 	unsigned int inc, delay;
-	u32 sync_inv_ack, tbu_pwr_status, sync_inv_progress;
 
 	writel_relaxed(QCOM_DUMMY_VAL, sync);
 	for (delay = 1, inc = 1; delay < TLB_LOOP_TIMEOUT; delay += inc) {
@@ -1292,12 +1291,6 @@ static int __arm_smmu_tlb_sync(struct arm_smmu_device *smmu,
 		if (inc < TLB_LOOP_INC_MAX)
 			inc *= 2;
 	}
-	sync_inv_ack = scm_io_read((unsigned long)(smmu->phys_addr +
-				     ARM_SMMU_STATS_SYNC_INV_TBU_ACK));
-	tbu_pwr_status = scm_io_read((unsigned long)(smmu->phys_addr +
-				     ARM_SMMU_TBU_PWR_STATUS));
-	sync_inv_progress = scm_io_read((unsigned long)(smmu->phys_addr +
-					ARM_SMMU_MMU2QSS_AND_SAFE_WAIT_CNTR));
 	trace_tlbsync_timeout(smmu->dev, 0);
 	__arm_smmu_tlb_sync_timeout(smmu);
 	return -EINVAL;

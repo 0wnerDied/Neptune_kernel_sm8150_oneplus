@@ -230,7 +230,7 @@ static int msm_pinmux_set_mux(struct pinctrl_dev *pctldev,
 	if (val & BIT(g->egpio_present))
 		val |= BIT(g->egpio_enable);
 
-	writel(val, base + g->ctl_reg);
+	writel_relaxed(val, base + g->ctl_reg);
 
 	raw_spin_unlock_irqrestore(&pctrl->lock, flags);
 
@@ -488,10 +488,6 @@ static int msm_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
 	val = readl_relaxed(base + g->ctl_reg);
 	val &= ~BIT(g->oe_bit);
 	writel_relaxed(val, base + g->ctl_reg);
-
-	val = readl_relaxed(pctrl->regs + g->ctl_reg);
-	val &= ~BIT(g->oe_bit);
-	writel_relaxed(val, pctrl->regs + g->ctl_reg);
 
 	raw_spin_unlock_irqrestore(&pctrl->lock, flags);
 

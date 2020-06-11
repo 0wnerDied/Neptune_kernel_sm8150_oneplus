@@ -409,7 +409,28 @@ pv_queue:
 	idx = node->count++;
 	tail = encode_tail(smp_processor_id(), idx);
 
-	node += idx;
+	/*
+	 * 4 nodes are allocated based on the assumption that there will
+	 * not be nested NMIs taking spinlocks. That may not be true in
+	 * some architectures even though the chance of needing more than
+	 * 4 nodes will still be extremely unlikely. When that happens,
+	 * we fall back to spinning on the lock directly without using
+	 * any MCS node. This is not the most elegant solution, but is
+	 * simple enough.
+	 */
+	if (unlikely(idx >= MAX_NODES)) {
+		qstat_inc(qstat_lock_no_node, true);
+		while (!queued_spin_trylock(lock))
+			cpu_relax();
+		goto release;
+	}
+
+	node = grab_mcs_node(node, idx);
+
+	/*
+	 * Keep counts of non-zero index values:
+	 */
+	qstat_inc(qstat_lock_use_node2 + idx - 1, idx);
 
 	/*
 	 * Ensure that we increment the head node->count before initialising
@@ -454,14 +475,8 @@ pv_queue:
 	if (old & _Q_TAIL_MASK) {
 		prev = decode_tail(old);
 
-		/*
-		 * We must ensure that the stores to @node are observed before
-		 * the write to prev->next. The address dependency from
-		 * xchg_tail is not sufficient to ensure this because the read
-		 * component of xchg_tail is unordered with respect to the
-		 * initialisation of @node.
-		 */
-		smp_store_release(&prev->next, node);
+		/* Link @node into the waitqueue. */
+		WRITE_ONCE(prev->next, node);
 
 		pv_wait_node(node, prev);
 		arch_mcs_spin_lock_contended(&node->locked);

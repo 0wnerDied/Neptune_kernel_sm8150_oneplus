@@ -270,7 +270,7 @@ struct mhi_config {
 
 #define NUM_CHANNELS			128
 #define HW_CHANNEL_BASE			100
-#define HW_CHANNEL_END			107
+#define HW_CHANNEL_END			110
 #define MHI_ENV_VALUE			2
 #define MHI_MASK_ROWS_CH_EV_DB		4
 #define TRB_MAX_DATA_SIZE		8192
@@ -607,6 +607,13 @@ struct mhi_dev {
 	/*Register for interrupt*/
 	bool				mhi_int;
 	bool				mhi_int_en;
+
+	/* Enable M2 autonomous mode from MHI */
+	bool				enable_m2;
+
+	/* Dont timeout waiting for M0 */
+	bool				no_m0_timeout;
+
 	/* Registered client callback list */
 	struct list_head		client_cb_list;
 	/* Tx, Rx DMA channels */

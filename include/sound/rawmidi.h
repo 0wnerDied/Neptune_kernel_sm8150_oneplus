@@ -79,7 +79,6 @@ struct snd_rawmidi_runtime {
 	int buffer_ref;		/* buffer reference count */
 	/* misc */
 	spinlock_t lock;
-	struct mutex realloc_mutex;
 	wait_queue_head_t sleep;
 	/* event handler (new bytes, input only) */
 	void (*event)(struct snd_rawmidi_substream *substream);

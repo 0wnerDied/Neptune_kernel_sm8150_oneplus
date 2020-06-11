@@ -31,6 +31,8 @@
 
 extern bool disable_boost;
 
+extern bool disable_boost;
+
 #ifdef CONFIG_SCHED_TUNE
 int disable_schedtune_boost(char *st_name, bool disable);
 #else

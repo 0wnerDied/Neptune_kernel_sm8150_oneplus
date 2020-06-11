@@ -2744,7 +2744,6 @@ CONFIG_MSM_NPU=y
 # Media ancillary drivers (tuners, sensors, i2c, spi, frontends)
 #
 CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
-CONFIG_VIDEO_IR_I2C=y
 
 #
 # Audio decoders, processors and mixers
@@ -3301,7 +3300,7 @@ CONFIG_USB_XHCI_PLATFORM=y
 #
 # USB Device Class drivers
 #
-# CONFIG_USB_ACM is not set
+CONFIG_USB_ACM=y
 # CONFIG_USB_PRINTER is not set
 # CONFIG_USB_WDM is not set
 # CONFIG_USB_TMC is not set
