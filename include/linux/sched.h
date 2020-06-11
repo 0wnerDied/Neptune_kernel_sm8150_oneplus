@@ -29,9 +29,6 @@
 #include <linux/mm_types_task.h>
 #include <linux/task_io_accounting.h>
 
-// tedlin@ASTI 2019/06/12 add for CONFIG_CONTROL_CENTER
-#include <oneplus/control_center/control_center_helper.h>
-
 extern bool disable_boost;
 
 #ifdef CONFIG_SCHED_TUNE
@@ -1420,12 +1417,6 @@ struct task_struct {
 	struct list_head ht_perf_event_node;
 #undef HT_PERF_COUNT_MAX
 #endif
-#endif
-
-// tedlin@ASTI 2019/06/12 add for CONFIG_CONTROL_CENTER
-#ifdef CONFIG_CONTROL_CENTER
-	bool cc_enable;
-	struct cc_tsk_data* ctd;
 #endif
 };
 

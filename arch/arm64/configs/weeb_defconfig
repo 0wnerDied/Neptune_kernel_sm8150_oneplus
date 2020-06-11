@@ -4667,8 +4667,8 @@ CONFIG_ESOC_MDM_DRV=y
 #
 # Qualcomm RmNet extensions
 #
-# CONFIG_RMNET_PERF is not set
-# CONFIG_RMNET_SHS is not set
+CONFIG_RMNET_PERF=y
+CONFIG_RMNET_SHS=y
 CONFIG_OEM_BOOT_MODE=y
 # CONFIG_WB_KERNEL_LOG is not set
 # CONFIG_PARAM_READ_WRITE is not set
@@ -4683,8 +4683,6 @@ CONFIG_AW8697_HAPTIC=y
 #
 # LED Triggers
 #
-# CONFIG_HOUSTON is not set
-# CONFIG_CONTROL_CENTER is not set
 
 #
 # Firmware Drivers
