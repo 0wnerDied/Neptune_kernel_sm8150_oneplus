@@ -15,7 +15,6 @@
 #include "pm8150b.dtsi"
 #include "pm8150l.dtsi"
 #include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
-#include <dt-bindings/gpio/gpio.h>
 
 /* PMIC GPIO pin control configurations: */
 &pm8150_gpios {
