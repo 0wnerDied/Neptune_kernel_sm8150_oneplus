@@ -1175,7 +1175,8 @@ extern int oneplus_get_panel_brightness_to_alpha(void);
 static ssize_t oneplus_display_get_dim_alpha(struct device *dev,
                                 struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%d\n", oneplus_get_panel_brightness_to_alpha());
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
+								oneplus_get_panel_brightness_to_alpha());
 }
 
 static ssize_t oneplus_display_set_dim_alpha(struct device *dev,
@@ -1191,33 +1192,36 @@ static ssize_t oneplus_display_get_forcescreenfp(struct device *dev,
 {
 
 	struct drm_connector *connector = to_drm_connector(dev);
-	int ret = 0;
 	oneplus_force_screenfp = dsi_display_get_fp_hbm_mode(connector);
 
-	ret = scnprintf(buf, PAGE_SIZE, "OP_FP mode = %d\n"
-											"0--finger-hbm mode(off)\n"
-											"1--finger-hbm mode(600)\n",
-											oneplus_force_screenfp);
-	return sprintf(buf, "%d\n", oneplus_force_screenfp);
-	
+	return scnprintf(buf, PAGE_SIZE, "%d\n", oneplus_force_screenfp);
 }
 
 static ssize_t oneplus_display_set_forcescreenfp(struct device *dev,
                                struct device_attribute *attr,
                                const char *buf, size_t count)
 {
-	//sscanf(buf, "%x", &oneplus_force_screenfp);
 	struct drm_connector *connector = to_drm_connector(dev);
 	int ret = 0;
-	ret = kstrtoint(buf, 10, &oneplus_force_screenfp);
+	int force_screenfp = 0;
+
+	ret = kstrtoint(buf, 10, &force_screenfp);
 	if (ret) {
 		pr_err("kstrtoint failed. ret=%d\n", ret);
 		return ret;
 	}
 
+	if (force_screenfp != 0 && force_screenfp != 1) {
+		pr_err("Invalid value. force_screenfp=%d\n", force_screenfp);
+		return count;
+	}
+
+	oneplus_force_screenfp = force_screenfp;
+
 	ret = dsi_display_set_fp_hbm_mode(connector, oneplus_force_screenfp);
 	if (ret)
 		pr_err("set hbm mode(%d) fail\n", oneplus_force_screenfp);
+
 	return count;
 }
 
@@ -1225,16 +1229,30 @@ static ssize_t oneplus_display_set_forcescreenfp(struct device *dev,
 static ssize_t op_display_get_dimlayer_enable(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%d\n", op_dimlayer_bl_enable);
+	return scnprintf(buf, PAGE_SIZE, "%d\n", op_dimlayer_bl_enable);
 }
 
 static ssize_t op_display_set_dimlayer_enable(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
-	sscanf(buf, "%d", &op_dimlayer_bl_enable);
+	int ret = 0;
+	int dimlayer_bl = 0;
 
-	pr_err("op_dimlayer_bl_enable : %d\n", op_dimlayer_bl_enable);
+	ret = kstrtoint(buf, 10, &dimlayer_bl);
+	if (ret) {
+		pr_err("kstrtoint failed. ret=%d\n", ret);
+		return ret;
+	}
+
+	if (dimlayer_bl != 0 && dimlayer_bl != 1) {
+		pr_err("Invalid value. dimlayer_bl=%d\n", dimlayer_bl);
+		return count;
+	}
+
+	op_dimlayer_bl_enable = dimlayer_bl;
+
+	pr_err("op_dimlayer_bl_enable=%d\n", op_dimlayer_bl_enable);
 
 	if (dc_mode_report_enable) {
 		input_event(dc_mode_input_dev, EV_MSC, MSC_RAW, op_dimlayer_bl_enable);
@@ -1247,7 +1265,7 @@ static ssize_t op_display_set_dimlayer_enable(struct device *dev,
 static ssize_t op_display_get_dither_enable(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%d\n", op_dither_enable);
+	return scnprintf(buf, PAGE_SIZE, "%d\n", op_dither_enable);
 }
 
 static ssize_t op_display_set_dither_enable(struct device *dev,
@@ -1262,7 +1280,7 @@ static ssize_t op_display_set_dither_enable(struct device *dev,
 static ssize_t op_display_get_dp_enable(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%d\n", op_dp_enable);
+	return scnprintf(buf, PAGE_SIZE, "%d\n", op_dp_enable);
 }
 
 static ssize_t op_display_set_dp_enable(struct device *dev,
