@@ -28,6 +28,7 @@
 #include "sm8150-oem-camera-t0.dtsi"
 #include "guacamole.dtsi"
 #include "guacamoles_sdx50m.dtsi"
+#include "guacamole_t0.dtsi"
 #include "guacamole_pvt.dtsi"
 
 #include "guacamoles_sdx50m_pvt.dtsi"

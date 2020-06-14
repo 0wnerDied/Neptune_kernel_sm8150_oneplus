@@ -26,19 +26,14 @@
 #include "guacamole.dtsi"
 #include "guacamole_sm8150.dtsi"
 #include "guacamole_t0.dtsi"
-#include "guacamole_evt1.dtsi"
-#include "guacamole_evt2.dtsi"
-#include "guacamole_evt3.dtsi"
-#include "guacamole_dvt.dtsi"
-#include "guacamole_pvt.dtsi"
 
 / {
-	model = "MTP 18821 18831 21 22";
+	model = "MTP 18821 18831 T0 11";
 	compatible = "qcom,sm8150-mtp", "qcom,sm8150", "qcom,mtp";
-	qcom,board-id = <8 0 >;
+	qcom,board-id = <8 0>;
 	/*we can add project id to this array,uefi can auto read it,if new project,we add to this array */
 	oem,project-id = <18821 18831>;
 	/*we can add hw id to this array,uefi can auto read it,if new hw,we add to this array  */
-	oem,hw-id = <21 22>;
+	oem,hw-id = <11>;
 };
 

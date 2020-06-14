@@ -28,7 +28,12 @@
 #include "sm8150-oem-camera-t0.dtsi"
 #include "guacamole.dtsi"
 #include "guacamole_sdx50m.dtsi"
+#include "guacamole_t0.dtsi"
+#include "guacamole_evt1.dtsi"
+#include "guacamole_evt2.dtsi"
+#include "guacamole_dvt.dtsi"
 #include "guacamole_pvt.dtsi"
+
 
 / {
 	model = "SDX50M MTP 18827 21 22";
