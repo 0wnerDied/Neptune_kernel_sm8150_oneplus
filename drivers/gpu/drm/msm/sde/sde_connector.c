@@ -655,7 +655,6 @@ static int _sde_connector_update_hbm(struct sde_connector *c_conn)
 		dsi_display->panel->is_hbm_enabled = fingerprint_mode;
 		if (fingerprint_mode) {
 			SDE_ATRACE_BEGIN("set_hbm_on");
-			HBM_flag=true;
 			mutex_lock(&dsi_display->panel->panel_lock);
 			if (dsi_display->panel->aod_status==1 && !finger_type) {
 				pr_err("Send DSI_CMD_AOD_OFF_HBM_ON_SETTING cmds\n");
@@ -671,6 +670,7 @@ static int _sde_connector_update_hbm(struct sde_connector *c_conn)
 				rc = dsi_panel_tx_cmd_set_op(dsi_display->panel, DSI_CMD_SET_HBM_ON_5);
 				pr_err("Send DSI_CMD_SET_HBM_ON_5 cmds\n");
 			}
+			HBM_flag=true;
 			SDE_ATRACE_END("set_hbm_on");
 			mutex_unlock(&dsi_display->panel->panel_lock);
 			if (rc) {
@@ -680,7 +680,6 @@ static int _sde_connector_update_hbm(struct sde_connector *c_conn)
 		}
 		else {
 			SDE_ATRACE_BEGIN("set_hbm_off");
-			HBM_flag = false;
 			//_sde_connector_update_bl_scale(c_conn);
 			mutex_lock(&dsi_display->panel->panel_lock);
 			if (dsi_display->panel->aod_status == 1 && !finger_type) {
@@ -705,11 +704,11 @@ static int _sde_connector_update_hbm(struct sde_connector *c_conn)
 				}
 			}
 			else {
-				HBM_flag = false;
 				//sde_encoder_poll_line_counts(drm_enc);
 				rc = dsi_panel_tx_cmd_set_op(dsi_display->panel, DSI_CMD_SET_HBM_OFF);
 				pr_err("Send DSI_CMD_SET_HBM_OFF cmds\n");
 			}
+			HBM_flag = false;
 			SDE_ATRACE_END("set_hbm_off");
 			mutex_unlock(&dsi_display->panel->panel_lock);
 			_sde_connector_update_bl_scale(c_conn);	
