@@ -2352,7 +2352,6 @@ CONFIG_HWMON=y
 # CONFIG_SENSORS_ATXP1 is not set
 # CONFIG_SENSORS_DS620 is not set
 # CONFIG_SENSORS_DS1621 is not set
-# CONFIG_SENSORS_I5K_AMB is not set
 # CONFIG_SENSORS_F71805F is not set
 # CONFIG_SENSORS_F71882FG is not set
 # CONFIG_SENSORS_F75375S is not set
@@ -2419,7 +2418,6 @@ CONFIG_HWMON=y
 # CONFIG_SENSORS_SHT21 is not set
 # CONFIG_SENSORS_SHT3x is not set
 # CONFIG_SENSORS_SHTC1 is not set
-# CONFIG_SENSORS_SIS5595 is not set
 # CONFIG_SENSORS_DME1737 is not set
 # CONFIG_SENSORS_EMC1403 is not set
 # CONFIG_SENSORS_EMC2103 is not set
@@ -2445,9 +2443,7 @@ CONFIG_HWMON=y
 # CONFIG_SENSORS_TMP108 is not set
 # CONFIG_SENSORS_TMP401 is not set
 # CONFIG_SENSORS_TMP421 is not set
-# CONFIG_SENSORS_VIA686A is not set
 # CONFIG_SENSORS_VT1211 is not set
-# CONFIG_SENSORS_VT8231 is not set
 # CONFIG_SENSORS_W83781D is not set
 # CONFIG_SENSORS_W83791D is not set
 # CONFIG_SENSORS_W83792D is not set
@@ -2537,9 +2533,6 @@ CONFIG_MFD_CORE=y
 # CONFIG_MFD_HI6421_PMIC is not set
 # CONFIG_HTC_PASIC3 is not set
 # CONFIG_HTC_I2CPLD is not set
-# CONFIG_LPC_ICH is not set
-# CONFIG_LPC_SCH is not set
-# CONFIG_MFD_JANZ_CMODIO is not set
 # CONFIG_MFD_KEMPLD is not set
 # CONFIG_MFD_88PM800 is not set
 # CONFIG_MFD_88PM805 is not set
@@ -2563,8 +2556,6 @@ CONFIG_MFD_CORE=y
 CONFIG_MFD_I2C_PMIC=y
 # CONFIG_MFD_QCOM_RPM is not set
 CONFIG_MFD_SPMI_PMIC=y
-# CONFIG_MFD_RDC321X is not set
-# CONFIG_MFD_RTSX_PCI is not set
 # CONFIG_MFD_RT5033 is not set
 # CONFIG_MFD_RTSX_USB is not set
 # CONFIG_MFD_RC5T583 is not set
@@ -2603,7 +2594,6 @@ CONFIG_MFD_SYSCON=y
 # CONFIG_MFD_LM3533 is not set
 # CONFIG_MFD_TC3589X is not set
 # CONFIG_MFD_TMIO is not set
-# CONFIG_MFD_VX855 is not set
 # CONFIG_MFD_ARIZONA_I2C is not set
 # CONFIG_MFD_ARIZONA_SPI is not set
 # CONFIG_MFD_WM8400 is not set
@@ -2688,9 +2678,7 @@ CONFIG_VIDEOBUF2_CORE=y
 # Media drivers
 #
 # CONFIG_MEDIA_USB_SUPPORT is not set
-# CONFIG_MEDIA_PCI_SUPPORT is not set
 CONFIG_V4L_PLATFORM_DRIVERS=y
-# CONFIG_VIDEO_CAFE_CCIC is not set
 # CONFIG_VIDEO_MUX is not set
 # CONFIG_VIDEO_QCOM_CAMSS is not set
 # CONFIG_SOC_CAMERA is not set
@@ -2799,7 +2787,6 @@ CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
 #
 # Graphics support
 #
-# CONFIG_VGA_ARB is not set
 CONFIG_DRM=y
 CONFIG_DRM_MIPI_DSI=y
 # CONFIG_DRM_DP_AUX_CHARDEV is not set
@@ -2816,21 +2803,13 @@ CONFIG_DRM_KMS_HELPER=y
 # CONFIG_DRM_I2C_NXP_TDA998X is not set
 # CONFIG_DRM_HDLCD is not set
 # CONFIG_DRM_MALI_DISPLAY is not set
-# CONFIG_DRM_RADEON is not set
-# CONFIG_DRM_AMDGPU is not set
 
 #
 # ACP (Audio CoProcessor) Configuration
 #
-# CONFIG_DRM_NOUVEAU is not set
 # CONFIG_DRM_VGEM is not set
 # CONFIG_DRM_UDL is not set
-# CONFIG_DRM_AST is not set
-# CONFIG_DRM_MGAG200 is not set
-# CONFIG_DRM_CIRRUS_QEMU is not set
 # CONFIG_DRM_RCAR_DW_HDMI is not set
-# CONFIG_DRM_QXL is not set
-# CONFIG_DRM_BOCHS is not set
 CONFIG_DRM_MSM=y
 # CONFIG_DRM_MSM_REGISTER_LOGGING is not set
 # CONFIG_DRM_MSM_HDMI_HDCP is not set
@@ -2884,7 +2863,6 @@ CONFIG_DRM_PANEL_BRIDGE=y
 # CONFIG_DRM_LT_LT9611 is not set
 # CONFIG_DRM_I2C_ADV7511 is not set
 # CONFIG_DRM_ARCPGU is not set
-# CONFIG_DRM_HISI_HIBMC is not set
 # CONFIG_DRM_HISI_KIRIN is not set
 # CONFIG_DRM_MXSFB is not set
 # CONFIG_DRM_TINYDRM is not set
@@ -2920,46 +2898,20 @@ CONFIG_FB_NOTIFY=y
 #
 # Frame buffer hardware drivers
 #
-# CONFIG_FB_CIRRUS is not set
-# CONFIG_FB_PM2 is not set
 # CONFIG_FB_ARMCLCD is not set
-# CONFIG_FB_CYBER2000 is not set
-# CONFIG_FB_ASILIANT is not set
-# CONFIG_FB_IMSTT is not set
 # CONFIG_FB_OPENCORES is not set
 # CONFIG_FB_S1D13XXX is not set
-# CONFIG_FB_NVIDIA is not set
-# CONFIG_FB_RIVA is not set
-# CONFIG_FB_I740 is not set
-# CONFIG_FB_MATROX is not set
-# CONFIG_FB_RADEON is not set
-# CONFIG_FB_ATY128 is not set
-# CONFIG_FB_ATY is not set
-# CONFIG_FB_S3 is not set
-# CONFIG_FB_SAVAGE is not set
-# CONFIG_FB_SIS is not set
-# CONFIG_FB_NEOMAGIC is not set
-# CONFIG_FB_KYRO is not set
-# CONFIG_FB_3DFX is not set
-# CONFIG_FB_VOODOO1 is not set
-# CONFIG_FB_VT8623 is not set
-# CONFIG_FB_TRIDENT is not set
-# CONFIG_FB_ARK is not set
-# CONFIG_FB_PM3 is not set
-# CONFIG_FB_CARMINE is not set
 # CONFIG_FB_SMSCUFX is not set
 # CONFIG_FB_UDL is not set
 # CONFIG_FB_IBM_GXT4500 is not set
 # CONFIG_FB_VIRTUAL is not set
 # CONFIG_FB_METRONOME is not set
-# CONFIG_FB_MB862XX is not set
 # CONFIG_FB_MSM is not set
 # CONFIG_FB_BROADSHEET is not set
 # CONFIG_FB_AUO_K190X is not set
 # CONFIG_FB_SIMPLE is not set
 # CONFIG_MSM_DBA is not set
 # CONFIG_FB_SSD1307 is not set
-# CONFIG_FB_SM712 is not set
 CONFIG_BACKLIGHT_LCD_SUPPORT=y
 # CONFIG_LCD_CLASS_DEVICE is not set
 CONFIG_BACKLIGHT_CLASS_DEVICE=y
@@ -3005,7 +2957,6 @@ CONFIG_SND_PROC_FS=y
 # CONFIG_SND_OPL3_LIB_SEQ is not set
 # CONFIG_SND_OPL4_LIB_SEQ is not set
 # CONFIG_SND_DRIVERS is not set
-# CONFIG_SND_PCI is not set
 
 #
 # HD-Audio
@@ -3291,7 +3242,6 @@ CONFIG_USB_XHCI_PLATFORM=y
 # CONFIG_USB_FOTG210_HCD is not set
 # CONFIG_USB_MAX3421_HCD is not set
 # CONFIG_USB_OHCI_HCD is not set
-# CONFIG_USB_UHCI_HCD is not set
 # CONFIG_USB_SL811_HCD is not set
 # CONFIG_USB_R8A66597_HCD is not set
 # CONFIG_USB_HCD_TEST_MODE is not set
@@ -3424,11 +3374,7 @@ CONFIG_USB_GADGET_STORAGE_NUM_BUFFERS=2
 # CONFIG_USB_SNP_UDC_PLAT is not set
 # CONFIG_USB_M66592 is not set
 # CONFIG_USB_BDC_UDC is not set
-# CONFIG_USB_AMD5536UDC is not set
 # CONFIG_USB_NET2272 is not set
-# CONFIG_USB_NET2280 is not set
-# CONFIG_USB_GOKU is not set
-# CONFIG_USB_EG20T is not set
 # CONFIG_USB_GADGET_XILINX is not set
 # CONFIG_USB_DUMMY_HCD is not set
 # CONFIG_USB_CI13XXX_MSM is not set
@@ -3564,7 +3510,6 @@ CONFIG_LEDS_TRIGGER_TIMER=y
 # CONFIG_LEDS_TRIGGER_CAMERA is not set
 # CONFIG_LEDS_TRIGGER_PANIC is not set
 # CONFIG_ACCESSIBILITY is not set
-# CONFIG_INFINIBAND is not set
 # CONFIG_EDAC_SUPPORT is not set
 # CONFIG_EDAC is not set
 # CONFIG_EDAC_LEGACY_SYSFS is not set
@@ -3710,7 +3655,6 @@ CONFIG_QCOM_GPI_DMA=y
 # CONFIG_QCOM_GPI_DMA_DEBUG is not set
 # CONFIG_QCOM_PCI_EDMA is not set
 # CONFIG_DW_DMAC is not set
-# CONFIG_DW_DMAC_PCI is not set
 
 #
 # DMA Clients
@@ -3724,15 +3668,9 @@ CONFIG_QCOM_GPI_DMA=y
 CONFIG_SYNC_FILE=y
 # CONFIG_AUXDISPLAY is not set
 CONFIG_UIO=y
-# CONFIG_UIO_CIF is not set
 # CONFIG_UIO_PDRV_GENIRQ is not set
 # CONFIG_UIO_DMEM_GENIRQ is not set
-# CONFIG_UIO_AEC is not set
-# CONFIG_UIO_SERCOS3 is not set
-# CONFIG_UIO_PCI_GENERIC is not set
-# CONFIG_UIO_NETX is not set
 # CONFIG_UIO_PRUSS is not set
-# CONFIG_UIO_MF624 is not set
 CONFIG_UIO_MSM_SHAREDMEM=y
 # CONFIG_VFIO is not set
 # CONFIG_VIRT_DRIVERS is not set
@@ -3740,7 +3678,6 @@ CONFIG_UIO_MSM_SHAREDMEM=y
 #
 # Virtio drivers
 #
-# CONFIG_VIRTIO_PCI is not set
 # CONFIG_VIRTIO_MMIO is not set
 
 #
@@ -3753,7 +3690,6 @@ CONFIG_STAGING=y
 # CONFIG_PRISM2_USB is not set
 # CONFIG_COMEDI is not set
 # CONFIG_R8712U is not set
-# CONFIG_RTS5208 is not set
 
 #
 # IIO staging drivers
@@ -3828,8 +3764,6 @@ CONFIG_STAGING=y
 #
 # Triggers - standalone
 #
-# CONFIG_FB_SM750 is not set
-# CONFIG_FB_XGI is not set
 
 #
 # Speakup console speech
@@ -3840,7 +3774,6 @@ CONFIG_STAGING=y
 # Android
 #
 CONFIG_ASHMEM=y
-# CONFIG_ANDROID_VSOC is not set
 # CONFIG_ANDROID_LOW_MEMORY_KILLER is not set
 CONFIG_ION=y
 # CONFIG_ION_SYSTEM_HEAP is not set
@@ -3854,7 +3787,6 @@ CONFIG_ION_POOL_FILL_MARK=100
 # CONFIG_FIQ_DEBUGGER is not set
 # CONFIG_FIQ_WATCHDOG is not set
 # CONFIG_STAGING_BOARD is not set
-# CONFIG_DGNC is not set
 # CONFIG_GS_FPGABOOT is not set
 # CONFIG_COMMON_CLK_XLNX_CLKWZRD is not set
 # CONFIG_FB_TFT is not set
@@ -3907,7 +3839,6 @@ CONFIG_RNDIS_IPA=y
 # CONFIG_IPA3_MHI_PROXY is not set
 # CONFIG_IPA3_MHI_PRIME_MANAGER is not set
 # CONFIG_IPA_UT is not set
-# CONFIG_MSM_11AD is not set
 # CONFIG_SEEMP_CORE is not set
 # CONFIG_IPA3_REGDUMP is not set
 CONFIG_CLKDEV_LOOKUP=y
@@ -4557,8 +4488,6 @@ CONFIG_QCOM_SPMI_ADC5=y
 # CONFIG_TMP007 is not set
 # CONFIG_TSYS01 is not set
 # CONFIG_TSYS02D is not set
-# CONFIG_NTB is not set
-# CONFIG_VME_BUS is not set
 CONFIG_PWM=y
 CONFIG_PWM_SYSFS=y
 # CONFIG_PWM_FSL_FTM is not set
@@ -4689,7 +4618,6 @@ CONFIG_ARM_PSCI_FW=y
 # CONFIG_ARM_PSCI_CHECKER is not set
 # CONFIG_ARM_SCPI_PROTOCOL is not set
 # CONFIG_FIRMWARE_MEMMAP is not set
-# CONFIG_FW_CFG_SYSFS is not set
 CONFIG_QCOM_SCM_64=y
 CONFIG_HAVE_ARM_SMCCC=y
 # CONFIG_GOOGLE_FIRMWARE is not set
@@ -4699,7 +4627,6 @@ CONFIG_HAVE_ARM_SMCCC=y
 # Tegra firmware driver
 #
 # CONFIG_MSM_TZ_LOG is not set
-# CONFIG_ACPI is not set
 
 #
 # File systems
@@ -5200,8 +5127,6 @@ CONFIG_CRYPTO_JITTERENTROPY=y
 CONFIG_CRYPTO_HW=y
 # CONFIG_CRYPTO_DEV_FSL_CAAM_CRYPTO_API_DESC is not set
 # CONFIG_CRYPTO_DEV_CCP is not set
-# CONFIG_CRYPTO_DEV_NITROX_CNN55XX is not set
-# CONFIG_CRYPTO_DEV_CAVIUM_ZIP is not set
 # CONFIG_CRYPTO_DEV_QCE is not set
 CONFIG_CRYPTO_DEV_QCOM_MSM_QCE=y
 CONFIG_CRYPTO_DEV_QCRYPTO=y
