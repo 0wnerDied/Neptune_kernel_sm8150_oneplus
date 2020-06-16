@@ -1420,13 +1420,4 @@ int perf_event_restart_events(unsigned int cpu);
 #define perf_event_exit_cpu	NULL
 #define perf_event_restart_events NULL
 #endif
-
-// tedlin@ASTI 2019/06/12 add for perf event (CONFIG_HOUSTON)
-#ifdef CONFIG_HOUSTON
-extern bool ht_perf_event_open(pid_t pid, int id);
-extern u64 ht_perf_read(struct task_struct *task, int id);
-#else
-static inline bool ht_perf_event_open(pid_t pid, int id) { return false; };
-static inline u64 ht_perf_read(struct task_struct *task, int id) { return 0; };
-#endif
 #endif /* _LINUX_PERF_EVENT_H */

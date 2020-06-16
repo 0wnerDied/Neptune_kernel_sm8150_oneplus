@@ -1245,19 +1245,6 @@ bool get_extern_bq_present(void)
 	return 0;
 }
 
-#ifdef CONFIG_HOUSTON
-void bq27541_force_update_current(bool enable)
-{
-	if (likely(bq27541_registered)) {
-		if (atomic_read(&bq27541_di->suspended) != 1) {
-			cancel_delayed_work_sync(&bq27541_di->battery_soc_work);
-			schedule_delayed_work(&bq27541_di->battery_soc_work,
-					msecs_to_jiffies(1));
-		}
-	}
-}
-#endif
-
 #ifdef CONFIG_GAUGE_BQ27411
 /* david.liu@bsp, 20161004 Add BQ27411 support */
 static void gauge_set_cmd_addr(int device_type)

@@ -1,8 +1,0 @@
-config HOUSTON
-	default n
-	bool "to collect system-wide and pmu data"
-	help
-	 Realtime temperature monitor
-config CONTROL_CENTER
-	default n
-	bool "control center"
