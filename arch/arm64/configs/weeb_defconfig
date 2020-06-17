@@ -4594,8 +4594,6 @@ CONFIG_AW8697_HAPTIC=y
 #
 # LED Triggers
 #
-# CONFIG_HOUSTON is not set
-# CONFIG_CONTROL_CENTER is not set
 
 #
 # Firmware Drivers
