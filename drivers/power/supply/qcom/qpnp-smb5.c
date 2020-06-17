@@ -275,7 +275,7 @@ do {									\
 #ifdef	CONFIG_OP_DEBUG_CHG
 	static int __debug_mask = PR_OP_DEBUG;
 #else
-static int __debug_mask;
+static int __debug_mask = 0;
 #endif
 module_param_named(
 	debug_mask, __debug_mask, int, 0600
