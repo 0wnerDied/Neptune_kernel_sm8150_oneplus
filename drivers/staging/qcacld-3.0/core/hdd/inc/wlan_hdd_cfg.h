@@ -175,7 +175,7 @@ struct hdd_context;
 #define CFG_RTS_THRESHOLD_NAME                 "RTSThreshold"
 #define CFG_RTS_THRESHOLD_MIN                  WNI_CFG_RTS_THRESHOLD_STAMIN     /* min is 0, meaning always use RTS. */
 #define CFG_RTS_THRESHOLD_MAX                  WNI_CFG_RTS_THRESHOLD_STAMAX     /* max is the max frame size */
-#define CFG_RTS_THRESHOLD_DEFAULT              1048576
+#define CFG_RTS_THRESHOLD_DEFAULT              WNI_CFG_RTS_THRESHOLD_STADEF
 
 /*
  * <ini>
@@ -198,7 +198,7 @@ struct hdd_context;
 #define CFG_FRAG_THRESHOLD_NAME                "gFragmentationThreshold"
 #define CFG_FRAG_THRESHOLD_MIN                 WNI_CFG_FRAGMENTATION_THRESHOLD_STAMIN
 #define CFG_FRAG_THRESHOLD_MAX                 WNI_CFG_FRAGMENTATION_THRESHOLD_STAMAX
-#define CFG_FRAG_THRESHOLD_DEFAULT             2346
+#define CFG_FRAG_THRESHOLD_DEFAULT             WNI_CFG_FRAGMENTATION_THRESHOLD_STADEF
 
 #define CFG_OPERATING_CHANNEL_NAME             "gOperatingChannel"
 #define CFG_OPERATING_CHANNEL_MIN              (0)
@@ -231,7 +231,7 @@ struct hdd_context;
 #define CFG_11D_SUPPORT_ENABLED_NAME           "g11dSupportEnabled"
 #define CFG_11D_SUPPORT_ENABLED_MIN            WNI_CFG_11D_ENABLED_STAMIN
 #define CFG_11D_SUPPORT_ENABLED_MAX            WNI_CFG_11D_ENABLED_STAMAX
-#define CFG_11D_SUPPORT_ENABLED_DEFAULT        0       /* Default is ON */
+#define CFG_11D_SUPPORT_ENABLED_DEFAULT        WNI_CFG_11D_ENABLED_STADEF       /* Default is ON */
 
 /*
  * <ini>
@@ -261,7 +261,7 @@ struct hdd_context;
 #define CFG_COUNTRY_CODE_PRIORITY_NAME         "gCountryCodePriority"
 #define CFG_COUNTRY_CODE_PRIORITY_MIN          (0)
 #define CFG_COUNTRY_CODE_PRIORITY_MAX          (1)
-#define CFG_COUNTRY_CODE_PRIORITY_DEFAULT      (1)
+#define CFG_COUNTRY_CODE_PRIORITY_DEFAULT      (0)
 
 #define CFG_HEARTBEAT_THRESH_24_NAME           "gHeartbeat24"
 #define CFG_HEARTBEAT_THRESH_24_MIN            WNI_CFG_HEART_BEAT_THRESHOLD_STAMIN
@@ -304,10 +304,10 @@ struct hdd_context;
 #define CFG_HT_MPDU_DENSITY_NAME               "ght_mpdu_density"
 #define CFG_HT_MPDU_DENSITY_MIN                WNI_CFG_MPDU_DENSITY_STAMIN
 #define CFG_HT_MPDU_DENSITY_MAX                WNI_CFG_MPDU_DENSITY_STAMAX
-#define CFG_HT_MPDU_DENSITY_DEFAULT            4
+#define CFG_HT_MPDU_DENSITY_DEFAULT            WNI_CFG_MPDU_DENSITY_STADEF
 
 #define CFG_REG_CHANGE_DEF_COUNTRY_NAME          "gRegulatoryChangeCountry"
-#define CFG_REG_CHANGE_DEF_COUNTRY_DEFAULT       (1)
+#define CFG_REG_CHANGE_DEF_COUNTRY_DEFAULT       (0)
 #define CFG_REG_CHANGE_DEF_COUNTRY_MIN           (0)
 #define CFG_REG_CHANGE_DEF_COUNTRY_MAX           (1)
 
@@ -400,7 +400,7 @@ enum hdd_dot11_mode {
 #define CFG_CHANNEL_BONDING_MODE_5GHZ_NAME     "gChannelBondingMode5GHz"
 #define CFG_CHANNEL_BONDING_MODE_MIN           WNI_CFG_CHANNEL_BONDING_MODE_STAMIN
 #define CFG_CHANNEL_BONDING_MODE_MAX           WNI_CFG_CHANNEL_BONDING_MODE_STAMAX
-#define CFG_CHANNEL_BONDING_MODE_DEFAULT       1
+#define CFG_CHANNEL_BONDING_MODE_DEFAULT       WNI_CFG_CHANNEL_BONDING_MODE_STADEF
 
 /*
  * <ini>
@@ -423,7 +423,7 @@ enum hdd_dot11_mode {
 #define CFG_SHORT_GI_20MHZ_NAME                "gShortGI20Mhz"
 #define CFG_SHORT_GI_20MHZ_MIN                 WNI_CFG_SHORT_GI_20MHZ_STAMIN
 #define CFG_SHORT_GI_20MHZ_MAX                 WNI_CFG_SHORT_GI_20MHZ_STAMAX
-#define CFG_SHORT_GI_20MHZ_DEFAULT             1
+#define CFG_SHORT_GI_20MHZ_DEFAULT             WNI_CFG_SHORT_GI_20MHZ_STADEF
 
 /*
  * <ini>
@@ -469,7 +469,7 @@ enum hdd_dot11_mode {
 #define CFG_NEIGHBOR_SCAN_TIMER_PERIOD_NAME             "gNeighborScanTimerPeriod"
 #define CFG_NEIGHBOR_SCAN_TIMER_PERIOD_MIN              (3)
 #define CFG_NEIGHBOR_SCAN_TIMER_PERIOD_MAX              (300)
-#define CFG_NEIGHBOR_SCAN_TIMER_PERIOD_DEFAULT          (200)
+#define CFG_NEIGHBOR_SCAN_TIMER_PERIOD_DEFAULT          (100)
 
 /*
  * <ini>
@@ -588,7 +588,7 @@ enum hdd_dot11_mode {
 #define CFG_NEIGHBOR_SCAN_MAX_CHAN_TIME_NAME                  "gNeighborScanChannelMaxTime"
 #define CFG_NEIGHBOR_SCAN_MAX_CHAN_TIME_MIN                   (3)
 #define CFG_NEIGHBOR_SCAN_MAX_CHAN_TIME_MAX                   (300)
-#define CFG_NEIGHBOR_SCAN_MAX_CHAN_TIME_DEFAULT               (30)
+#define CFG_NEIGHBOR_SCAN_MAX_CHAN_TIME_DEFAULT               (40)
 
 /*
  * <ini>
@@ -1494,7 +1494,7 @@ enum hdd_dot11_mode {
 #define CFG_ADAPTIVE_SCAN_DWELL_MODE_NAME        "hostscan_adaptive_dwell_mode"
 #define CFG_ADAPTIVE_SCAN_DWELL_MODE_MIN         (0)
 #define CFG_ADAPTIVE_SCAN_DWELL_MODE_MAX         (4)
-#define CFG_ADAPTIVE_SCAN_DWELL_MODE_DEFAULT     (1)
+#define CFG_ADAPTIVE_SCAN_DWELL_MODE_DEFAULT     (2)
 
 /*
  * <ini>
@@ -1725,7 +1725,7 @@ enum hdd_dot11_mode {
 #define CFG_LFR_FEATURE_ENABLED_NAME                        "FastRoamEnabled"
 #define CFG_LFR_FEATURE_ENABLED_MIN                         (0)
 #define CFG_LFR_FEATURE_ENABLED_MAX                         (1)
-#define CFG_LFR_FEATURE_ENABLED_DEFAULT                     (1)
+#define CFG_LFR_FEATURE_ENABLED_DEFAULT                     (0)
 
 /*
  * <ini>
@@ -2557,7 +2557,7 @@ enum hdd_dot11_mode {
 #define CFG_INTERFACE_CHANGE_WAIT_NAME    "gInterfaceChangeWait"
 #define CFG_INTERFACE_CHANGE_WAIT_MIN     (10)
 #define CFG_INTERFACE_CHANGE_WAIT_MAX     (500000)
-#define CFG_INTERFACE_CHANGE_WAIT_DEFAULT (2000)
+#define CFG_INTERFACE_CHANGE_WAIT_DEFAULT (10000)
 
 /*
  * <ini>
@@ -2833,7 +2833,7 @@ enum hdd_dot11_mode {
 #define CFG_IBSS_TXSP_END_INACTIVITY_NAME          "gIbssTxSpEndInactivityTime"
 #define CFG_IBSS_TXSP_END_INACTIVITY_MIN           (0)
 #define CFG_IBSS_TXSP_END_INACTIVITY_MAX           (100)
-#define CFG_IBSS_TXSP_END_INACTIVITY_DEFAULT       (10)
+#define CFG_IBSS_TXSP_END_INACTIVITY_DEFAULT       (0)
 
 /*
  * <ini>
@@ -3251,7 +3251,7 @@ enum hdd_dot11_mode {
 #define CFG_AP_OBSS_PROTECTION_MODE_NAME       "gEnableApOBSSProt"
 #define CFG_AP_OBSS_PROTECTION_MODE_MIN        (0)
 #define CFG_AP_OBSS_PROTECTION_MODE_MAX        (1)
-#define CFG_AP_OBSS_PROTECTION_MODE_DEFAULT    (1)
+#define CFG_AP_OBSS_PROTECTION_MODE_DEFAULT    (0)
 
 /*
  * <ini>
@@ -3296,7 +3296,7 @@ enum hdd_dot11_mode {
 #define CFG_AP_KEEP_ALIVE_PERIOD_NAME          "gApKeepAlivePeriod"
 #define CFG_AP_KEEP_ALIVE_PERIOD_MIN           WNI_CFG_AP_KEEP_ALIVE_TIMEOUT_STAMIN
 #define CFG_AP_KEEP_ALIVE_PERIOD_MAX           WNI_CFG_AP_KEEP_ALIVE_TIMEOUT_STAMAX
-#define CFG_AP_KEEP_ALIVE_PERIOD_DEFAULT       20
+#define CFG_AP_KEEP_ALIVE_PERIOD_DEFAULT       WNI_CFG_AP_KEEP_ALIVE_TIMEOUT_STADEF
 
 /*
  * <ini>
@@ -3378,13 +3378,13 @@ enum hdd_dot11_mode {
 #define CFG_WLAN_MCC_TO_SCC_SWITCH_MODE_MIN      (QDF_MCC_TO_SCC_SWITCH_DISABLE)
 #define CFG_WLAN_MCC_TO_SCC_SWITCH_MODE_MAX \
 		   (QDF_MCC_TO_SCC_SWITCH_MAX - 1)
-#define CFG_WLAN_MCC_TO_SCC_SWITCH_MODE_DEFAULT  (3)
+#define CFG_WLAN_MCC_TO_SCC_SWITCH_MODE_DEFAULT  (QDF_MCC_TO_SCC_SWITCH_DISABLE)
 #endif
 
 #define CFG_DISABLE_PACKET_FILTER		"gDisablePacketFilter"
 #define CFG_DISABLE_PACKET_FILTER_MIN		(0)
 #define CFG_DISABLE_PACKET_FILTER_MAX		(1)
-#define CFG_DISABLE_PACKET_FILTER_DEFAULT	(0)
+#define CFG_DISABLE_PACKET_FILTER_DEFAULT	(1)
 
 #define CFG_ENABLE_LTE_COEX              "gEnableLTECoex"
 #define CFG_ENABLE_LTE_COEX_MIN               (0)
@@ -3394,7 +3394,7 @@ enum hdd_dot11_mode {
 #define CFG_GO_KEEP_ALIVE_PERIOD_NAME          "gGoKeepAlivePeriod"
 #define CFG_GO_KEEP_ALIVE_PERIOD_MIN           WNI_CFG_GO_KEEP_ALIVE_TIMEOUT_STAMIN
 #define CFG_GO_KEEP_ALIVE_PERIOD_MAX           WNI_CFG_GO_KEEP_ALIVE_TIMEOUT_STAMAX
-#define CFG_GO_KEEP_ALIVE_PERIOD_DEFAULT       20
+#define CFG_GO_KEEP_ALIVE_PERIOD_DEFAULT       WNI_CFG_GO_KEEP_ALIVE_TIMEOUT_STADEF
 
 /* gGoLinkMonitorPeriod is period where link is idle and where
  * we send NULL frame
@@ -3588,7 +3588,7 @@ enum hdd_dot11_mode {
 #define CFG_MAX_TX_POWER_MIN                    WNI_CFG_CURRENT_TX_POWER_LEVEL_STAMIN
 #define CFG_MAX_TX_POWER_MAX                    WNI_CFG_CURRENT_TX_POWER_LEVEL_STAMAX
 /* Not to use CFG default because if no registry setting, this is ignored by SME. */
-#define CFG_MAX_TX_POWER_DEFAULT                30
+#define CFG_MAX_TX_POWER_DEFAULT                WNI_CFG_CURRENT_TX_POWER_LEVEL_STAMAX
 
 /* This ini controls driver to honor/dishonor power constraint from AP */
 #define CFG_TX_POWER_CTRL_NAME                 "gAllowTPCfromAP"
@@ -3617,7 +3617,7 @@ enum hdd_dot11_mode {
 #define CFG_MAX_LI_MODULATED_DTIM_NAME         "gMaxLIModulatedDTIM"
 #define CFG_MAX_LI_MODULATED_DTIM_MIN          (1)
 #define CFG_MAX_LI_MODULATED_DTIM_MAX          (10)
-#define CFG_MAX_LI_MODULATED_DTIM_DEFAULT      (6)
+#define CFG_MAX_LI_MODULATED_DTIM_DEFAULT      (10)
 
 /*
  * <ini>
@@ -3877,7 +3877,7 @@ enum station_keepalive_method {
 #define CFG_QOS_WMM_INFRA_UAPSD_VO_SRV_INTV_NAME         "InfraUapsdVoSrvIntv"
 #define CFG_QOS_WMM_INFRA_UAPSD_VO_SRV_INTV_MIN           (0)
 #define CFG_QOS_WMM_INFRA_UAPSD_VO_SRV_INTV_MAX           (4294967295UL)
-#define CFG_QOS_WMM_INFRA_UAPSD_VO_SRV_INTV_DEFAULT       (0)
+#define CFG_QOS_WMM_INFRA_UAPSD_VO_SRV_INTV_DEFAULT       (20)
 
 /*
  * <ini>
@@ -3921,7 +3921,7 @@ enum station_keepalive_method {
 #define CFG_QOS_WMM_INFRA_UAPSD_VI_SRV_INTV_NAME         "InfraUapsdViSrvIntv"
 #define CFG_QOS_WMM_INFRA_UAPSD_VI_SRV_INTV_MIN           (0)
 #define CFG_QOS_WMM_INFRA_UAPSD_VI_SRV_INTV_MAX           (4294967295UL)
-#define CFG_QOS_WMM_INFRA_UAPSD_VI_SRV_INTV_DEFAULT       (0)
+#define CFG_QOS_WMM_INFRA_UAPSD_VI_SRV_INTV_DEFAULT       (300)
 
 /*
  * <ini>
@@ -3965,7 +3965,7 @@ enum station_keepalive_method {
 #define CFG_QOS_WMM_INFRA_UAPSD_BE_SRV_INTV_NAME         "InfraUapsdBeSrvIntv"
 #define CFG_QOS_WMM_INFRA_UAPSD_BE_SRV_INTV_MIN           (0)
 #define CFG_QOS_WMM_INFRA_UAPSD_BE_SRV_INTV_MAX           (4294967295UL)
-#define CFG_QOS_WMM_INFRA_UAPSD_BE_SRV_INTV_DEFAULT       (0)
+#define CFG_QOS_WMM_INFRA_UAPSD_BE_SRV_INTV_DEFAULT       (300)
 
 /*
  * <ini>
@@ -4009,7 +4009,7 @@ enum station_keepalive_method {
 #define CFG_QOS_WMM_INFRA_UAPSD_BK_SRV_INTV_NAME         "InfraUapsdBkSrvIntv"
 #define CFG_QOS_WMM_INFRA_UAPSD_BK_SRV_INTV_MIN           (0)
 #define CFG_QOS_WMM_INFRA_UAPSD_BK_SRV_INTV_MAX           (4294967295UL)
-#define CFG_QOS_WMM_INFRA_UAPSD_BK_SRV_INTV_DEFAULT       (0)
+#define CFG_QOS_WMM_INFRA_UAPSD_BK_SRV_INTV_DEFAULT       (300)
 
 /*
  * <ini>
@@ -4563,7 +4563,7 @@ enum station_keepalive_method {
 #define CFG_QOS_ADDTS_WHEN_ACM_IS_OFF_MIN                (0)
 /* Send AddTs even when ACM is not set for the AC */
 #define CFG_QOS_ADDTS_WHEN_ACM_IS_OFF_MAX                (1)
-#define CFG_QOS_ADDTS_WHEN_ACM_IS_OFF_DEFAULT            (1)
+#define CFG_QOS_ADDTS_WHEN_ACM_IS_OFF_DEFAULT            (0)
 
 #ifdef FEATURE_WLAN_ESE
 #define CFG_QOS_WMM_INFRA_INACTIVITY_INTERVAL_NAME    "InfraInactivityInterval"
@@ -4745,7 +4745,7 @@ enum station_keepalive_method {
 #define CFG_RRM_ENABLE_NAME                              "gRrmEnable"
 #define CFG_RRM_ENABLE_MIN                               (0)
 #define CFG_RRM_ENABLE_MAX                               (1)
-#define CFG_RRM_ENABLE_DEFAULT                           (1)
+#define CFG_RRM_ENABLE_DEFAULT                           (0)
 
 /*
  * <ini>
@@ -4803,7 +4803,7 @@ enum station_keepalive_method {
 #define CFG_NEIGHBOR_LOOKUP_RSSI_THRESHOLD_NAME      "gNeighborLookupThreshold"
 #define CFG_NEIGHBOR_LOOKUP_RSSI_THRESHOLD_MIN       (10)
 #define CFG_NEIGHBOR_LOOKUP_RSSI_THRESHOLD_MAX       (120)
-#define CFG_NEIGHBOR_LOOKUP_RSSI_THRESHOLD_DEFAULT   (76)
+#define CFG_NEIGHBOR_LOOKUP_RSSI_THRESHOLD_DEFAULT   (78)
 
 /*
  * <ini>
@@ -4899,7 +4899,7 @@ enum station_keepalive_method {
 #define CFG_ENABLE_HOST_SSDP_NAME              "ssdp"
 #define CFG_ENABLE_HOST_SSDP_MIN               (0)
 #define CFG_ENABLE_HOST_SSDP_MAX               (1)
-#define CFG_ENABLE_HOST_SSDP_DEFAULT           (0)
+#define CFG_ENABLE_HOST_SSDP_DEFAULT           (1)
 
 #define CFG_ENABLE_HOST_NSOFFLOAD_NAME         "hostNSOffload"
 #define CFG_ENABLE_HOST_NSOFFLOAD_MIN          (0)
@@ -4937,7 +4937,7 @@ enum station_keepalive_method {
 #define CFG_HW_FILTER_MODE_BITMAP_NAME	"gHwFilterMode"
 #define CFG_HW_FILTER_MODE_BITMAP_MIN		(0)
 #define CFG_HW_FILTER_MODE_BITMAP_MAX		(3)
-#define CFG_HW_FILTER_MODE_BITMAP_DEFAULT	(3)
+#define CFG_HW_FILTER_MODE_BITMAP_DEFAULT	(1)
 
 /*
  * <ini>
@@ -5048,7 +5048,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_VHT_ENABLE_RX_MCS_8_9               "gVhtRxMCS"
 #define CFG_VHT_ENABLE_RX_MCS_8_9_MIN           (0)
 #define CFG_VHT_ENABLE_RX_MCS_8_9_MAX           (2)
-#define CFG_VHT_ENABLE_RX_MCS_8_9_DEFAULT       (2)
+#define CFG_VHT_ENABLE_RX_MCS_8_9_DEFAULT       (0)
 
 /*
  * <ini>
@@ -5074,7 +5074,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_VHT_ENABLE_TX_MCS_8_9               "gVhtTxMCS"
 #define CFG_VHT_ENABLE_TX_MCS_8_9_MIN           (0)
 #define CFG_VHT_ENABLE_TX_MCS_8_9_MAX           (2)
-#define CFG_VHT_ENABLE_TX_MCS_8_9_DEFAULT       (2)
+#define CFG_VHT_ENABLE_TX_MCS_8_9_DEFAULT       (0)
 
 /*
  * <ini>
@@ -5100,7 +5100,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_VHT_ENABLE_RX_MCS2x2_8_9               "gVhtRxMCS2x2"
 #define CFG_VHT_ENABLE_RX_MCS2x2_8_9_MIN           (0)
 #define CFG_VHT_ENABLE_RX_MCS2x2_8_9_MAX           (2)
-#define CFG_VHT_ENABLE_RX_MCS2x2_8_9_DEFAULT       (2)
+#define CFG_VHT_ENABLE_RX_MCS2x2_8_9_DEFAULT       (0)
 
 /*
  * <ini>
@@ -5126,7 +5126,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_VHT_ENABLE_TX_MCS2x2_8_9               "gVhtTxMCS2x2"
 #define CFG_VHT_ENABLE_TX_MCS2x2_8_9_MIN           (0)
 #define CFG_VHT_ENABLE_TX_MCS2x2_8_9_MAX           (2)
-#define CFG_VHT_ENABLE_TX_MCS2x2_8_9_DEFAULT       (2)
+#define CFG_VHT_ENABLE_TX_MCS2x2_8_9_DEFAULT       (0)
 
 /*
  * <ini>
@@ -5173,7 +5173,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_VHT_ENABLE_2x2_CAP_FEATURE         "gEnable2x2"
 #define CFG_VHT_ENABLE_2x2_CAP_FEATURE_MIN     (0)
 #define CFG_VHT_ENABLE_2x2_CAP_FEATURE_MAX     (1)
-#define CFG_VHT_ENABLE_2x2_CAP_FEATURE_DEFAULT (1)
+#define CFG_VHT_ENABLE_2x2_CAP_FEATURE_DEFAULT (0)
 
 /*
  * <ini>
@@ -5283,7 +5283,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_VHT_ENABLE_MU_BFORMEE_CAP_FEATURE         "gEnableMuBformee"
 #define CFG_VHT_ENABLE_MU_BFORMEE_CAP_FEATURE_MIN     (0)
 #define CFG_VHT_ENABLE_MU_BFORMEE_CAP_FEATURE_MAX     (1)
-#define CFG_VHT_ENABLE_MU_BFORMEE_CAP_FEATURE_DEFAULT (1)
+#define CFG_VHT_ENABLE_MU_BFORMEE_CAP_FEATURE_DEFAULT (0)
 
 #define CFG_VHT_ENABLE_PAID_FEATURE             "gEnablePAID"
 #define CFG_VHT_ENABLE_PAID_FEATURE_MIN         (0)
@@ -5322,7 +5322,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_VHT_ENABLE_1x1_TX_CHAINMASK         "gSetTxChainmask1x1"
 #define CFG_VHT_ENABLE_1x1_TX_CHAINMASK_MIN     (0)
 #define CFG_VHT_ENABLE_1x1_TX_CHAINMASK_MAX     (3)
-#define CFG_VHT_ENABLE_1x1_TX_CHAINMASK_DEFAULT (1)
+#define CFG_VHT_ENABLE_1x1_TX_CHAINMASK_DEFAULT (0)
 
 /*
  * <ini>
@@ -5351,7 +5351,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_VHT_ENABLE_1x1_RX_CHAINMASK         "gSetRxChainmask1x1"
 #define CFG_VHT_ENABLE_1x1_RX_CHAINMASK_MIN     (0)
 #define CFG_VHT_ENABLE_1x1_RX_CHAINMASK_MAX     (3)
-#define CFG_VHT_ENABLE_1x1_RX_CHAINMASK_DEFAULT (1)
+#define CFG_VHT_ENABLE_1x1_RX_CHAINMASK_DEFAULT (0)
 
 /*
  * <ini>
@@ -5429,7 +5429,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_ENABLE_DFS_MASTER_CAPABILITY               "gEnableDFSMasterCap"
 #define CFG_ENABLE_DFS_MASTER_CAPABILITY_MIN           (0)
 #define CFG_ENABLE_DFS_MASTER_CAPABILITY_MAX           (1)
-#define CFG_ENABLE_DFS_MASTER_CAPABILITY_DEFAULT       (1)
+#define CFG_ENABLE_DFS_MASTER_CAPABILITY_DEFAULT       (0)
 
 /*
  * <ini>
@@ -5503,7 +5503,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_REPORT_MAX_LINK_SPEED                  "gReportMaxLinkSpeed"
 #define CFG_REPORT_MAX_LINK_SPEED_MIN              (eHDD_LINK_SPEED_REPORT_ACTUAL)
 #define CFG_REPORT_MAX_LINK_SPEED_MAX              (eHDD_LINK_SPEED_REPORT_MAX_SCALED)
-#define CFG_REPORT_MAX_LINK_SPEED_DEFAULT          (2)
+#define CFG_REPORT_MAX_LINK_SPEED_DEFAULT          (eHDD_LINK_SPEED_REPORT_ACTUAL)
 
 /*
  * <ini>
@@ -5596,7 +5596,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_P2P_DEVICE_ADDRESS_ADMINISTRATED_NAME                "isP2pDeviceAddrAdministrated"
 #define CFG_P2P_DEVICE_ADDRESS_ADMINISTRATED_MIN                 (0)
 #define CFG_P2P_DEVICE_ADDRESS_ADMINISTRATED_MAX                 (1)
-#define CFG_P2P_DEVICE_ADDRESS_ADMINISTRATED_DEFAULT             (0)
+#define CFG_P2P_DEVICE_ADDRESS_ADMINISTRATED_DEFAULT             (1)
 
 /*
  * <ini>
@@ -6326,7 +6326,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_ENABLE_MODULATED_DTIM_NAME       "gEnableModulatedDTIM"
 #define CFG_ENABLE_MODULATED_DTIM_MIN        (0)
 #define CFG_ENABLE_MODULATED_DTIM_MAX        (5)
-#define CFG_ENABLE_MODULATED_DTIM_DEFAULT    (3)
+#define CFG_ENABLE_MODULATED_DTIM_DEFAULT    (0)
 
 /*
  * <ini>
@@ -6396,7 +6396,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_ENABLE_TX_STBC                       "gEnableTXSTBC"
 #define CFG_ENABLE_TX_STBC_MIN                   (0)
 #define CFG_ENABLE_TX_STBC_MAX                   (1)
-#define CFG_ENABLE_TX_STBC_DEFAULT               (1)
+#define CFG_ENABLE_TX_STBC_DEFAULT               (0)
 
 /*
  * <ini>
@@ -6568,7 +6568,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_TDLS_SUPPORT_ENABLE                     "gEnableTDLSSupport"
 #define CFG_TDLS_SUPPORT_ENABLE_MIN                 (0)
 #define CFG_TDLS_SUPPORT_ENABLE_MAX                 (1)
-#define CFG_TDLS_SUPPORT_ENABLE_DEFAULT             (1)
+#define CFG_TDLS_SUPPORT_ENABLE_DEFAULT             (0)
 
 /*
  * <ini>
@@ -6593,7 +6593,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_TDLS_IMPLICIT_TRIGGER                   "gEnableTDLSImplicitTrigger"
 #define CFG_TDLS_IMPLICIT_TRIGGER_MIN               (0)
 #define CFG_TDLS_IMPLICIT_TRIGGER_MAX               (1)
-#define CFG_TDLS_IMPLICIT_TRIGGER_DEFAULT           (1)
+#define CFG_TDLS_IMPLICIT_TRIGGER_DEFAULT           (0)
 
 /*
  * <ini>
@@ -6983,7 +6983,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_TDLS_OFF_CHANNEL_SUPPORT_ENABLE          "gEnableTDLSOffChannel"
 #define CFG_TDLS_OFF_CHANNEL_SUPPORT_ENABLE_MIN      (0)
 #define CFG_TDLS_OFF_CHANNEL_SUPPORT_ENABLE_MAX      (1)
-#define CFG_TDLS_OFF_CHANNEL_SUPPORT_ENABLE_DEFAULT  (1)
+#define CFG_TDLS_OFF_CHANNEL_SUPPORT_ENABLE_DEFAULT  (0)
 
 /*
  * <ini>
@@ -7215,7 +7215,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_ENABLE_RX_LDPC                       "gEnableRXLDPC"
 #define CFG_ENABLE_RX_LDPC_MIN                   (0)
 #define CFG_ENABLE_RX_LDPC_MAX                   (1)
-#define CFG_ENABLE_RX_LDPC_DEFAULT               (1)
+#define CFG_ENABLE_RX_LDPC_DEFAULT               (0)
 
 /*
  * <ini>
@@ -7242,7 +7242,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_VHT_SU_BEAMFORMEE_CAP_FEATURE         "gTxBFEnable"
 #define CFG_VHT_SU_BEAMFORMEE_CAP_FEATURE_MIN     (WNI_CFG_VHT_SU_BEAMFORMEE_CAP_STAMIN)
 #define CFG_VHT_SU_BEAMFORMEE_CAP_FEATURE_MAX     (WNI_CFG_VHT_SU_BEAMFORMEE_CAP_STAMAX)
-#define CFG_VHT_SU_BEAMFORMEE_CAP_FEATURE_DEFAULT (1)
+#define CFG_VHT_SU_BEAMFORMEE_CAP_FEATURE_DEFAULT (WNI_CFG_VHT_SU_BEAMFORMEE_CAP_STADEF)
 
 /*
  * <ini>
@@ -7274,7 +7274,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_VHT_ENABLE_TXBF_SAP_MODE         "gEnableTxBFeeSAP"
 #define CFG_VHT_ENABLE_TXBF_SAP_MODE_MIN     (0)
 #define CFG_VHT_ENABLE_TXBF_SAP_MODE_MAX     (1)
-#define CFG_VHT_ENABLE_TXBF_SAP_MODE_DEFAULT (1)
+#define CFG_VHT_ENABLE_TXBF_SAP_MODE_DEFAULT (0)
 
 #define CFG_VHT_CSN_BEAMFORMEE_ANT_SUPPORTED         "gTxBFCsnValue"
 #define CFG_VHT_CSN_BEAMFORMEE_ANT_SUPPORTED_MIN     (WNI_CFG_VHT_CSN_BEAMFORMEE_ANT_SUPPORTED_STAMIN)
@@ -7284,12 +7284,12 @@ enum hdd_link_speed_rpt_type {
 #define CFG_VHT_ENABLE_TXBF_IN_20MHZ               "gEnableTxBFin20MHz"
 #define CFG_VHT_ENABLE_TXBF_IN_20MHZ_MIN           (0)
 #define CFG_VHT_ENABLE_TXBF_IN_20MHZ_MAX           (1)
-#define CFG_VHT_ENABLE_TXBF_IN_20MHZ_DEFAULT       (1)
+#define CFG_VHT_ENABLE_TXBF_IN_20MHZ_DEFAULT       (0)
 
 #define CFG_VHT_ENABLE_TX_SU_BEAM_FORMER         "gEnableTxSUBeamformer"
 #define CFG_VHT_ENABLE_TX_SU_BEAM_FORMER_MIN     (0)
 #define CFG_VHT_ENABLE_TX_SU_BEAM_FORMER_MAX     (1)
-#define CFG_VHT_ENABLE_TX_SU_BEAM_FORMER_DEFAULT (1)
+#define CFG_VHT_ENABLE_TX_SU_BEAM_FORMER_DEFAULT (0)
 
 /* Enable debug for remain on channel issues */
 #define CFG_DEBUG_P2P_REMAIN_ON_CHANNEL_NAME    "gDebugP2pRemainOnChannel"
@@ -7314,7 +7314,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_ENABLE_VHT_FOR_24GHZ_NAME             "gEnableVhtFor24GHzBand"
 #define CFG_ENABLE_VHT_FOR_24GHZ_MIN              (0)
 #define CFG_ENABLE_VHT_FOR_24GHZ_MAX              (1)
-#define CFG_ENABLE_VHT_FOR_24GHZ_DEFAULT          (1)
+#define CFG_ENABLE_VHT_FOR_24GHZ_DEFAULT          (0)
 
 /*
  * gEnableVendorVhtFor24GHzBand:Parameter to control VHT support
@@ -7358,7 +7358,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_ENABLE_SNR_MONITORING_NAME              "gEnableSNRMonitoring"
 #define CFG_ENABLE_SNR_MONITORING_MIN               (0)
 #define CFG_ENABLE_SNR_MONITORING_MAX               (1)
-#define CFG_ENABLE_SNR_MONITORING_DEFAULT           (1)
+#define CFG_ENABLE_SNR_MONITORING_DEFAULT           (0)
 
 /*
  * <ini>
@@ -7383,7 +7383,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_ENABLE_IP_TCP_UDP_CHKSUM_OFFLOAD            "gEnableIpTcpUdpChecksumOffload"
 #define CFG_ENABLE_IP_TCP_UDP_CHKSUM_OFFLOAD_DISABLE    (0)
 #define CFG_ENABLE_IP_TCP_UDP_CHKSUM_OFFLOAD_ENABLE     (1)
-#define CFG_ENABLE_IP_TCP_UDP_CHKSUM_OFFLOAD_DEFAULT    (1)
+#define CFG_ENABLE_IP_TCP_UDP_CHKSUM_OFFLOAD_DEFAULT    (CFG_ENABLE_IP_TCP_UDP_CHKSUM_OFFLOAD_ENABLE)
 
 #ifdef WLAN_FEATURE_FASTPATH
 
@@ -7406,7 +7406,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_ENABLE_FASTPATH                      "gEnableFastPath"
 #define CFG_ENABLE_FASTPATH_MIN                  (0)
 #define CFG_ENABLE_FASTPATH_MAX                  (1)
-#define CFG_ENABLE_FASTPATH_DEFAULT              (1)
+#define CFG_ENABLE_FASTPATH_DEFAULT              (CFG_ENABLE_FASTPATH_MIN)
 #endif /* WLAN_FEATURE_FASTPATH */
 
 /*
@@ -7420,7 +7420,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_IPA_OFFLOAD_CONFIG_NAME              "gIPAConfig"
 #define CFG_IPA_OFFLOAD_CONFIG_MIN               (0)
 #define CFG_IPA_OFFLOAD_CONFIG_MAX               (0xFFFFFFFF)
-#define CFG_IPA_OFFLOAD_CONFIG_DEFAULT           (0x7d)
+#define CFG_IPA_OFFLOAD_CONFIG_DEFAULT           (CFG_IPA_OFFLOAD_CONFIG_MIN)
 
 /*
  * IPA DESC SIZE
@@ -7433,12 +7433,12 @@ enum hdd_link_speed_rpt_type {
 #define CFG_IPA_HIGH_BANDWIDTH_MBPS              "gIPAHighBandwidthMbps"
 #define CFG_IPA_HIGH_BANDWIDTH_MBPS_MIN          (200)
 #define CFG_IPA_HIGH_BANDWIDTH_MBPS_MAX          (1000)
-#define CFG_IPA_HIGH_BANDWIDTH_MBPS_DEFAULT      (800)
+#define CFG_IPA_HIGH_BANDWIDTH_MBPS_DEFAULT      (400)
 
 #define CFG_IPA_MEDIUM_BANDWIDTH_MBPS            "gIPAMediumBandwidthMbps"
 #define CFG_IPA_MEDIUM_BANDWIDTH_MBPS_MIN        (100)
 #define CFG_IPA_MEDIUM_BANDWIDTH_MBPS_MAX        (400)
-#define CFG_IPA_MEDIUM_BANDWIDTH_MBPS_DEFAULT    (400)
+#define CFG_IPA_MEDIUM_BANDWIDTH_MBPS_DEFAULT    (200)
 
 #define CFG_IPA_LOW_BANDWIDTH_MBPS               "gIPALowBandwidthMbps"
 #define CFG_IPA_LOW_BANDWIDTH_MBPS_MIN           (0)
@@ -7448,7 +7448,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_IPA_FORCE_VOTING_ENABLE              "gIPAForceVotingEnable"
 #define CFG_IPA_FORCE_VOTING_ENABLE_MIN          (0)
 #define CFG_IPA_FORCE_VOTING_ENABLE_MAX          (1)
-#define CFG_IPA_FORCE_VOTING_ENABLE_DEFAULT      (1)
+#define CFG_IPA_FORCE_VOTING_ENABLE_DEFAULT      (0)
 
 /*
  * Firmware uart print
@@ -7456,7 +7456,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_ENABLE_FW_UART_PRINT_NAME             "gEnablefwprint"
 #define CFG_ENABLE_FW_UART_PRINT_DISABLE          (0)
 #define CFG_ENABLE_FW_UART_PRINT_ENABLE           (1)
-#define CFG_ENABLE_FW_UART_PRINT_DEFAULT          (0)
+#define CFG_ENABLE_FW_UART_PRINT_DEFAULT          (CFG_ENABLE_FW_UART_PRINT_DISABLE)
 
 /*
  * Firmware log
@@ -7467,18 +7467,18 @@ enum hdd_link_speed_rpt_type {
 #define CFG_ENABLE_FW_LOG_DIAG                   (2)
 #define CFG_ENABLE_FW_LOG_MIN                    (CFG_ENABLE_FW_LOG_DISABLE)
 #define CFG_ENABLE_FW_LOG_MAX                    (CFG_ENABLE_FW_LOG_DIAG)
-#define CFG_ENABLE_FW_LOG_DEFAULT                (0)
+#define CFG_ENABLE_FW_LOG_DEFAULT                (CFG_ENABLE_FW_LOG_WMI)
 
 /* Macro to handle maximum receive AMPDU size configuration */
 #define CFG_VHT_AMPDU_LEN_EXPONENT_NAME                "gVhtAmpduLenExponent"
 #define CFG_VHT_AMPDU_LEN_EXPONENT_MIN                 (0)
 #define CFG_VHT_AMPDU_LEN_EXPONENT_MAX                 (7)
-#define CFG_VHT_AMPDU_LEN_EXPONENT_DEFAULT             (7)
+#define CFG_VHT_AMPDU_LEN_EXPONENT_DEFAULT             (3)
 
 #define CFG_VHT_MPDU_LEN_NAME                          "gVhtMpduLen"
 #define CFG_VHT_MPDU_LEN_MIN                           (0)
 #define CFG_VHT_MPDU_LEN_MAX                           (2)
-#define CFG_VHT_MPDU_LEN_DEFAULT                       (2)
+#define CFG_VHT_MPDU_LEN_DEFAULT                       (0)
 
 #define CFG_SAP_MAX_NO_PEERS                       "gSoftApMaxPeers"
 #define CFG_SAP_MAX_NO_PEERS_MIN                   (1)
@@ -7519,12 +7519,12 @@ enum hdd_link_speed_rpt_type {
 #define CFG_SET_TXPOWER_LIMIT2G_NAME               "TxPower2g"
 #define CFG_SET_TXPOWER_LIMIT2G_MIN                (0)
 #define CFG_SET_TXPOWER_LIMIT2G_MAX                (30)
-#define CFG_SET_TXPOWER_LIMIT2G_DEFAULT            (10)
+#define CFG_SET_TXPOWER_LIMIT2G_DEFAULT            (30)
 
 #define CFG_SET_TXPOWER_LIMIT5G_NAME               "TxPower5g"
 #define CFG_SET_TXPOWER_LIMIT5G_MIN                (0)
 #define CFG_SET_TXPOWER_LIMIT5G_MAX                (30)
-#define CFG_SET_TXPOWER_LIMIT5G_DEFAULT            (10)
+#define CFG_SET_TXPOWER_LIMIT5G_DEFAULT            (30)
 
 #ifdef QCA_LL_LEGACY_TX_FLOW_CONTROL
 
@@ -7849,7 +7849,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_RA_RATE_LIMIT_INTERVAL_NAME            "gRArateLimitInterval"
 #define CFG_RA_RATE_LIMIT_INTERVAL_MIN             (60)
 #define CFG_RA_RATE_LIMIT_INTERVAL_MAX             (3600)
-#define CFG_RA_RATE_LIMIT_INTERVAL_DEFAULT         (600) /*60 SEC */
+#define CFG_RA_RATE_LIMIT_INTERVAL_DEFAULT         (60) /*60 SEC */
 #endif
 
 /*
@@ -8010,7 +8010,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_ROAMING_DFS_CHANNEL_ENABLED_ACTIVE     (2)
 #define CFG_ROAMING_DFS_CHANNEL_MIN                (CFG_ROAMING_DFS_CHANNEL_DISABLED)
 #define CFG_ROAMING_DFS_CHANNEL_MAX                (CFG_ROAMING_DFS_CHANNEL_ENABLED_ACTIVE)
-#define CFG_ROAMING_DFS_CHANNEL_DEFAULT            (1)
+#define CFG_ROAMING_DFS_CHANNEL_DEFAULT            (CFG_ROAMING_DFS_CHANNEL_DISABLED)
 
 #ifdef MSM_PLATFORM
 #define CFG_BUS_BANDWIDTH_HIGH_THRESHOLD           "gBusBandwidthHighThreshold"
@@ -8452,7 +8452,7 @@ enum hdd_link_speed_rpt_type {
 
 #ifdef WLAN_FEATURE_LPSS
 #define CFG_ENABLE_LPASS_SUPPORT                          "gEnableLpassSupport"
-#define CFG_ENABLE_LPASS_SUPPORT_DEFAULT                  (1)
+#define CFG_ENABLE_LPASS_SUPPORT_DEFAULT                  (0)
 #define CFG_ENABLE_LPASS_SUPPORT_MIN                      (0)
 #define CFG_ENABLE_LPASS_SUPPORT_MAX                      (1)
 #endif
@@ -8946,7 +8946,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_TSO_ENABLED_NAME           "TSOEnable"
 #define CFG_TSO_ENABLED_MIN            (0)
 #define CFG_TSO_ENABLED_MAX            (1)
-#define CFG_TSO_ENABLED_DEFAULT        (1)
+#define CFG_TSO_ENABLED_DEFAULT        (0)
 
 /*
  * <ini>
@@ -8988,7 +8988,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_GRO_ENABLED_NAME           "GROEnable"
 #define CFG_GRO_ENABLED_MIN            (0)
 #define CFG_GRO_ENABLED_MAX            (1)
-#define CFG_GRO_ENABLED_DEFAULT        (1)
+#define CFG_GRO_ENABLED_DEFAULT        (0)
 
 /*
  * Enable Rx traffic flow steering to enable Rx interrupts on multiple CEs based
@@ -8999,7 +8999,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_FLOW_STEERING_ENABLED_NAME        "gEnableFlowSteering"
 #define CFG_FLOW_STEERING_ENABLED_MIN         (0)
 #define CFG_FLOW_STEERING_ENABLED_MAX         (1)
-#define CFG_FLOW_STEERING_ENABLED_DEFAULT     (1)
+#define CFG_FLOW_STEERING_ENABLED_DEFAULT     (0)
 
 /*
  * Max number of MSDUs per HTT RX IN ORDER INDICATION msg.
@@ -9014,7 +9014,7 @@ enum hdd_link_speed_rpt_type {
 #define CFG_MAX_MSDUS_PER_RXIND_NAME          "maxMSDUsPerRxInd"
 #define CFG_MAX_MSDUS_PER_RXIND_MIN           (4)
 #define CFG_MAX_MSDUS_PER_RXIND_MAX           (32)
-#define CFG_MAX_MSDUS_PER_RXIND_DEFAULT       (8)
+#define CFG_MAX_MSDUS_PER_RXIND_DEFAULT       (32)
 /*
  * In static display use case when APPS is in stand alone power save mode enable
  * active offload mode which helps FW to filter out MC/BC data packets to avoid
@@ -10398,7 +10398,7 @@ enum dot11p_mode {
 #define CFG_ENABLE_NAN_DATAPATH_NAME    "genable_nan_datapath"
 #define CFG_ENABLE_NAN_DATAPATH_MIN     (0)
 #define CFG_ENABLE_NAN_DATAPATH_MAX     (1)
-#define CFG_ENABLE_NAN_DATAPATH_DEFAULT (1)
+#define CFG_ENABLE_NAN_DATAPATH_DEFAULT (0)
 
 /*
  * NAN channel on which NAN data interface to start
@@ -11050,8 +11050,13 @@ enum dot11p_mode {
 #define CFG_RX_MODE_MIN      (0)
 #define CFG_RX_MODE_MAX      (CFG_ENABLE_RX_THREAD | CFG_ENABLE_RPS | \
 				 CFG_ENABLE_NAPI | CFG_ENABLE_DYNAMIC_RPS)
-#define CFG_RX_MODE_DEFAULT  (5)
-
+#ifdef MDM_PLATFORM
+#define CFG_RX_MODE_DEFAULT  (0)
+#elif defined(HELIUMPLUS)
+#define CFG_RX_MODE_DEFAULT  CFG_ENABLE_NAPI
+#else
+#define CFG_RX_MODE_DEFAULT  (CFG_ENABLE_RX_THREAD | CFG_ENABLE_NAPI)
+#endif
 
 /*
  * <ini>
@@ -11072,7 +11077,7 @@ enum dot11p_mode {
 #define CFG_CE_SERVICE_MAX_YIELD_TIME_NAME     "ce_service_max_yield_time"
 #define CFG_CE_SERVICE_MAX_YIELD_TIME_MIN      (500)
 #define CFG_CE_SERVICE_MAX_YIELD_TIME_MAX      (10000)
-#define CFG_CE_SERVICE_MAX_YIELD_TIME_DEFAULT  (500)
+#define CFG_CE_SERVICE_MAX_YIELD_TIME_DEFAULT  (10000)
 
 /*
  * <ini>
@@ -11093,7 +11098,7 @@ enum dot11p_mode {
 #define CFG_CE_SERVICE_MAX_RX_IND_FLUSH_NAME     "ce_service_max_rx_ind_flush"
 #define CFG_CE_SERVICE_MAX_RX_IND_FLUSH_MIN      (1)
 #define CFG_CE_SERVICE_MAX_RX_IND_FLUSH_MAX      (32)
-#define CFG_CE_SERVICE_MAX_RX_IND_FLUSH_DEFAULT  (1)
+#define CFG_CE_SERVICE_MAX_RX_IND_FLUSH_DEFAULT  (32)
 
 /*
  * <ini>
@@ -11526,7 +11531,7 @@ enum dot11p_mode {
 #define CFG_MAX_SCHED_SCAN_PLAN_INT_NAME       "g_max_sched_scan_plan_int"
 #define CFG_MAX_SCHED_SCAN_PLAN_INT_MIN        (1)
 #define CFG_MAX_SCHED_SCAN_PLAN_INT_MAX        (7200)
-#define CFG_MAX_SCHED_SCAN_PLAN_INT_DEFAULT    (1)
+#define CFG_MAX_SCHED_SCAN_PLAN_INT_DEFAULT    (3600)
 
 /*
  * <ini>
@@ -11892,7 +11897,7 @@ enum hdd_wext_control {
 #define CFG_POWERSAVE_OFFLOAD_NAME                "gEnablePowerSaveOffload"
 #define CFG_POWERSAVE_OFFLOAD_MIN                 (0)
 #define CFG_POWERSAVE_OFFLOAD_MAX                 (PS_DUTY_CYCLING_QPOWER)
-#define CFG_POWERSAVE_OFFLOAD_DEFAULT             (1)
+#define CFG_POWERSAVE_OFFLOAD_DEFAULT             (CFG_POWERSAVE_OFFLOAD_MIN)
 
 /*
  * <ini>
@@ -14645,7 +14650,7 @@ enum hdd_external_acs_policy {
  * </ini>
  */
 #define CFG_ENABLE_PACKET_FILTERS_NAME     "g_enable_packet_filter_bitmap"
-#define CFG_ENABLE_PACKET_FILTERS_DEFAULT  (3)
+#define CFG_ENABLE_PACKET_FILTERS_DEFAULT  (0)
 #define CFG_ENABLE_PACKET_FILTERS_MIN      (0)
 #define CFG_ENABLE_PACKET_FILTERS_MAX      (63)
 
@@ -15875,7 +15880,7 @@ enum hdd_external_acs_policy {
 #define CFG_ENABLE_RTT_MAC_RANDOMIZATION_NAME    "enable_rtt_mac_randomization"
 #define CFG_ENABLE_RTT_MAC_RANDOMIZATION_MIN     (0)
 #define CFG_ENABLE_RTT_MAC_RANDOMIZATION_MAX     (1)
-#define CFG_ENABLE_RTT_MAC_RANDOMIZATION_DEFAULT (1)
+#define CFG_ENABLE_RTT_MAC_RANDOMIZATION_DEFAULT (0)
 
 /*
  * <ini>
@@ -16308,7 +16313,7 @@ enum hdd_external_acs_policy {
 #define CFG_ENABLE_PEER_UNMAP_CONF_NAME    "gEnablePeerUnmapConfSupport"
 #define CFG_ENABLE_PEER_UNMAP_CONF_MIN     (0)
 #define CFG_ENABLE_PEER_UNMAP_CONF_MAX     (1)
-#define CFG_ENABLE_PEER_UNMAP_CONF_DEFAULT (1)
+#define CFG_ENABLE_PEER_UNMAP_CONF_DEFAULT (0)
 
 /*
  * <ini>
