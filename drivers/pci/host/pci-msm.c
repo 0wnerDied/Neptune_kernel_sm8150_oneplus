@@ -4075,9 +4075,9 @@ static int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 		dev->rc_idx, retries);
 
 	if (pcie_phy_is_ready(dev))
-		PCIE_DBG(dev, "PCIe RC%d PHY is ready!\n", dev->rc_idx);
+		PCIE_INFO(dev, "PCIe RC%d PHY is ready!\n", dev->rc_idx);
 	else {
-		PCIE_DBG(dev, "PCIe PHY RC%d failed to come up!\n",
+		PCIE_ERR(dev, "PCIe PHY RC%d failed to come up!\n",
 			dev->rc_idx);
 		ret = -ENODEV;
 		pcie_phy_dump(dev);
@@ -4092,12 +4092,8 @@ static int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 				dev->gpio[MSM_PCIE_GPIO_EP].on);
 
 	/* de-assert PCIe reset link to bring EP out of reset */
-<<<<<<< HEAD
 
 	PCIE_INFO(dev, "PCIe: Release the reset of endpoint of RC%d.\n",
-=======
-	PCIE_DBG(dev, "PCIe: Release the reset of endpoint of RC%d.\n",
->>>>>>> f90a0c4d3950... treewide: Silence various loggers
 		dev->rc_idx);
 	gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 				1 - dev->gpio[MSM_PCIE_GPIO_PERST].on);
@@ -4162,14 +4158,9 @@ static int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 		msm_pcie_confirm_linkup(dev, false, false, NULL)) {
 		PCIE_DBG(dev, "Link is up after %d checkings\n",
 			link_check_count);
-		PCIE_DBG(dev, "PCIe RC%d link initialized\n", dev->rc_idx);
+		PCIE_INFO(dev, "PCIe RC%d link initialized\n", dev->rc_idx);
 	} else {
-<<<<<<< HEAD
 		PCIE_INFO(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
-=======
-#if !IS_ENABLED(CONFIG_MFD_ABC_PCIE)
-		PCIE_DBG(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
->>>>>>> f90a0c4d3950... treewide: Silence various loggers
 			dev->rc_idx);
 		gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 			dev->gpio[MSM_PCIE_GPIO_PERST].on);
