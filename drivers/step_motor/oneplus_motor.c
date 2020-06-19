@@ -3000,7 +3000,7 @@ static void oneplus_motor_awake_init(struct oneplus_motor_chip* chip)
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0))
 	wake_lock_init(&chip->suspend_lock, WAKE_LOCK_SUSPEND, "motor_wakelock");
 #else
-	chip->suspend_ws = wakeup_source_register("motor_wakelock");
+	chip->suspend_ws = wakeup_source_register(NULL, "motor_wakelock");
 #endif
 }
 
