@@ -483,7 +483,7 @@ static int32_t cam_sensor_driver_platform_probe(
 	s_ctrl->sensor_state = CAM_SENSOR_INIT;
 
 	if (cam_clk_ws_flag) {
-		cam_clk_ws = wakeup_source_register("cam_clk");
+		cam_clk_ws = wakeup_source_register(NULL, "cam_clk");
 		cam_clk_ws_flag = false;
 	}
 
