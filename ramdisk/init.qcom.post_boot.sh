@@ -217,6 +217,9 @@ swapon /dev/block/zram0 -p 32758
 echo 2323200 > /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq
 echo 2649600 > /sys/devices/system/cpu/cpu7/cpufreq/scaling_max_freq
 
+# s2idle
+echo "s2idle" > /sys/power/msm_sleep
+
 # Disable OP Shit things after boot
 
 while $(dumpsys window policy | grep mlsShowing | awk -F= '{print $2}'); do
