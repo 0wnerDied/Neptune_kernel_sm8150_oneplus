@@ -3098,7 +3098,7 @@ static inline void walt_update_min_max_capacity(void) { }
 
 static inline bool energy_aware(void)
 {
-	return sched_feat(ENERGY_AWARE);
+	return true;
 }
 
 #define	CPU_RESERVED	1
