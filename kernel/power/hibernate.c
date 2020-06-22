@@ -1065,7 +1065,7 @@ power_attr(disk);
 static ssize_t resume_show(struct kobject *kobj, struct kobj_attribute *attr,
 			   char *buf)
 {
-	return sprintf(buf,"%d:%d\n", MAJOR(swsusp_resume_device),
+	return sprintf(buf, "%d:%d\n", MAJOR(swsusp_resume_device),
 		       MINOR(swsusp_resume_device));
 }
 
@@ -1141,7 +1141,7 @@ static ssize_t reserved_size_store(struct kobject *kobj,
 
 power_attr(reserved_size);
 
-static struct attribute * g[] = {
+static struct attribute *g[] = {
 	&disk_attr.attr,
 	&resume_attr.attr,
 	&image_size_attr.attr,
@@ -1168,7 +1168,7 @@ static int __init resume_setup(char *str)
 	if (noresume)
 		return 1;
 
-	strncpy( resume_file, str, 255 );
+	strncpy(resume_file, str, 255);
 	return 1;
 }
 
