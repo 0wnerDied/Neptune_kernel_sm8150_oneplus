@@ -115,6 +115,7 @@ static int try_to_freeze_tasks(bool user_only)
 			    if (p != current && !freezer_should_skip(p)
 			        && freezing(p) && !frozen(p))
 			    	sched_show_task(p);
+			}
 		}
 		read_unlock(&tasklist_lock);
 	} else {
