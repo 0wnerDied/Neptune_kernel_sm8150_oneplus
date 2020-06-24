@@ -309,39 +309,6 @@ error:
  * You can assume the first device is /dev/dm-0, the next device is /dev/dm-1,
  * and so forth.
  */
-static int __init dm_setup(char *str)
-{
-	struct dm_option opt;
-	unsigned long num_devices;
-
-	if (!str) {
-		DMDEBUG("str is NULL");
-		goto parse_fail;
-	}
-	opt.next = str;
-	if (!get_dm_option(&opt, DM_FIELD_SEP))
-		goto parse_fail;
-	if (isdigit(opt.start[0])) {	/* XXX: Optional number field */
-		num_devices = simple_strtoul(opt.start, NULL, 10);
-		str = opt.next;
-	} else {
-		num_devices = 1;
-		/* Don't advance str */
-	}
-	if (num_devices > DM_MAX_DEVICES) {
-		DMDEBUG("too many devices %lu > %d",
-			num_devices, DM_MAX_DEVICES);
-	}
-	dm_setup_args.str = str;
-	dm_setup_args.num_devices = num_devices;
-	DMINFO("will configure %lu devices", num_devices);
-	dm_early_setup = 1;
-	return 1;
-
-parse_fail:
-	DMWARN("Invalid arguments supplied to dm=.");
-	return 0;
-}
 
 static void __init dm_setup_drives(void)
 {

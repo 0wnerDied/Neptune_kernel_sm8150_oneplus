@@ -721,21 +721,6 @@ static void qrtr_alloc_backup(struct work_struct *work)
 	}
 }
 
-static struct sk_buff *qrtr_get_backup(size_t len)
-{
-	struct sk_buff *skb = NULL;
-
-	if (len < QRTR_BACKUP_LO_SIZE)
-		skb = skb_dequeue(&qrtr_backup_lo);
-	else if (len < QRTR_BACKUP_HI_SIZE)
-		skb = skb_dequeue(&qrtr_backup_hi);
-
-	if (skb)
-		queue_work(system_unbound_wq, &qrtr_backup_work);
-
-	return skb;
-}
-
 static void qrtr_backup_init(void)
 {
 	skb_queue_head_init(&qrtr_backup_lo);
