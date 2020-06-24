@@ -220,11 +220,16 @@ echo 2649600 > /sys/devices/system/cpu/cpu7/cpufreq/scaling_max_freq
 # s2idle
 echo "s2idle" > /sys/power/mem_sleep
 
+# Sync filesystems on system suspend
+echo "1" > /sys/power/sync_on_suspend
+
 # Disable OP Shit things after boot
 
 while $(dumpsys window policy | grep mlsShowing | awk -F= '{print $2}'); do
 sleep 1
 done
+
+sleep 30
 
 resetprop ctl.stop oneplus_brain_service
 resetprop ctl.stop charger_logkit
