@@ -62,6 +62,7 @@ static int wg_open(struct net_device *dev)
 		if (peer->persistent_keepalive_interval)
 			wg_packet_send_keepalive(peer);
 	}
+out:
 	mutex_unlock(&wg->device_update_lock);
 	return ret;
 }
