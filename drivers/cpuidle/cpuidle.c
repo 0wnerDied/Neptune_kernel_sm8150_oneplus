@@ -13,7 +13,6 @@
 #include <linux/mutex.h>
 #include <linux/sched.h>
 #include <linux/sched/clock.h>
-#include <linux/sched/idle.h>
 #include <linux/notifier.h>
 #include <linux/pm_qos.h>
 #include <linux/cpu.h>
@@ -192,8 +191,10 @@ int cpuidle_enter_s2idle(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 	 * be frozen safely.
 	 */
 	index = find_deepest_state(drv, dev, UINT_MAX, 0, true);
-	if (index > 0)
+	if (index > 0) {
 		enter_s2idle_proper(drv, dev, index);
+		local_irq_enable();
+	}
 	return index;
 }
 #endif /* CONFIG_SUSPEND */
