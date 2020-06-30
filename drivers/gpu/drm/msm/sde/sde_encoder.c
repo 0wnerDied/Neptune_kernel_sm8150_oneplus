@@ -2282,22 +2282,18 @@ static void sde_encoder_input_event_handler(struct input_handle *handle,
 
 	priv = drm_enc->dev->dev_private;
 	sde_enc = to_sde_encoder_virt(drm_enc);
-
-	{
-		struct drm_crtc *crtc = sde_enc->crtc;
-
-		if (!crtc || (crtc->index >= ARRAY_SIZE(priv->disp_thread))) {
-			SDE_DEBUG_ENC(sde_enc,
-					"invalid cached CRTC: %d or crtc index: %d\n",
-					crtc == NULL,
-					crtc ? crtc->index : -EINVAL);
-			return;
-		}
-
-		SDE_EVT32_VERBOSE(DRMID(drm_enc));
-
-		disp_thread = &priv->disp_thread[crtc->index];
+	if (!sde_enc->crtc || (sde_enc->crtc->index
+			>= ARRAY_SIZE(priv->disp_thread))) {
+		SDE_DEBUG_ENC(sde_enc,
+			"invalid cached CRTC: %d or crtc index: %d\n",
+			sde_enc->crtc == NULL,
+			sde_enc->crtc ? sde_enc->crtc->index : -EINVAL);
+		return;
 	}
+
+	SDE_EVT32_VERBOSE(DRMID(drm_enc));
+
+	disp_thread = &priv->disp_thread[sde_enc->crtc->index];
 
 	kthread_queue_work(&disp_thread->worker,
 				&sde_enc->input_event_work);
@@ -2702,20 +2698,18 @@ static int sde_encoder_resource_control(struct drm_encoder *drm_enc,
 		mutex_unlock(&sde_enc->rc_lock);
 		break;
 	case SDE_ENC_RC_EVENT_EARLY_WAKEUP:
-	{
-			struct drm_crtc *crtc = sde_enc->crtc;
+		if (!sde_enc->crtc ||
+			sde_enc->crtc->index >= ARRAY_SIZE(priv->disp_thread)) {
+			SDE_DEBUG_ENC(sde_enc,
+				"invalid crtc:%d or crtc index:%d , sw_event:%u\n",
+				sde_enc->crtc == NULL,
+				sde_enc->crtc ? sde_enc->crtc->index : -EINVAL,
+				sw_event);
+			return -EINVAL;
+		}
 
-			if (!crtc || crtc->index >= ARRAY_SIZE(priv->disp_thread)) {
-				SDE_DEBUG_ENC(sde_enc,
-						"invalid crtc:%d or crtc index:%d , sw_event:%u\n",
-						crtc == NULL,
-						crtc ? crtc->index : -EINVAL,
-						sw_event);
-				return -EINVAL;
-			}
+		disp_thread = &priv->disp_thread[sde_enc->crtc->index];
 
-			disp_thread = &priv->disp_thread[crtc->index];
-	}
 		mutex_lock(&sde_enc->rc_lock);
 
 		if (sde_enc->rc_state == SDE_ENC_RC_STATE_ON) {
