@@ -144,7 +144,9 @@ static int sde_backlight_setup(struct sde_connector *c_conn,
 	display = (struct dsi_display *) c_conn->display;
 	bl_config = &display->panel->bl_config;
 	props.max_brightness = bl_config->brightness_max_level;
-	props.brightness = bl_config->brightness_max_level;
+//	props.brightness = bl_config->brightness_default_level;
+	props.brightness = bl_config->bl_def_val;
+	SDE_ERROR("props.brightness = %d\n",props.brightness);
 	snprintf(bl_node_name, BL_NODE_NAME_SIZE, "panel%u-backlight",
 							display_count);
 	c_conn->bl_device = backlight_device_register(bl_node_name, dev->dev,
@@ -470,7 +472,6 @@ static int _sde_connector_update_bl_scale(struct sde_connector *c_conn)
 	struct dsi_display *dsi_display;
 	struct dsi_backlight_config *bl_config;
 	int rc = 0;
-	struct backlight_device *bl_dev;
 
 	if (!c_conn) {
 		SDE_ERROR("Invalid params sde_connector null\n");
@@ -485,20 +486,11 @@ static int _sde_connector_update_bl_scale(struct sde_connector *c_conn)
 		return -EINVAL;
 	}
 
-	bl_dev = c_conn->bl_device;
-	if (!bl_dev) {
-		SDE_ERROR("Invalid params backlight_device null\n");
-		return -EINVAL;
-	}
-
-	mutex_lock(&bl_dev->update_lock);
-
 	bl_config = &dsi_display->panel->bl_config;
 
 	if (dsi_display->panel->bl_config.bl_update ==
 		BL_UPDATE_DELAY_UNTIL_FIRST_FRAME && !c_conn->allow_bl_update) {
 		c_conn->unset_bl_level = bl_config->bl_level;
-		mutex_unlock(&bl_dev->update_lock);
 		return 0;
 	}
 
@@ -522,7 +514,6 @@ static int _sde_connector_update_bl_scale(struct sde_connector *c_conn)
 			dsi_display, bl_config->bl_level);
 	c_conn->unset_bl_level = 0;
 
-	mutex_unlock(&bl_dev->update_lock);
 	return rc;
 }
 //xiaoxiaohuan@OnePlus.MultiMediaService,2018/08/04, add for fingerprint
