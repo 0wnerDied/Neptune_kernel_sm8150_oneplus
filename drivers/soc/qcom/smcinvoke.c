@@ -1572,6 +1572,11 @@ static long process_accept_req(struct file *filp, unsigned int cmd,
 
 	mutex_unlock(&g_smcinvoke_lock);
 
+	if (server_info->state == SMCINVOKE_SERVER_STATE_DEFUNCT)
+		server_info->state = 0;
+
+	mutex_unlock(&g_smcinvoke_lock);
+
 	/* First check if it has response otherwise wait for req */
 	if (user_args.has_resp) {
 		mutex_lock(&g_smcinvoke_lock);
