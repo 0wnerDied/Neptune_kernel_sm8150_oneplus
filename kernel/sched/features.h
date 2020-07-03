@@ -126,8 +126,10 @@ SCHED_FEAT(FIND_BEST_TARGET, true)
 SCHED_FEAT(FBT_STRICT_ORDER, false)
 
 /*
- * Inflate the effective utilization of SchedTune-boosted tasks, which
- * generally leads to usage of higher frequencies.
- * If disabled, boosts will only bias tasks to higher-capacity CPUs.
+ * If the sync flag is set but ignored, prefer to
+ * select cpu in the same cluster as current. So
+ * if current is a big cpu and sync is set, indicate
+ * that the selection algorithm for a boosted task
+ * should be used.
  */
-SCHED_FEAT(SCHEDTUNE_BOOST_UTIL, false)
+SCHED_FEAT(SYNC_BOOST, true)
