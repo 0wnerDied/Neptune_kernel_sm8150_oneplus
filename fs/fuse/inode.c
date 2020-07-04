@@ -1218,7 +1218,7 @@ static void fuse_sb_destroy(struct super_block *sb)
 	if (fc) {
 		fuse_send_destroy(fc);
 
-		fuse_abort_conn(fc);
+		fuse_abort_conn(fc, false);
 		fuse_wait_aborted(fc);
 
 		down_write(&fc->killsb);
