@@ -780,7 +780,7 @@
 		wake-capable-sensor;
 		trips {
 			gpu_trip0: gpu-trip0 {
-				temperature = <85000>;
+				temperature = <100000>;
 				hysteresis = <0>;
 				type = "passive";
 			};
@@ -872,7 +872,7 @@
 
 		trips {
 			active-config {
-				temperature = <85000>;
+				temperature = <95000>;
 				hysteresis = <25000>;
 				type = "passive";
 			};
@@ -888,7 +888,7 @@
 
 		trips {
 			active-config {
-				temperature = <85000>;
+				temperature = <95000>;
 				hysteresis = <25000>;
 				type = "passive";
 			};
@@ -1249,12 +1249,12 @@
 		wake-capable-sensor;
 		trips {
 			q6_hvx_step0: q6-hvx-step0 {
-				temperature = <95000>;
+				temperature = <105000>;
 				hysteresis = <0>;
 				type = "passive";
 			};
 			q6_hvx_step1: q6-hvx-step1 {
-				temperature = <105000>;
+				temperature = <115000>;
 				hysteresis = <5000>;
 				type = "passive";
 			};
