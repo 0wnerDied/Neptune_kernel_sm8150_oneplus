@@ -26,6 +26,4 @@ mkdir -p net/wireguard
 curl -A "$USER_AGENT" -LsS "https://git.zx2c4.com/wireguard-linux-compat/snapshot/wireguard-linux-compat-$VERSION.tar.xz" | tar -C "net/wireguard" -xJf - --strip-components=2 "wireguard-linux-compat-$VERSION/src"
 sed -i 's/tristate/bool/;s/default m/default y/;' net/wireguard/Kconfig
 touch net/wireguard/.check
-# Use "git apply" so that changes are uncommitted
-curl https://github.com/idkwhoiam322/weeb_kernel_oneplus_sm8150/commit/5f07cf9c099937a8de656a67e14a4000729092b0.patch | git apply
 git add net/wireguard && git commit -s --message="wireguard: Update to version ${VERSION}"
