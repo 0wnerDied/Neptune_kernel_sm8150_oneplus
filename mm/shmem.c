@@ -113,8 +113,7 @@ static unsigned long shmem_default_max_blocks(void)
 
 static unsigned long shmem_default_max_inodes(void)
 {
-	unsigned long nr_pages = totalram_pages;
-	return min(nr_pages - totalhigh_pages, nr_pages / 2);
+	return min(totalram_pages - totalhigh_pages, totalram_pages / 2);
 }
 #endif
 
