@@ -1942,6 +1942,7 @@ static int diag_switch_logging(struct diag_logging_mode_param_t *param)
 
 	for (proc = 0; proc < NUM_DIAG_MD_DEV; proc++) {
 		local_proc = 1 << proc;
+		driver->proc_hdlc_disabled[proc] = 0;
 		if (param->device_mask & (local_proc)) {
 			curr_mode = driver->logging_mode[proc];
 			DIAG_LOG(DIAG_DEBUG_USERSPACE,
