@@ -9,7 +9,6 @@
 #define _TRACE_NFS_H
 
 #include <linux/tracepoint.h>
-#include <linux/iversion.h>
 
 #define nfs_show_file_type(ftype) \
 	__print_symbolic(ftype, \
@@ -62,7 +61,7 @@ DECLARE_EVENT_CLASS(nfs_inode_event,
 			__entry->dev = inode->i_sb->s_dev;
 			__entry->fileid = nfsi->fileid;
 			__entry->fhandle = nfs_fhandle_hash(&nfsi->fh);
-			__entry->version = inode_peek_iversion_raw(inode);
+			__entry->version = inode->i_version;
 		),
 
 		TP_printk(
@@ -101,7 +100,7 @@ DECLARE_EVENT_CLASS(nfs_inode_event_done,
 			__entry->fileid = nfsi->fileid;
 			__entry->fhandle = nfs_fhandle_hash(&nfsi->fh);
 			__entry->type = nfs_umode_to_dtype(inode->i_mode);
-			__entry->version = inode_peek_iversion_raw(inode);
+			__entry->version = inode->i_version;
 			__entry->size = i_size_read(inode);
 			__entry->nfsi_flags = nfsi->flags;
 			__entry->cache_validity = nfsi->cache_validity;

@@ -23,7 +23,6 @@
 #include <linux/xattr.h>
 #include <linux/security.h>
 #include <linux/posix_acl_xattr.h>
-#include <linux/iversion.h>
 #include "ctree.h"
 #include "btrfs_inode.h"
 #include "transaction.h"
