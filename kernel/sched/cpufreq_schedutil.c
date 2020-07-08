@@ -191,7 +191,7 @@ static void sugov_deferred_update(struct sugov_policy *sg_policy, u64 time,
 	if (!sugov_update_next_freq(sg_policy, time, next_freq))
 		return;
 
-	if (likely(use_pelt()))
+	if (use_pelt())
 		sg_policy->work_in_progress = true;
 	sched_irq_work_queue(&sg_policy->irq_work);
 }
