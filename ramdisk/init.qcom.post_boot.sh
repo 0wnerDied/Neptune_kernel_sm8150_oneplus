@@ -61,15 +61,6 @@ fi
 # wsf Range : 1..1000 So set to bare minimum value 1.
 echo 1 > /proc/sys/vm/watermark_scale_factor
 
-# configure governor settings for silver cluster
-echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor
-
-# configure governor settings for gold cluster
-echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy4/scaling_governor
-
-# configure governor settings for gold+ cluster
-echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy7/scaling_governor
-
 # Enable bus-dcvs
 for device in /sys/devices/platform/soc
 do
@@ -223,24 +214,7 @@ echo "s2idle" > /sys/power/mem_sleep
 # Sync filesystems on system suspend
 echo "1" > /sys/power/sync_on_suspend
 
-# After boot
-while $(dumpsys window policy | grep mlsShowing | awk -F= '{print $2}'); do
-sleep 1
-done
-
-sleep 30
-
 # Disable sleep_disabled
 echo N > /sys/module/lpm_levels/parameters/sleep_disabled
-
-# Disable OP Shit things
-resetprop ctl.stop oneplus_brain_service
-resetprop ctl.stop charger_logkit
-resetprop ctl.stop oemlogkit
-resetprop ctl.stop opdiagnose
-resetprop ctl.stop OPDiagdataCopy
-resetprop persist.sys.ohpd.flags 0
-resetprop persist.sys.ohpd.kcheck false
-resetprop persist.vendor.sys.memplus.enable 0
 
 exit 0
