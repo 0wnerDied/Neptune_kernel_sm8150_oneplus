@@ -9,6 +9,7 @@ cc_library_static {
     ],
     srcs: [
         "fdt.c",
+        "fdt_check.c",
         "fdt_ro.c",
         "fdt_wip.c",
         "fdt_sw.c",
