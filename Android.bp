@@ -7,6 +7,7 @@ cc_defaults {
         "-Wno-sign-compare",
         "-Wno-missing-field-initializers",
         "-Wno-unused-parameter",
+        "-DNO_YAML"
     ],
 
     static_libs: ["libfdt"],
