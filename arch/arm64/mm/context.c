@@ -194,9 +194,10 @@ set_asid:
 	return idx2asid(asid) | generation;
 }
 
-void check_and_switch_context(struct mm_struct *mm, unsigned int cpu)
+void check_and_switch_context(struct mm_struct *mm)
 {
 	unsigned long flags;
+	unsigned int cpu;
 	u64 asid;
 
 	asid = atomic64_read(&mm->context.id);
@@ -209,7 +210,7 @@ void check_and_switch_context(struct mm_struct *mm, unsigned int cpu)
 	 * flush_context).
 	 */
 	if (!((asid ^ atomic64_read(&asid_generation)) >> asid_bits)
-	    && atomic64_xchg_relaxed(&per_cpu(active_asids, cpu), asid))
+	    && atomic64_xchg_relaxed(this_cpu_ptr(&active_asids), asid))
 		goto switch_mm_fastpath;
 
 	raw_spin_lock_irqsave(&cpu_asid_lock, flags);
@@ -220,10 +221,11 @@ void check_and_switch_context(struct mm_struct *mm, unsigned int cpu)
 		atomic64_set(&mm->context.id, asid);
 	}
 
+	cpu = smp_processor_id();
 	if (cpumask_test_and_clear_cpu(cpu, &tlb_flush_pending))
 		local_flush_tlb_all();
 
-	atomic64_set(&per_cpu(active_asids, cpu), asid);
+	atomic64_set(this_cpu_ptr(&active_asids), asid);
 	raw_spin_unlock_irqrestore(&cpu_asid_lock, flags);
 
 switch_mm_fastpath:
