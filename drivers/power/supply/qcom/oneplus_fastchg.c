@@ -1160,7 +1160,7 @@ static long  dash_dev_ioctl(struct file *filp, unsigned int cmd,
 				mod_timer(&di->watchdog,
 				jiffies + msecs_to_jiffies(15000));
 			} else if (arg == DASH_NOTIFY_FAST_PRESENT + 2) {
-				pr_err("REJECT_DATA\n");
+				pr_debug("REJECT_DATA\n");
 				dash_write(di, REJECT_DATA);
 			} else if (arg == DASH_NOTIFY_FAST_PRESENT + 3) {
 				notify_check_usb_suspend(false, false);

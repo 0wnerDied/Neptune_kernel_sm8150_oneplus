@@ -7472,7 +7472,7 @@ bool is_fastchg_allowed(struct smb_charger *chg)
 
 	switch_to_normal = get_prop_fast_switch_to_normal(chg);
 	if (pre_switch_to_normal != switch_to_normal)
-		pr_info("switch_to_normal =%d\n", switch_to_normal);
+		pr_debug("switch_to_normal =%d\n", switch_to_normal);
 	if (switch_to_normal)
 		return false;
 
