@@ -412,7 +412,7 @@ retry:
 	ret = 0;
 out:
     put_net(net);
-	return net;
+	return ret;
 }
 
 void wg_socket_reinit(struct wg_device *wg, struct sock *new4,

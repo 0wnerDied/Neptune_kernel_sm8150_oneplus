@@ -193,7 +193,6 @@ int cpuidle_enter_s2idle(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 	index = find_deepest_state(drv, dev, UINT_MAX, 0, true);
 	if (index > 0)
 		enter_s2idle_proper(drv, dev, index);
-
 	return index;
 }
 #endif /* CONFIG_SUSPEND */
