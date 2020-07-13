@@ -4253,7 +4253,7 @@ static struct kernel_param_ops fg_esr_cal_ops = {
 
 module_param_cb(esr_fast_cal_en, &fg_esr_cal_ops, &fg_esr_fast_cal_en, 0644);
 
-#define FG_RATE_LIM_MS (5 * MSEC_PER_SEC)
+#define FG_RATE_LIM_MS (3 * MSEC_PER_SEC)
 
 /* All power supply functions here */
 
