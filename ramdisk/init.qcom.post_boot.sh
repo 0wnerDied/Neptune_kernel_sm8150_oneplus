@@ -204,10 +204,6 @@ echo 70 > /proc/sys/vm/swappiness
 mkswap /dev/block/zram0
 swapon /dev/block/zram0 -p 32758
 
-# Freq limit
-echo 2323200 > /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq
-echo 2649600 > /sys/devices/system/cpu/cpu7/cpufreq/scaling_max_freq
-
 # s2idle
 echo "s2idle" > /sys/power/mem_sleep
 
