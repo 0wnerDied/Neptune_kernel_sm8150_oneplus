@@ -207,9 +207,6 @@ swapon /dev/block/zram0 -p 32758
 # s2idle
 echo "s2idle" > /sys/power/mem_sleep
 
-# Sync filesystems on system suspend
-echo "1" > /sys/power/sync_on_suspend
-
 # Disable sleep_disabled
 echo N > /sys/module/lpm_levels/parameters/sleep_disabled
 
