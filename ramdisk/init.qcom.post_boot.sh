@@ -194,15 +194,12 @@ echo 1 > /dev/stune/top-app/schedtune.boost
 rm -f /data/vendor/swap/swapfile 2>/dev/null
 sync
 
-# Set zRAM disksize
-swapoff /dev/block/zram0
-echo 1 > /sys/block/zram0/reset
-echo lz4 > /sys/block/zram0/comp_algorithm
-echo 1536M > /sys/block/zram0/disksize
-echo 0 > /sys/block/zram0/mem_limit
-echo 70 > /proc/sys/vm/swappiness
-mkswap /dev/block/zram0
-swapon /dev/block/zram0 -p 32758
+# Setup swap
+echo 4294967296 > /sys/devices/virtual/block/vbswap0/disksize
+echo 135 > /proc/sys/vm/swappiness
+chmod 755 /sbin/mkswap
+/sbin/mkswap /dev/block/vbswap0
+swapon /dev/block/vbswap0 -p 32758
 
 # s2idle
 echo "s2idle" > /sys/power/mem_sleep
