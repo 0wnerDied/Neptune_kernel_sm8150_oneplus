@@ -2147,6 +2147,7 @@ static void binder_send_failed_reply(struct binder_transaction *t,
 			binder_free_transaction(t);
 			return;
 		}
+		__release(&target_thread->proc->inner_lock);
 		next = t->from_parent;
 
 		binder_debug(BINDER_DEBUG_FAILED_TRANSACTION,
