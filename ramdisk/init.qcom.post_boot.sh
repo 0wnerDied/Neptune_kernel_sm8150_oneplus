@@ -181,7 +181,7 @@ echo 200 > /dev/blkio/background/blkio.weight
 echo 10 > /proc/sys/vm/dirty_background_ratio
 echo 3000 > /proc/sys/vm/dirty_expire_centisecs
 echo 0 > /proc/sys/vm/page-cluster
-echo 32768 > /proc/sys/vm/min_free_kbytes
+# echo 32768 > /proc/sys/vm/min_free_kbytes
 
 # stune
 echo 0 > /dev/stune/schedtune.prefer_idle
@@ -196,9 +196,9 @@ sync
 
 # Setup swap
 echo 4294967296 > /sys/devices/virtual/block/vbswap0/disksize
-echo 135 > /proc/sys/vm/swappiness
-chmod 755 /sbin/mkswap
-/sbin/mkswap /dev/block/vbswap0
+echo 130 > /proc/sys/vm/swappiness
+chmod 755 /sbin/Neptune/mkswap
+/sbin/Neptune/mkswap /dev/block/vbswap0
 swapon /dev/block/vbswap0 -p 32758
 
 # s2idle
