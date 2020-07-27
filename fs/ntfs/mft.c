@@ -24,7 +24,6 @@
 #include <linux/slab.h>
 #include <linux/swap.h>
 #include <linux/bio.h>
-#include <linux/iversion.h>
 
 #include "attrib.h"
 #include "aops.h"
@@ -2655,7 +2654,7 @@ mft_rec_already_initialized:
 		 * file so that the file can be updated if necessary (compare
 		 * with f_version).
 		 */
-		inode_set_iversion(vi, 1);
+		vi->i_version = 1;
 
 		/* The owner and group come from the ntfs volume. */
 		vi->i_uid = vol->uid;
