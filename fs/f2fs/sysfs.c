@@ -27,7 +27,7 @@ enum {
 	NM_INFO,	/* struct f2fs_nm_info */
 	F2FS_SBI,	/* struct f2fs_sb_info */
 #ifdef CONFIG_F2FS_STAT_FS
-	STAT_INFO,      /* struct f2fs_stat_info */
+	STAT_INFO,	/* struct f2fs_stat_info */
 #endif
 #ifdef CONFIG_F2FS_FAULT_INJECTION
 	FAULT_INFO_RATE,	/* struct f2fs_fault_info */
@@ -386,6 +386,8 @@ static ssize_t f2fs_sbi_store(struct f2fs_attr *a,
 			struct f2fs_sb_info *sbi,
 			const char *buf, size_t count)
 {
+	if (!strcmp(a->attr.name, "cp_interval"))
+		return count;
 	return __sbi_store(a, sbi, buf, count);
 }
 
@@ -653,7 +655,7 @@ static struct kobj_type f2fs_ktype = {
 };
 
 static struct kset f2fs_kset = {
-	.kobj   = {.ktype = &f2fs_ktype},
+	.kobj	= {.ktype = &f2fs_ktype},
 };
 
 static struct kobj_type f2fs_feat_ktype = {
@@ -734,9 +736,9 @@ void f2fs_record_iostat(struct f2fs_sb_info *sbi)
 				msecs_to_jiffies(sbi->iostat_period_ms);
 
 	for (i = 0; i < NR_IO_TYPE; i++) {
-		iostat_diff[i] = sbi->write_iostat[i] -
-				sbi->prev_write_iostat[i];
-		sbi->prev_write_iostat[i] = sbi->write_iostat[i];
+		iostat_diff[i] = sbi->rw_iostat[i] -
+				sbi->prev_rw_iostat[i];
+		sbi->prev_rw_iostat[i] = sbi->rw_iostat[i];
 	}
 	spin_unlock(&sbi->iostat_lock);
 
@@ -755,33 +757,58 @@ static int __maybe_unused iostat_info_seq_show(struct seq_file *seq,
 
 	seq_printf(seq, "time:		%-16llu\n", now);
 
-	/* print app IOs */
+	/* print app write IOs */
+	seq_puts(seq, "[WRITE]\n");
 	seq_printf(seq, "app buffered:	%-16llu\n",
-				sbi->write_iostat[APP_BUFFERED_IO]);
+				sbi->rw_iostat[APP_BUFFERED_IO]);
 	seq_printf(seq, "app direct:	%-16llu\n",
-				sbi->write_iostat[APP_DIRECT_IO]);
+				sbi->rw_iostat[APP_DIRECT_IO]);
 	seq_printf(seq, "app mapped:	%-16llu\n",
-				sbi->write_iostat[APP_MAPPED_IO]);
+				sbi->rw_iostat[APP_MAPPED_IO]);
 
-	/* print fs IOs */
+	/* print fs write IOs */
 	seq_printf(seq, "fs data:	%-16llu\n",
-				sbi->write_iostat[FS_DATA_IO]);
+				sbi->rw_iostat[FS_DATA_IO]);
 	seq_printf(seq, "fs node:	%-16llu\n",
-				sbi->write_iostat[FS_NODE_IO]);
+				sbi->rw_iostat[FS_NODE_IO]);
 	seq_printf(seq, "fs meta:	%-16llu\n",
-				sbi->write_iostat[FS_META_IO]);
+				sbi->rw_iostat[FS_META_IO]);
 	seq_printf(seq, "fs gc data:	%-16llu\n",
-				sbi->write_iostat[FS_GC_DATA_IO]);
+				sbi->rw_iostat[FS_GC_DATA_IO]);
 	seq_printf(seq, "fs gc node:	%-16llu\n",
-				sbi->write_iostat[FS_GC_NODE_IO]);
+				sbi->rw_iostat[FS_GC_NODE_IO]);
 	seq_printf(seq, "fs cp data:	%-16llu\n",
-				sbi->write_iostat[FS_CP_DATA_IO]);
+				sbi->rw_iostat[FS_CP_DATA_IO]);
 	seq_printf(seq, "fs cp node:	%-16llu\n",
-				sbi->write_iostat[FS_CP_NODE_IO]);
+				sbi->rw_iostat[FS_CP_NODE_IO]);
 	seq_printf(seq, "fs cp meta:	%-16llu\n",
-				sbi->write_iostat[FS_CP_META_IO]);
+				sbi->rw_iostat[FS_CP_META_IO]);
+
+	/* print app read IOs */
+	seq_puts(seq, "[READ]\n");
+	seq_printf(seq, "app buffered:	%-16llu\n",
+				sbi->rw_iostat[APP_BUFFERED_READ_IO]);
+	seq_printf(seq, "app direct:	%-16llu\n",
+				sbi->rw_iostat[APP_DIRECT_READ_IO]);
+	seq_printf(seq, "app mapped:	%-16llu\n",
+				sbi->rw_iostat[APP_MAPPED_READ_IO]);
+
+	/* print fs read IOs */
+	seq_printf(seq, "fs data:	%-16llu\n",
+				sbi->rw_iostat[FS_DATA_READ_IO]);
+	seq_printf(seq, "fs gc data:	%-16llu\n",
+				sbi->rw_iostat[FS_GDATA_READ_IO]);
+	seq_printf(seq, "fs compr_data:	%-16llu\n",
+				sbi->rw_iostat[FS_CDATA_READ_IO]);
+	seq_printf(seq, "fs node:	%-16llu\n",
+				sbi->rw_iostat[FS_NODE_READ_IO]);
+	seq_printf(seq, "fs meta:	%-16llu\n",
+				sbi->rw_iostat[FS_META_READ_IO]);
+
+	/* print other IOs */
+	seq_puts(seq, "[OTHER]\n");
 	seq_printf(seq, "fs discard:	%-16llu\n",
-				sbi->write_iostat[FS_DISCARD]);
+				sbi->rw_iostat[FS_DISCARD]);
 
 	return 0;
 }
@@ -841,9 +868,8 @@ int __init f2fs_init_sysfs(void)
 	if (ret) {
 		kobject_put(&f2fs_feat);
 		kset_unregister(&f2fs_kset);
-	} else {
+	} else
 		f2fs_proc_root = proc_mkdir("fs/f2fs_dev", NULL);
-	}
 
 	ida_init(&f2fs_mount_ida);
 
