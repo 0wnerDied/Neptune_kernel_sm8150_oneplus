@@ -18,7 +18,7 @@ echo
 
 ./generator ramdisk/init.qcom.post_boot.sh init/execprog.h
 
-make CC=clang AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip weeb_defconfig
+make CC=clang AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip neptune_defconfig
 
 echo
 echo "Compiling kernel"
