@@ -98,11 +98,11 @@ sesInfoFree(struct cifs_ses *buf_to_free)
 	kfree(buf_to_free->serverOS);
 	kfree(buf_to_free->serverDomain);
 	kfree(buf_to_free->serverNOS);
-	kzfree(buf_to_free->password);
+	kfree_sensitive(buf_to_free->password);
 	kfree(buf_to_free->user_name);
 	kfree(buf_to_free->domainName);
-	kzfree(buf_to_free->auth_key.response);
-	kzfree(buf_to_free);
+	kfree_sensitive(buf_to_free->auth_key.response);
+	kfree_sensitive(buf_to_free);
 }
 
 struct cifs_tcon *
@@ -133,7 +133,7 @@ tconInfoFree(struct cifs_tcon *buf_to_free)
 	}
 	atomic_dec(&tconInfoAllocCount);
 	kfree(buf_to_free->nativeFileSystem);
-	kzfree(buf_to_free->password);
+	kfree_sensitive(buf_to_free->password);
 	kfree(buf_to_free);
 }
 

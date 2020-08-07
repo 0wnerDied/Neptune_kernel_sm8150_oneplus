@@ -309,21 +309,21 @@ void do_request_cleanup(struct cpt_vf *cptvf,
 	}
 
 	if (info->scatter_components)
-		kzfree(info->scatter_components);
+		kfree_sensitive(info->scatter_components);
 
 	if (info->gather_components)
-		kzfree(info->gather_components);
+		kfree_sensitive(info->gather_components);
 
 	if (info->out_buffer)
-		kzfree(info->out_buffer);
+		kfree_sensitive(info->out_buffer);
 
 	if (info->in_buffer)
-		kzfree(info->in_buffer);
+		kfree_sensitive(info->in_buffer);
 
 	if (info->completion_addr)
-		kzfree((void *)info->completion_addr);
+		kfree_sensitive((void *)info->completion_addr);
 
-	kzfree(info);
+	kfree_sensitive(info);
 }
 
 void do_post_process(struct cpt_vf *cptvf, struct cpt_info_buffer *info)

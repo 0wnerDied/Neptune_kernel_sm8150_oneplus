@@ -64,7 +64,7 @@ void sctp_auth_key_put(struct sctp_auth_bytes *key)
 		return;
 
 	if (refcount_dec_and_test(&key->refcnt)) {
-		kzfree(key);
+		kfree_sensitive(key);
 		SCTP_DBG_OBJCNT_DEC(keys);
 	}
 }

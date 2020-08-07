@@ -150,8 +150,10 @@ void memcg_destroy_kmem_caches(struct mem_cgroup *);
 void * __must_check __krealloc(const void *, size_t, gfp_t);
 void * __must_check krealloc(const void *, size_t, gfp_t);
 void kfree(const void *);
-void kzfree(const void *);
+void kfree_sensitive(const void *);
 size_t ksize(const void *);
+
+#define kzfree(x)	kfree_sensitive(x)	/* For backward compatibility */
 
 #ifdef CONFIG_HAVE_HARDENED_USERCOPY_ALLOCATOR
 const char *__check_heap_object(const void *ptr, unsigned long n,

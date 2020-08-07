@@ -409,7 +409,7 @@ static int chap_server_compute_md5(
 	pr_debug("[server] Sending CHAP_R=0x%s\n", response);
 	auth_ret = 0;
 out:
-	kzfree(desc);
+	kfree_sensitive(desc);
 	if (tfm)
 		crypto_free_shash(tfm);
 	kfree(challenge);

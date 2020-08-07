@@ -250,7 +250,7 @@ out_free:
 	kfree(state->sha1_digest);
 	if (state->sha1) {
 		crypto_free_shash(state->sha1->tfm);
-		kzfree(state->sha1);
+		kfree_sensitive(state->sha1);
 	}
 	crypto_free_sync_skcipher(state->arc4);
 	kfree(state);
@@ -267,7 +267,7 @@ static void mppe_free(void *arg)
 	if (state) {
 		kfree(state->sha1_digest);
 		crypto_free_shash(state->sha1->tfm);
-		kzfree(state->sha1);
+		kfree_sensitive(state->sha1);
 		crypto_free_sync_skcipher(state->arc4);
 		kfree(state);
 	}
