@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -58,6 +58,7 @@ enum {
 
 enum {
 	MDSS_PLL_TARGET_8996,
+	MDSS_PLL_TARGET_SDM660,
 };
 
 #define DFPS_MAX_NUM_OF_FRAME_RATES 16
