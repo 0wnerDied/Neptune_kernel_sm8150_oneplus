@@ -539,13 +539,12 @@ unsigned int ovl_get_nlink(struct dentry *lowerdentry,
 	int nlink_diff;
 	int nlink;
 	char buf[13];
-	ssize_t err;
+	int err;
 
 	if (!lowerdentry || !upperdentry || d_inode(lowerdentry)->i_nlink == 1)
 		return fallback;
 
-	err = ovl_vfs_getxattr(upperdentry, OVL_XATTR_NLINK,
-			       &buf, sizeof(buf) - 1);
+	err = vfs_getxattr(upperdentry, OVL_XATTR_NLINK, &buf, sizeof(buf) - 1);
 	if (err < 0)
 		goto fail;
 
