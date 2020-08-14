@@ -409,7 +409,7 @@ static void crypt_iv_essiv_dtr(struct crypt_config *cc)
 	crypto_free_shash(essiv->hash_tfm);
 	essiv->hash_tfm = NULL;
 
-	kzfree(essiv->salt);
+	kfree_sensitive(essiv->salt);
 	essiv->salt = NULL;
 
 	essiv_tfm = cc->iv_private;
@@ -543,7 +543,7 @@ static void crypt_iv_lmk_dtr(struct crypt_config *cc)
 		crypto_free_shash(lmk->hash_tfm);
 	lmk->hash_tfm = NULL;
 
-	kzfree(lmk->seed);
+	kfree_sensitive(lmk->seed);
 	lmk->seed = NULL;
 }
 
@@ -695,9 +695,9 @@ static void crypt_iv_tcw_dtr(struct crypt_config *cc)
 {
 	struct iv_tcw_private *tcw = &cc->iv_gen_private.tcw;
 
-	kzfree(tcw->iv_seed);
+	kfree_sensitive(tcw->iv_seed);
 	tcw->iv_seed = NULL;
-	kzfree(tcw->whitening);
+	kfree_sensitive(tcw->whitening);
 	tcw->whitening = NULL;
 
 	if (tcw->crc32_tfm && !IS_ERR(tcw->crc32_tfm))
@@ -1883,8 +1883,9 @@ static int crypt_alloc_tfms_skcipher(struct crypt_config *cc, char *ciphermode)
 	unsigned i;
 	int err;
 
-	cc->cipher_tfm.tfms = kzalloc(cc->tfms_count *
-				      sizeof(struct crypto_skcipher *), GFP_KERNEL);
+	cc->cipher_tfm.tfms = kcalloc(cc->tfms_count,
+				      sizeof(struct crypto_skcipher *),
+				      GFP_KERNEL);
 	if (!cc->cipher_tfm.tfms)
 		return -ENOMEM;
 
@@ -2048,7 +2049,7 @@ static int crypt_set_keyring_key(struct crypt_config *cc, const char *key_string
 	key = request_key(key_string[0] == 'l' ? &key_type_logon : &key_type_user,
 			  key_desc + 1, NULL);
 	if (IS_ERR(key)) {
-		kzfree(new_key_string);
+		kfree_sensitive(new_key_string);
 		return PTR_ERR(key);
 	}
 
@@ -2058,14 +2059,14 @@ static int crypt_set_keyring_key(struct crypt_config *cc, const char *key_string
 	if (!ukp) {
 		up_read(&key->sem);
 		key_put(key);
-		kzfree(new_key_string);
+		kfree_sensitive(new_key_string);
 		return -EKEYREVOKED;
 	}
 
 	if (cc->key_size != ukp->datalen) {
 		up_read(&key->sem);
 		key_put(key);
-		kzfree(new_key_string);
+		kfree_sensitive(new_key_string);
 		return -EINVAL;
 	}
 
@@ -2081,10 +2082,10 @@ static int crypt_set_keyring_key(struct crypt_config *cc, const char *key_string
 
 	if (!ret) {
 		set_bit(DM_CRYPT_KEY_VALID, &cc->flags);
-		kzfree(cc->key_string);
+		kfree_sensitive(cc->key_string);
 		cc->key_string = new_key_string;
 	} else
-		kzfree(new_key_string);
+		kfree_sensitive(new_key_string);
 
 	return ret;
 }
@@ -2145,7 +2146,7 @@ static int crypt_set_key(struct crypt_config *cc, char *key)
 	clear_bit(DM_CRYPT_KEY_VALID, &cc->flags);
 
 	/* wipe references to any kernel keyring key */
-	kzfree(cc->key_string);
+	kfree_sensitive(cc->key_string);
 	cc->key_string = NULL;
 
 	/* Decode key from its hex representation. */
@@ -2169,7 +2170,7 @@ static int crypt_wipe_key(struct crypt_config *cc)
 
 	clear_bit(DM_CRYPT_KEY_VALID, &cc->flags);
 	get_random_bytes(&cc->key, cc->key_size);
-	kzfree(cc->key_string);
+	kfree_sensitive(cc->key_string);
 	cc->key_string = NULL;
 	r = crypt_setkey(cc);
 	memset(&cc->key, 0, cc->key_size * sizeof(u8));
@@ -2250,14 +2251,14 @@ static void crypt_dtr(struct dm_target *ti)
 	if (cc->dev)
 		dm_put_device(ti, cc->dev);
 
-	kzfree(cc->cipher);
-	kzfree(cc->cipher_string);
-	kzfree(cc->key_string);
-	kzfree(cc->cipher_auth);
-	kzfree(cc->authenc_key);
+	kfree_sensitive(cc->cipher);
+	kfree_sensitive(cc->cipher_string);
+	kfree_sensitive(cc->key_string);
+	kfree_sensitive(cc->cipher_auth);
+	kfree_sensitive(cc->authenc_key);
 
 	/* Must zero key material before freeing */
-	kzfree(cc);
+	kfree_sensitive(cc);
 
 	spin_lock(&dm_crypt_clients_lock);
 	WARN_ON(!dm_crypt_clients_n);

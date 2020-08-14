@@ -1006,7 +1006,7 @@ krb5_rc4_setup_seq_key(struct krb5_ctx *kctx,
 	err = 0;
 
 out_err:
-	kzfree(desc);
+	kfree_sensitive(desc);
 	crypto_free_shash(hmac);
 	dprintk("%s: returning %d\n", __func__, err);
 	return err;
@@ -1083,7 +1083,7 @@ krb5_rc4_setup_enc_key(struct krb5_ctx *kctx,
 	err = 0;
 
 out_err:
-	kzfree(desc);
+	kfree_sensitive(desc);
 	crypto_free_shash(hmac);
 	dprintk("%s: returning %d\n", __func__, err);
 	return err;

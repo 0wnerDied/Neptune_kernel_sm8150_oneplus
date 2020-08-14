@@ -1618,7 +1618,8 @@ struct edid *drm_do_get_edid(struct drm_connector *connector,
 		edid[EDID_LENGTH-1] += edid[0x7e] - valid_extensions;
 		edid[0x7e] = valid_extensions;
 
-		new = kmalloc((valid_extensions + 1) * EDID_LENGTH, GFP_KERNEL);
+		new = kmalloc_array(valid_extensions + 1, EDID_LENGTH,
+				    GFP_KERNEL);
 		if (!new)
 			goto out;
 
@@ -2681,7 +2682,7 @@ static int drm_cvt_modes(struct drm_connector *connector,
 	const u8 empty[3] = { 0, 0, 0 };
 
 	for (i = 0; i < 4; i++) {
-		int uninitialized_var(width), height;
+		int width, height;
 		cvt = &(timing->data.other_data.data.cvt[i]);
 
 		if (!memcmp(cvt->code, empty, 3))

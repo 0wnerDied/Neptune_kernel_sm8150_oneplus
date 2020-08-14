@@ -406,7 +406,7 @@ static void pmic_arb_chained_irq(struct irq_desc *desc)
 	struct virtio_spmi_msg *req;
 	u32 *irq_status;
 
-	irq_status = kzalloc((pa->max_apid + 1) * sizeof(u32), GFP_ATOMIC);
+	irq_status = kcalloc(pa->max_apid + 1, sizeof(u32), GFP_ATOMIC);
 	if (!irq_status)
 		return;
 

@@ -192,9 +192,9 @@ static void aa_free_data(void *ptr, void *arg)
 {
 	struct aa_data *data = ptr;
 
-	kzfree(data->data);
-	kzfree(data->key);
-	kzfree(data);
+	kfree_sensitive(data->data);
+	kfree_sensitive(data->key);
+	kfree_sensitive(data);
 }
 
 /**
@@ -221,13 +221,13 @@ void aa_free_profile(struct aa_profile *profile)
 	aa_put_profile(rcu_access_pointer(profile->parent));
 
 	aa_put_ns(profile->ns);
-	kzfree(profile->rename);
+	kfree_sensitive(profile->rename);
 
 	aa_free_file_rules(&profile->file);
 	aa_free_cap_rules(&profile->caps);
 	aa_free_rlimit_rules(&profile->rlimits);
 
-	kzfree(profile->dirname);
+	kfree_sensitive(profile->dirname);
 	aa_put_dfa(profile->xmatch);
 	aa_put_dfa(profile->policy.dfa);
 
@@ -235,13 +235,13 @@ void aa_free_profile(struct aa_profile *profile)
 		rht = profile->data;
 		profile->data = NULL;
 		rhashtable_free_and_destroy(rht, aa_free_data, NULL);
-		kzfree(rht);
+		kfree_sensitive(rht);
 	}
 
-	kzfree(profile->hash);
+	kfree_sensitive(profile->hash);
 	aa_put_loaddata(profile->rawdata);
 
-	kzfree(profile);
+	kfree_sensitive(profile);
 }
 
 /**

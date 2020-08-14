@@ -640,8 +640,8 @@ static void _rtl92cu_init_chipN_two_out_ep_priority(struct ieee80211_hw *hw,
 								u8 queue_sel)
 {
 	u16 beQ, bkQ, viQ, voQ, mgtQ, hiQ;
-	u16 uninitialized_var(valueHi);
-	u16 uninitialized_var(valueLow);
+	u16 valueHi;
+	u16 valueLow;
 
 	switch (queue_sel) {
 	case (TX_SELE_HQ | TX_SELE_LQ):

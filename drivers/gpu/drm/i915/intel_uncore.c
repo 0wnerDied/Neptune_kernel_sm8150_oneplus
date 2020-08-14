@@ -1558,7 +1558,7 @@ int __intel_wait_for_register_fw(struct drm_i915_private *dev_priv,
 				 unsigned int slow_timeout_ms,
 				 u32 *out_value)
 {
-	u32 uninitialized_var(reg_value);
+	u32 reg_value;
 #define done (((reg_value = I915_READ_FW(reg)) & mask) == value)
 	int ret;
 

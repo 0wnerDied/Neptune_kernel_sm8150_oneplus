@@ -230,7 +230,7 @@ void gf128mul_4k_bbe(be128 *a, const struct gf128mul_4k *t);
 
 static inline void gf128mul_free_4k(struct gf128mul_4k *t)
 {
-	kzfree(t);
+	kfree_sensitive(t);
 }
 
 

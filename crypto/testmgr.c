@@ -604,7 +604,8 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
 		goto out_nooutbuf;
 
 	/* avoid "the frame size is larger than 1024 bytes" compiler warning */
-	sg = kmalloc(sizeof(*sg) * 8 * (diff_dst ? 4 : 2), GFP_KERNEL);
+	sg = kmalloc(array3_size(sizeof(*sg), 8, (diff_dst ? 4 : 2)),
+		     GFP_KERNEL);
 	if (!sg)
 		goto out_nosg;
 	sgout = &sg[16];
@@ -1920,7 +1921,7 @@ static int drbg_cavs_test(const struct drbg_testvec *test, int pr,
 	if (IS_ERR(drng)) {
 		printk(KERN_ERR "alg: drbg: could not allocate DRNG handle for "
 		       "%s\n", driver);
-		kzfree(buf);
+		kfree_sensitive(buf);
 		return -ENOMEM;
 	}
 
@@ -1967,7 +1968,7 @@ static int drbg_cavs_test(const struct drbg_testvec *test, int pr,
 
 outbuf:
 	crypto_free_rng(drng);
-	kzfree(buf);
+	kfree_sensitive(buf);
 	return ret;
 }
 

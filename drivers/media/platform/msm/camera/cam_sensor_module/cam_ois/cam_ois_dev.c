@@ -643,11 +643,13 @@ static int __init cam_ois_driver_init(void)
         CAM_INFO(CAM_OIS, "Create successs");
 
     if (pOISdata_wide == NULL){
-        pOISdata_wide = kmalloc(sizeof(unsigned char)*OIS_DATA_LENGTH*OIS_DATA_SIZE, GFP_KERNEL);
+        pOISdata_wide = kmalloc(array3_size(OIS_DATA_LENGTH, OIS_DATA_SIZE, sizeof(unsigned char)),
+				GFP_KERNEL);
         memset (pOISdata_wide, 0, sizeof(unsigned char)*OIS_DATA_SIZE*OIS_DATA_LENGTH);
     }
     if (pOISdata_tele == NULL){
-        pOISdata_tele = kmalloc(sizeof(unsigned char)*OIS_DATA_LENGTH*OIS_DATA_SIZE, GFP_KERNEL);
+        pOISdata_tele = kmalloc(array3_size(OIS_DATA_LENGTH, OIS_DATA_SIZE, sizeof(unsigned char)),
+				GFP_KERNEL);
         memset (pOISdata_tele, 0, sizeof(unsigned char)*OIS_DATA_SIZE*OIS_DATA_LENGTH);
     }
 

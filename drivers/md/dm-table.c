@@ -561,7 +561,7 @@ static char **realloc_argv(unsigned *size, char **old_argv)
 		new_size = 8;
 		gfp = GFP_NOIO;
 	}
-	argv = kmalloc(new_size * sizeof(*argv), gfp);
+	argv = kmalloc_array(new_size, sizeof(*argv), gfp);
 	if (argv) {
 		memcpy(argv, old_argv, *size * sizeof(*argv));
 		*size = new_size;
@@ -662,7 +662,7 @@ static int validate_hardware_logical_block_alignment(struct dm_table *table,
 	 */
 	unsigned short remaining = 0;
 
-	struct dm_target *uninitialized_var(ti);
+	struct dm_target *ti;
 	struct queue_limits ti_limits;
 	unsigned i;
 

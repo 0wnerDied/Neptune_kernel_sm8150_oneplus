@@ -1564,7 +1564,8 @@ static ssize_t proc_register_info_read(struct file *file,
 		return count;
 	}
 	ts->reg_info.reg_result =
-	    kzalloc(ts->reg_info.reg_length * (sizeof(uint16_t)), GFP_KERNEL | GFP_DMA);
+	    kcalloc(ts->reg_info.reg_length, sizeof(uint16_t),
+		    GFP_KERNEL | GFP_DMA);
 	if (!ts->reg_info.reg_result) {
 		TPD_INFO("ts->reg_info.reg_result kzalloc error\n");
 		return count;

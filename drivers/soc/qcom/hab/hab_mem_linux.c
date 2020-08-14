@@ -343,7 +343,7 @@ int habmem_hyp_grant_user(unsigned long address,
 	struct grantable *item = (struct grantable *)ppdata;
 	struct page **pages;
 
-	pages = vmalloc(page_count * sizeof(struct page *));
+	pages = vmalloc(array_size(page_count, sizeof(struct page *)));
 	if (!pages)
 		return -ENOMEM;
 

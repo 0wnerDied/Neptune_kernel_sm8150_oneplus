@@ -2459,7 +2459,9 @@ static struct scatterlist **dm_integrity_alloc_journal_scatterlist(struct dm_int
 	struct scatterlist **sl;
 	unsigned i;
 
-	sl = kvmalloc(ic->journal_sections * sizeof(struct scatterlist *), GFP_KERNEL | __GFP_ZERO);
+	sl = kvmalloc_array(ic->journal_sections,
+			    sizeof(struct scatterlist *),
+			    GFP_KERNEL | __GFP_ZERO);
 	if (!sl)
 		return NULL;
 
@@ -2475,7 +2477,8 @@ static struct scatterlist **dm_integrity_alloc_journal_scatterlist(struct dm_int
 
 		n_pages = (end_index - start_index + 1);
 
-		s = kvmalloc(n_pages * sizeof(struct scatterlist), GFP_KERNEL);
+		s = kvmalloc_array(n_pages, sizeof(struct scatterlist),
+				   GFP_KERNEL);
 		if (!s) {
 			dm_integrity_free_journal_scatterlist(ic, sl);
 			return NULL;
@@ -2500,8 +2503,8 @@ static struct scatterlist **dm_integrity_alloc_journal_scatterlist(struct dm_int
 
 static void free_alg(struct alg_spec *a)
 {
-	kzfree(a->alg_string);
-	kzfree(a->key);
+	kfree_sensitive(a->alg_string);
+	kfree_sensitive(a->key);
 	memset(a, 0, sizeof *a);
 }
 
@@ -2654,7 +2657,9 @@ static int create_journal(struct dm_integrity_c *ic, char **error)
 				goto bad;
 			}
 
-			sg = kvmalloc((ic->journal_pages + 1) * sizeof(struct scatterlist), GFP_KERNEL);
+			sg = kvmalloc_array(ic->journal_pages + 1,
+					    sizeof(struct scatterlist),
+					    GFP_KERNEL);
 			if (!sg) {
 				*error = "Unable to allocate sg list";
 				r = -ENOMEM;
@@ -2720,7 +2725,9 @@ static int create_journal(struct dm_integrity_c *ic, char **error)
 				r = -ENOMEM;
 				goto bad;
 			}
-			ic->sk_requests = kvmalloc(ic->journal_sections * sizeof(struct skcipher_request *), GFP_KERNEL | __GFP_ZERO);
+			ic->sk_requests = kvmalloc_array(ic->journal_sections,
+							 sizeof(struct skcipher_request *),
+							 GFP_KERNEL | __GFP_ZERO);
 			if (!ic->sk_requests) {
 				*error = "Unable to allocate sk requests";
 				r = -ENOMEM;
@@ -2754,7 +2761,8 @@ static int create_journal(struct dm_integrity_c *ic, char **error)
 					r = -ENOMEM;
 					goto bad;
 				}
-				section_req->iv = kmalloc(ivsize * 2, GFP_KERNEL);
+				section_req->iv = kmalloc_array(ivsize, 2,
+								GFP_KERNEL);
 				if (!section_req->iv) {
 					skcipher_request_free(section_req);
 					*error = "Unable to allocate iv";
@@ -3235,7 +3243,7 @@ static void dm_integrity_dtr(struct dm_target *ti)
 		for (i = 0; i < ic->journal_sections; i++) {
 			struct skcipher_request *req = ic->sk_requests[i];
 			if (req) {
-				kzfree(req->iv);
+				kfree_sensitive(req->iv);
 				skcipher_request_free(req);
 			}
 		}
