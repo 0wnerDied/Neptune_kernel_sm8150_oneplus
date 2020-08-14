@@ -463,7 +463,7 @@ static loff_t rmidev_llseek(struct file *filp, loff_t off, int whence)
 	struct rmidev_data *dev_data = filp->private_data;
 
 	if (IS_ERR(dev_data)) {
-		pr_err("%s: Pointer of char device data is invalid", __func__);
+		pr_debug("%s: Pointer of char device data is invalid", __func__);
 		return -EBADF;
 	}
 
@@ -518,7 +518,7 @@ static ssize_t rmidev_read(struct file *filp, char __user * buf,
 
 	tmpbuf = kzalloc(count + 1, GFP_KERNEL);
 	if (IS_ERR(dev_data)) {
-		pr_err("%s: Pointer of char device data is invalid", __func__);
+		pr_debug("%s: Pointer of char device data is invalid", __func__);
 		kfree(tmpbuf);
 		return -EBADF;
 	}
@@ -569,7 +569,7 @@ static ssize_t rmidev_write(struct file *filp, const char __user * buf,
 
 	tmpbuf = kzalloc(count + 1, GFP_KERNEL);
 	if (IS_ERR(dev_data)) {
-		pr_err("%s: Pointer of char device data is invalid", __func__);
+		pr_debug("%s: Pointer of char device data is invalid", __func__);
 		kfree(tmpbuf);
 		return -EBADF;
 	}
@@ -777,7 +777,7 @@ static int rmidev_create_device_class(void)
 	rmidev_device_class = class_create(THIS_MODULE, DEVICE_CLASS_NAME);
 
 	if (IS_ERR(rmidev_device_class)) {
-		pr_err("%s: Failed to create /dev/%s\n",
+		pr_debug("%s: Failed to create /dev/%s\n",
 		       __func__, CHAR_DEVICE_NAME);
 		return -ENODEV;
 	}
@@ -795,7 +795,7 @@ static void remote_rmi4_delay_work(struct work_struct *work)
 struct remotepanel_data *remote_alloc_panel_data(void)
 {
 	if (rmidev) {
-		pr_err("%s:remote panel data has alloc already null\n",
+		pr_debug("%s:remote panel data has alloc already null\n",
 		       __func__);
 		return NULL;
 	}
@@ -820,11 +820,11 @@ int register_remote_device(struct remotepanel_data *pdata)
 	struct rmidev_data *dev_data = NULL;
 
 	if (pdata == NULL) {
-		pr_err("%s:pdata is null\n", __func__);
+		pr_debug("%s:pdata is null\n", __func__);
 		return -1;
 	}
 	if (rmidev) {
-		pr_err("%s:remote device has register already null\n",
+		pr_debug("%s:remote device has register already null\n",
 		       __func__);
 		return -1;
 	}
