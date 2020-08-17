@@ -207,6 +207,10 @@ echo "s2idle" > /sys/power/mem_sleep
 # Disable sleep_disabled
 echo N > /sys/module/lpm_levels/parameters/sleep_disabled
 
+# Set governor for big and prime clusters
+echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy4/scaling_governor
+echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy7/scaling_governor
+
 # Set readahead
 sleep 20
 find /sys/devices -name read_ahead_kb | while read node; do echo 64 > $node; done
