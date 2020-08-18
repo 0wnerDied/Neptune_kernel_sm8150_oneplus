@@ -196,7 +196,7 @@ sync
 
 # Setup swap
 echo 4294967296 > /sys/devices/virtual/block/vbswap0/disksize
-echo 130 > /proc/sys/vm/swappiness
+echo 140 > /proc/sys/vm/swappiness
 chmod 755 /sbin/Neptune/mkswap
 /sbin/Neptune/mkswap /dev/block/vbswap0
 swapon /dev/block/vbswap0 -p 32758
