@@ -213,6 +213,6 @@ echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy7/scaling_governor
 
 # Set readahead
 sleep 20
-find /sys/devices -name read_ahead_kb | while read node; do echo 64 > $node; done
+find /sys/devices -name read_ahead_kb | while read node; do echo 128 > $node; done
 
 exit 0
