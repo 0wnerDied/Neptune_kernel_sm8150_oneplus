@@ -123,7 +123,7 @@ static size_t ZSTD_decompressBegin(ZSTD_DCtx *dctx)
 	return 0;
 }
 
-ZSTD_DCtx *ZSTD_createDCtx_advanced(ZSTD_customMem customMem)
+static ZSTD_DCtx *ZSTD_createDCtx_advanced(ZSTD_customMem customMem)
 {
 	ZSTD_DCtx *dctx;
 
@@ -142,14 +142,6 @@ ZSTD_DCtx *ZSTD_initDCtx(void *workspace, size_t workspaceSize)
 {
 	ZSTD_customMem const stackMem = ZSTD_initStack(workspace, workspaceSize);
 	return ZSTD_createDCtx_advanced(stackMem);
-}
-
-size_t ZSTD_freeDCtx(ZSTD_DCtx *dctx)
-{
-	if (dctx == NULL)
-		return 0; /* support free on NULL */
-	ZSTD_free(dctx, dctx->customMem);
-	return 0; /* reserved as a potential error code in the future */
 }
 
 static void ZSTD_refDDict(ZSTD_DCtx *dstDCtx, const ZSTD_DDict *ddict);
@@ -289,7 +281,7 @@ typedef struct {
 
 /*! ZSTD_getcBlockSize() :
 *   Provides the size of compressed block from block header `src` */
-size_t ZSTD_getcBlockSize(const void *src, size_t srcSize, blockProperties_t *bpPtr)
+static size_t ZSTD_getcBlockSize(const void *src, size_t srcSize, blockProperties_t *bpPtr)
 {
 	if (srcSize < ZSTD_blockHeaderSize)
 		return ERROR(srcSize_wrong);
@@ -317,7 +309,7 @@ static size_t ZSTD_copyRawBlock(void *dst, size_t dstCapacity, const void *src, 
 
 /*! ZSTD_decodeLiteralsBlock() :
 	@return : nb of bytes read from src (< srcSize ) */
-size_t ZSTD_decodeLiteralsBlock(ZSTD_DCtx *dctx, const void *src, size_t srcSize) /* note : srcSize < BLOCKSIZE */
+static size_t ZSTD_decodeLiteralsBlock(ZSTD_DCtx *dctx, const void *src, size_t srcSize) /* note : srcSize < BLOCKSIZE */
 {
 	if (srcSize < MIN_CBLOCK_SIZE)
 		return ERROR(corruption_detected);
@@ -679,7 +671,7 @@ static size_t ZSTD_buildSeqTable(FSE_DTable *DTableSpace, const FSE_DTable **DTa
 	}
 }
 
-size_t ZSTD_decodeSeqHeaders(ZSTD_DCtx *dctx, int *nbSeqPtr, const void *src, size_t srcSize)
+static size_t ZSTD_decodeSeqHeaders(ZSTD_DCtx *dctx, int *nbSeqPtr, const void *src, size_t srcSize)
 {
 	const BYTE *const istart = (const BYTE *const)src;
 	const BYTE *const iend = istart + srcSize;
@@ -1364,7 +1356,7 @@ static void ZSTD_checkContinuity(ZSTD_DCtx *dctx, const void *dst)
 	}
 }
 
-size_t ZSTD_generateNxBytes(void *dst, size_t dstCapacity, BYTE byte, size_t length)
+static size_t ZSTD_generateNxBytes(void *dst, size_t dstCapacity, BYTE byte, size_t length)
 {
 	if (length > dstCapacity)
 		return ERROR(dstSize_tooSmall);
@@ -1640,8 +1632,6 @@ size_t ZSTD_decompressDCtx(ZSTD_DCtx *dctx, void *dst, size_t dstCapacity, const
 	return ZSTD_decompress_usingDict(dctx, dst, dstCapacity, src, srcSize, NULL, 0);	
 }
 
-int ZSTD_isSkipFrame(ZSTD_DCtx *dctx) { return dctx->stage == ZSTDds_skipFrame; } /* for zbuff */
-
 /* ======   ZSTD_DDict   ====== */
 
 struct ZSTD_DDict_s {
@@ -1715,25 +1705,6 @@ struct ZSTD_DStream_s {
 	U32 hostageByte;
 }; /* typedef'd to ZSTD_DStream within "zstd.h" */
 
-size_t ZSTD_freeDStream(ZSTD_DStream *zds)
-{
-	if (zds == NULL)
-		return 0; /* support free on null */
-	{
-		ZSTD_customMem const cMem = zds->customMem;
-		ZSTD_freeDCtx(zds->dctx);
-		zds->dctx = NULL;
-		ZSTD_freeDDict(zds->ddictLocal);
-		zds->ddictLocal = NULL;
-		ZSTD_free(zds->inBuff, cMem);
-		zds->inBuff = NULL;
-		ZSTD_free(zds->outBuff, cMem);
-		zds->outBuff = NULL;
-		ZSTD_free(zds, cMem);
-		return 0;
-	}
-}
-
 /* *****   Decompression   ***** */
 
 ZSTD_STATIC size_t ZSTD_limitCopy(void *dst, size_t dstCapacity, const void *src, size_t srcSize)
@@ -1742,10 +1713,6 @@ ZSTD_STATIC size_t ZSTD_limitCopy(void *dst, size_t dstCapacity, const void *src
 	memcpy(dst, src, length);
 	return length;
 }
-
-EXPORT_SYMBOL(ZSTD_DCtxWorkspaceBound);	
-EXPORT_SYMBOL(ZSTD_initDCtx);	
-EXPORT_SYMBOL(ZSTD_decompressDCtx);
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_DESCRIPTION("Zstd Decompressor");

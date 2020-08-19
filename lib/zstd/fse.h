@@ -263,9 +263,6 @@ size_t FSE_count_simple(unsigned *count, unsigned *maxSymbolValuePtr, const void
 unsigned FSE_optimalTableLog_internal(unsigned maxTableLog, size_t srcSize, unsigned maxSymbolValue, unsigned minus);
 /**< same as FSE_optimalTableLog(), which used `minus==2` */
 
-size_t FSE_buildCTable_raw(FSE_CTable *ct, unsigned nbBits);
-/**< build a fake FSE_CTable, designed for a flat distribution, where each symbol uses nbBits */
-
 size_t FSE_buildCTable_rle(FSE_CTable *ct, unsigned char symbolValue);
 /**< build a fake FSE_CTable, designed to compress always the same symbolValue */
 
@@ -274,9 +271,6 @@ size_t FSE_buildCTable_rle(FSE_CTable *ct, unsigned char symbolValue);
  * `wkspSize` must be >= `(1<<tableLog)`.
  */
 size_t FSE_buildCTable_wksp(FSE_CTable *ct, const short *normalizedCounter, unsigned maxSymbolValue, unsigned tableLog, void *workSpace, size_t wkspSize);
-
-size_t FSE_buildDTable_raw(FSE_DTable *dt, unsigned nbBits);
-/**< build a fake FSE_DTable, designed to read a flat distribution where each symbol uses nbBits */
 
 size_t FSE_buildDTable_rle(FSE_DTable *dt, unsigned char symbolValue);
 /**< build a fake FSE_DTable, designed to always generate the same symbolValue */

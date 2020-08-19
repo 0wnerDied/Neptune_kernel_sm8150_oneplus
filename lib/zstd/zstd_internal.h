@@ -219,10 +219,6 @@ typedef struct {
 	const BYTE *cachedLiterals;
 } seqStore_t;
 
-const seqStore_t *ZSTD_getSeqStore(const ZSTD_CCtx *ctx);
-void ZSTD_seqToCodes(const seqStore_t *seqStorePtr);
-int ZSTD_isSkipFrame(ZSTD_DCtx *dctx);
-
 /*= Custom memory allocation functions */
 typedef void *(*ZSTD_allocFunction)(void *opaque, size_t size);
 typedef void (*ZSTD_freeFunction)(void *opaque, void *address);
@@ -248,26 +244,11 @@ typedef struct {
 ZSTD_customMem ZSTD_initStack(void *workspace, size_t workspaceSize);
 
 void *ZSTD_stackAllocAll(void *opaque, size_t *size);
-void *ZSTD_stackAlloc(void *opaque, size_t size);
-void ZSTD_stackFree(void *opaque, void *address);
 
 /*======  common function  ======*/
 
 ZSTD_STATIC U32 ZSTD_highbit32(U32 val) { return 31 - __builtin_clz(val); }
 
-/* hidden functions */
-
-/* ZSTD_invalidateRepCodes() :
- * ensures next compression will not use repcodes from previous block.
- * Note : only works with regular variant;
- *        do not use with extDict variant ! */
-void ZSTD_invalidateRepCodes(ZSTD_CCtx *cctx);
-
-size_t ZSTD_freeCCtx(ZSTD_CCtx *cctx);
-size_t ZSTD_freeDCtx(ZSTD_DCtx *dctx);
-size_t ZSTD_freeCDict(ZSTD_CDict *cdict);
 size_t ZSTD_freeDDict(ZSTD_DDict *cdict);
-size_t ZSTD_freeCStream(ZSTD_CStream *zcs);
-size_t ZSTD_freeDStream(ZSTD_DStream *zds);
 
 #endif /* ZSTD_CCOMMON_H_MODULE */

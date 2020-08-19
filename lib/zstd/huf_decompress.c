@@ -87,7 +87,7 @@ typedef struct {
 	BYTE nbBits;
 } HUF_DEltX2; /* single-symbol decoding */
 
-size_t HUF_readDTableX2_wksp(HUF_DTable *DTable, const void *src, size_t srcSize, void *workspace, size_t workspaceSize)
+static size_t HUF_readDTableX2_wksp(HUF_DTable *DTable, const void *src, size_t srcSize, void *workspace, size_t workspaceSize)
 {
 	U32 tableLog = 0;
 	U32 nbSymbols = 0;
@@ -221,14 +221,6 @@ static size_t HUF_decompress1X2_usingDTable_internal(void *dst, size_t dstSize, 
 	return dstSize;
 }
 
-size_t HUF_decompress1X2_usingDTable(void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, const HUF_DTable *DTable)
-{
-	DTableDesc dtd = HUF_getDTableDesc(DTable);
-	if (dtd.tableType != 0)
-		return ERROR(GENERIC);
-	return HUF_decompress1X2_usingDTable_internal(dst, dstSize, cSrc, cSrcSize, DTable);
-}
-
 size_t HUF_decompress1X2_DCtx_wksp(HUF_DTable *DCtx, void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, void *workspace, size_t workspaceSize)
 {
 	const BYTE *ip = (const BYTE *)cSrc;
@@ -352,15 +344,7 @@ static size_t HUF_decompress4X2_usingDTable_internal(void *dst, size_t dstSize, 
 	}
 }
 
-size_t HUF_decompress4X2_usingDTable(void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, const HUF_DTable *DTable)
-{
-	DTableDesc dtd = HUF_getDTableDesc(DTable);
-	if (dtd.tableType != 0)
-		return ERROR(GENERIC);
-	return HUF_decompress4X2_usingDTable_internal(dst, dstSize, cSrc, cSrcSize, DTable);
-}
-
-size_t HUF_decompress4X2_DCtx_wksp(HUF_DTable *dctx, void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, void *workspace, size_t workspaceSize)
+static size_t HUF_decompress4X2_DCtx_wksp(HUF_DTable *dctx, void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, void *workspace, size_t workspaceSize)
 {
 	const BYTE *ip = (const BYTE *)cSrc;
 
@@ -681,29 +665,6 @@ static size_t HUF_decompress1X4_usingDTable_internal(void *dst, size_t dstSize, 
 	return dstSize;
 }
 
-size_t HUF_decompress1X4_usingDTable(void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, const HUF_DTable *DTable)
-{
-	DTableDesc dtd = HUF_getDTableDesc(DTable);
-	if (dtd.tableType != 1)
-		return ERROR(GENERIC);
-	return HUF_decompress1X4_usingDTable_internal(dst, dstSize, cSrc, cSrcSize, DTable);
-}
-
-size_t HUF_decompress1X4_DCtx_wksp(HUF_DTable *DCtx, void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, void *workspace, size_t workspaceSize)
-{
-	const BYTE *ip = (const BYTE *)cSrc;
-
-	size_t const hSize = HUF_readDTableX4_wksp(DCtx, cSrc, cSrcSize, workspace, workspaceSize);
-	if (HUF_isError(hSize))
-		return hSize;
-	if (hSize >= cSrcSize)
-		return ERROR(srcSize_wrong);
-	ip += hSize;
-	cSrcSize -= hSize;
-
-	return HUF_decompress1X4_usingDTable_internal(dst, dstSize, ip, cSrcSize, DCtx);
-}
-
 static size_t HUF_decompress4X4_usingDTable_internal(void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, const HUF_DTable *DTable)
 {
 	if (cSrcSize < 10)
@@ -814,15 +775,7 @@ static size_t HUF_decompress4X4_usingDTable_internal(void *dst, size_t dstSize, 
 	}
 }
 
-size_t HUF_decompress4X4_usingDTable(void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, const HUF_DTable *DTable)
-{
-	DTableDesc dtd = HUF_getDTableDesc(DTable);
-	if (dtd.tableType != 1)
-		return ERROR(GENERIC);
-	return HUF_decompress4X4_usingDTable_internal(dst, dstSize, cSrc, cSrcSize, DTable);
-}
-
-size_t HUF_decompress4X4_DCtx_wksp(HUF_DTable *dctx, void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, void *workspace, size_t workspaceSize)
+static size_t HUF_decompress4X4_DCtx_wksp(HUF_DTable *dctx, void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, void *workspace, size_t workspaceSize)
 {
 	const BYTE *ip = (const BYTE *)cSrc;
 
@@ -884,7 +837,7 @@ static const algo_time_t algoTime[16 /* Quantization */][3 /* single, double, qu
 *   based on a set of pre-determined metrics.
 *   @return : 0==HUF_decompress4X2, 1==HUF_decompress4X4 .
 *   Assumption : 0 < cSrcSize < dstSize <= 128 KB */
-U32 HUF_selectDecoder(size_t dstSize, size_t cSrcSize)
+static U32 HUF_selectDecoder(size_t dstSize, size_t cSrcSize)
 {
 	/* decoder timing evaluation */
 	U32 const Q = (U32)(cSrcSize * 16 / dstSize); /* Q < 16 since dstSize > cSrcSize */
@@ -898,29 +851,6 @@ U32 HUF_selectDecoder(size_t dstSize, size_t cSrcSize)
 
 typedef size_t (*decompressionAlgo)(void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize);
 
-size_t HUF_decompress4X_DCtx_wksp(HUF_DTable *dctx, void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, void *workspace, size_t workspaceSize)
-{
-	/* validation checks */
-	if (dstSize == 0)
-		return ERROR(dstSize_tooSmall);
-	if (cSrcSize > dstSize)
-		return ERROR(corruption_detected); /* invalid */
-	if (cSrcSize == dstSize) {
-		memcpy(dst, cSrc, dstSize);
-		return dstSize;
-	} /* not compressed */
-	if (cSrcSize == 1) {
-		memset(dst, *(const BYTE *)cSrc, dstSize);
-		return dstSize;
-	} /* RLE */
-
-	{
-		U32 const algoNb = HUF_selectDecoder(dstSize, cSrcSize);
-		return algoNb ? HUF_decompress4X4_DCtx_wksp(dctx, dst, dstSize, cSrc, cSrcSize, workspace, workspaceSize)
-			      : HUF_decompress4X2_DCtx_wksp(dctx, dst, dstSize, cSrc, cSrcSize, workspace, workspaceSize);
-	}
-}
-
 size_t HUF_decompress4X_hufOnly_wksp(HUF_DTable *dctx, void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, void *workspace, size_t workspaceSize)
 {
 	/* validation checks */
@@ -933,28 +863,5 @@ size_t HUF_decompress4X_hufOnly_wksp(HUF_DTable *dctx, void *dst, size_t dstSize
 		U32 const algoNb = HUF_selectDecoder(dstSize, cSrcSize);
 		return algoNb ? HUF_decompress4X4_DCtx_wksp(dctx, dst, dstSize, cSrc, cSrcSize, workspace, workspaceSize)
 			      : HUF_decompress4X2_DCtx_wksp(dctx, dst, dstSize, cSrc, cSrcSize, workspace, workspaceSize);
-	}
-}
-
-size_t HUF_decompress1X_DCtx_wksp(HUF_DTable *dctx, void *dst, size_t dstSize, const void *cSrc, size_t cSrcSize, void *workspace, size_t workspaceSize)
-{
-	/* validation checks */
-	if (dstSize == 0)
-		return ERROR(dstSize_tooSmall);
-	if (cSrcSize > dstSize)
-		return ERROR(corruption_detected); /* invalid */
-	if (cSrcSize == dstSize) {
-		memcpy(dst, cSrc, dstSize);
-		return dstSize;
-	} /* not compressed */
-	if (cSrcSize == 1) {
-		memset(dst, *(const BYTE *)cSrc, dstSize);
-		return dstSize;
-	} /* RLE */
-
-	{
-		U32 const algoNb = HUF_selectDecoder(dstSize, cSrcSize);
-		return algoNb ? HUF_decompress1X4_DCtx_wksp(dctx, dst, dstSize, cSrc, cSrcSize, workspace, workspaceSize)
-			      : HUF_decompress1X2_DCtx_wksp(dctx, dst, dstSize, cSrc, cSrcSize, workspace, workspaceSize);
 	}
 }

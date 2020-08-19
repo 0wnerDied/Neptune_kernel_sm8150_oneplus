@@ -124,17 +124,6 @@ ZSTD_CCtx *ZSTD_initCCtx(void *workspace, size_t workspaceSize)
 	return cctx;
 }
 
-size_t ZSTD_freeCCtx(ZSTD_CCtx *cctx)
-{
-	if (cctx == NULL)
-		return 0; /* support free on NULL */
-	ZSTD_free(cctx->workSpace, cctx->customMem);
-	ZSTD_free(cctx, cctx->customMem);
-	return 0; /* reserved as a potential error code in the future */
-}
-
-const seqStore_t *ZSTD_getSeqStore(const ZSTD_CCtx *ctx) /* hidden interface */ { return &(ctx->seqStore); }
-
 /** ZSTD_cycleLog() :
  *  condition for correct operation : hashLog > 1 */
 static U32 ZSTD_cycleLog(U32 hashLog, ZSTD_strategy strat)
@@ -302,17 +291,6 @@ static size_t ZSTD_resetCCtx_advanced(ZSTD_CCtx *zc, ZSTD_parameters params, U64
 	}
 }
 
-/* ZSTD_invalidateRepCodes() :
- * ensures next compression will not use repcodes from previous block.
- * Note : only works with regular variant;
- *        do not use with extDict variant ! */
-void ZSTD_invalidateRepCodes(ZSTD_CCtx *cctx)
-{
-	int i;
-	for (i = 0; i < ZSTD_REP_NUM; i++)
-		cctx->rep[i] = 0;
-}
-
 /*! ZSTD_reduceTable() :
 *   reduce table indexes by `reducerValue` */
 static void ZSTD_reduceTable(U32 *const table, U32 const size, U32 const reducerValue)
@@ -349,17 +327,6 @@ static void ZSTD_reduceIndex(ZSTD_CCtx *zc, const U32 reducerValue)
 /*-*******************************************************
 *  Block entropic compression
 *********************************************************/
-
-/* See doc/zstd_compression_format.md for detailed format description */
-
-size_t ZSTD_noCompressBlock(void *dst, size_t dstCapacity, const void *src, size_t srcSize)
-{
-	if (srcSize + ZSTD_blockHeaderSize > dstCapacity)
-		return ERROR(dstSize_tooSmall);
-	memcpy((BYTE *)dst + ZSTD_blockHeaderSize, src, srcSize);
-	ZSTD_writeLE24(dst, (U32)(srcSize << 2) + (U32)bt_raw);
-	return ZSTD_blockHeaderSize + srcSize;
-}
 
 static size_t ZSTD_noCompressLiterals(void *dst, size_t dstCapacity, const void *src, size_t srcSize)
 {
@@ -481,7 +448,7 @@ static const BYTE ML_Code[128] = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11
 				  40, 40, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 42, 42, 42, 42, 42, 42, 42, 42,
 				  42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42};
 
-void ZSTD_seqToCodes(const seqStore_t *seqStorePtr)
+static void ZSTD_seqToCodes(const seqStore_t *seqStorePtr)
 {
 	BYTE const LL_deltaCode = 19;
 	BYTE const ML_deltaCode = 36;
@@ -2170,7 +2137,7 @@ void ZSTD_compressBlock_lazy_extDict_generic(ZSTD_CCtx *ctx, const void *src, si
 	}
 }
 
-void ZSTD_compressBlock_greedy_extDict(ZSTD_CCtx *ctx, const void *src, size_t srcSize) { ZSTD_compressBlock_lazy_extDict_generic(ctx, src, srcSize, 0, 0); }
+static void ZSTD_compressBlock_greedy_extDict(ZSTD_CCtx *ctx, const void *src, size_t srcSize) { ZSTD_compressBlock_lazy_extDict_generic(ctx, src, srcSize, 0, 0); }
 
 static void ZSTD_compressBlock_lazy_extDict(ZSTD_CCtx *ctx, const void *src, size_t srcSize)
 {
@@ -2725,19 +2692,6 @@ struct ZSTD_CDict_s {
 	ZSTD_CCtx *refContext;
 }; /* typedef'd tp ZSTD_CDict within "zstd.h" */
 
-size_t ZSTD_freeCDict(ZSTD_CDict *cdict)
-{
-	if (cdict == NULL)
-		return 0; /* support free on NULL */
-	{
-		ZSTD_customMem const cMem = cdict->refContext->customMem;
-		ZSTD_freeCCtx(cdict->refContext);
-		ZSTD_free(cdict->dictBuffer, cMem);
-		ZSTD_free(cdict, cMem);
-		return 0;
-	}
-}
-
 /* ******************************************************************
 *  Streaming
 ********************************************************************/
@@ -2766,45 +2720,6 @@ struct ZSTD_CStream_s {
 	ZSTD_parameters params;
 	ZSTD_customMem customMem;
 }; /* typedef'd to ZSTD_CStream within "zstd.h" */
-
-ZSTD_CStream *ZSTD_createCStream_advanced(ZSTD_customMem customMem)
-{
-	ZSTD_CStream *zcs;
-
-	if (!customMem.customAlloc || !customMem.customFree)
-		return NULL;
-
-	zcs = (ZSTD_CStream *)ZSTD_malloc(sizeof(ZSTD_CStream), customMem);
-	if (zcs == NULL)
-		return NULL;
-	memset(zcs, 0, sizeof(ZSTD_CStream));
-	memcpy(&zcs->customMem, &customMem, sizeof(ZSTD_customMem));
-	zcs->cctx = ZSTD_createCCtx_advanced(customMem);
-	if (zcs->cctx == NULL) {
-		ZSTD_freeCStream(zcs);
-		return NULL;
-	}
-	return zcs;
-}
-
-size_t ZSTD_freeCStream(ZSTD_CStream *zcs)
-{
-	if (zcs == NULL)
-		return 0; /* support free on NULL */
-	{
-		ZSTD_customMem const cMem = zcs->customMem;
-		ZSTD_freeCCtx(zcs->cctx);
-		zcs->cctx = NULL;
-		ZSTD_freeCDict(zcs->cdictLocal);
-		zcs->cdictLocal = NULL;
-		ZSTD_free(zcs->inBuff, cMem);
-		zcs->inBuff = NULL;
-		ZSTD_free(zcs->outBuff, cMem);
-		zcs->outBuff = NULL;
-		ZSTD_free(zcs, cMem);
-		return 0;
-	}
-}
 
 /*======   Compression   ======*/
 
@@ -2970,12 +2885,6 @@ ZSTD_parameters ZSTD_getParams(int compressionLevel, unsigned long long srcSize,
 	params.cParams = cParams;
 	return params;
 }
-
-EXPORT_SYMBOL(ZSTD_CCtxWorkspaceBound);
-EXPORT_SYMBOL(ZSTD_initCCtx);
-EXPORT_SYMBOL(ZSTD_compressCCtx);
-
-EXPORT_SYMBOL(ZSTD_getParams);
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_DESCRIPTION("Zstd Compressor");

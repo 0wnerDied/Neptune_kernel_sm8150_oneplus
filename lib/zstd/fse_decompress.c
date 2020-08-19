@@ -177,33 +177,6 @@ size_t FSE_buildDTable_rle(FSE_DTable *dt, BYTE symbolValue)
 	return 0;
 }
 
-size_t FSE_buildDTable_raw(FSE_DTable *dt, unsigned nbBits)
-{
-	void *ptr = dt;
-	FSE_DTableHeader *const DTableH = (FSE_DTableHeader *)ptr;
-	void *dPtr = dt + 1;
-	FSE_decode_t *const dinfo = (FSE_decode_t *)dPtr;
-	const unsigned tableSize = 1 << nbBits;
-	const unsigned tableMask = tableSize - 1;
-	const unsigned maxSV1 = tableMask + 1;
-	unsigned s;
-
-	/* Sanity checks */
-	if (nbBits < 1)
-		return ERROR(GENERIC); /* min size */
-
-	/* Build Decoding Table */
-	DTableH->tableLog = (U16)nbBits;
-	DTableH->fastMode = 1;
-	for (s = 0; s < maxSV1; s++) {
-		dinfo[s].newState = 0;
-		dinfo[s].symbol = (BYTE)s;
-		dinfo[s].nbBits = (BYTE)nbBits;
-	}
-
-	return 0;
-}
-
 FORCE_INLINE size_t FSE_decompress_usingDTable_generic(void *dst, size_t maxDstSize, const void *cSrc, size_t cSrcSize, const FSE_DTable *dt,
 						       const unsigned fast)
 {
