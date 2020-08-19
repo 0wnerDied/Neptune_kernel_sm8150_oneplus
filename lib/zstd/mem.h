@@ -22,7 +22,7 @@
 ******************************************/
 #include <asm/unaligned.h>
 #include <linux/string.h> /* memcpy */
-#include <linux/types.h>  /* size_t, ptrdiff_t */
+#include <linux/zstd.h>
 
 /*-****************************************
 *  Compiler specifics

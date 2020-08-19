@@ -31,11 +31,9 @@
 *********************************************************/
 #include "fse.h"
 #include "huf.h"
-#include "mem.h" /* low level memory routines */
 #include "zstd_internal.h"
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/string.h> /* memcpy, memmove, memset */
 
 #define ZSTD_PREFETCH(ptr) __builtin_prefetch(ptr, 0, 0)
 

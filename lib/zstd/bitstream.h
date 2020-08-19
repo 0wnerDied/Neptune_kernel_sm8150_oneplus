@@ -50,8 +50,7 @@
 /*-****************************************
 *  Dependencies
 ******************************************/
-#include "error_private.h" /* error codes and messages */
-#include "mem.h"	   /* unaligned access routines */
+#include "error_private.h" /* error codes and messages/unaligned access routines */
 
 /*=========================================
 *  Target specific

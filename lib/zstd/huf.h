@@ -41,16 +41,13 @@
 #define HUF_H_298734234
 
 /* *** Dependencies *** */
-#include <linux/types.h> /* size_t */
+#include "mem.h" /* size_t/U32 */
 
 /* ***   Tool functions *** */
 #define HUF_BLOCKSIZE_MAX (128 * 1024) /**< maximum input size for a single block compressed with HUF_compress */
 
 /* Error Management */
 unsigned HUF_isError(size_t code); /**< tells if a return value is an error code */
-
-/* *** Dependencies *** */
-#include "mem.h" /* U32 */
 
 /* *** Constants *** */
 #define HUF_TABLELOG_MAX 12     /* max configured tableLog (for static allocation); can be modified up to HUF_ABSOLUTEMAX_TABLELOG */

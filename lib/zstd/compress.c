@@ -19,11 +19,9 @@
 ***************************************/
 #include "fse.h"
 #include "huf.h"
-#include "mem.h"
 #include "zstd_internal.h" /* includes zstd.h */
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/string.h> /* memset */
 
 /*-*************************************
 *  Constants

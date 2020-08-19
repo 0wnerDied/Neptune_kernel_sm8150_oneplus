@@ -40,11 +40,9 @@
 /* **************************************************************
 *  Includes
 ****************************************************************/
-#include "bitstream.h"
 #include "fse.h" /* header compression */
 #include "huf.h"
 #include <linux/kernel.h>
-#include <linux/string.h> /* memcpy, memset */
 
 /* **************************************************************
 *  Error Management

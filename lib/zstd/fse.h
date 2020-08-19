@@ -40,10 +40,8 @@
 #ifndef FSE_H
 #define FSE_H
 
-/*-*****************************************
-*  Dependencies
-******************************************/
-#include <linux/types.h> /* size_t, ptrdiff_t */
+/* *** Dependency *** */
+#include "bitstream.h"
 
 /*-*****************************************
 *  FSE_PUBLIC_API : control library symbols visibility
@@ -223,9 +221,6 @@ If there is an error, the function will return an error code, which can be teste
 FSE_decompress_usingDTable() result will tell how many bytes were regenerated (<=`dstCapacity`).
 If there is an error, the function will return an error code, which can be tested using FSE_isError(). (ex: dst buffer too small)
 */
-
-/* *** Dependency *** */
-#include "bitstream.h"
 
 /* *****************************************
 *  Static allocation

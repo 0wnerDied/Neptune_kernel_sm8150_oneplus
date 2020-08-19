@@ -22,8 +22,7 @@
 /* ****************************************
 *  Dependencies
 ******************************************/
-#include <linux/types.h> /* size_t */
-#include <linux/zstd.h>  /* enum list */
+#include "mem.h" /* size_t/enum list */
 
 /* ****************************************
 *  Compiler-specific

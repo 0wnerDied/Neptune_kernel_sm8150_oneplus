@@ -43,7 +43,6 @@
 #include "error_private.h" /* ERR_*, ERROR */
 #include "fse.h"
 #include "huf.h"
-#include "mem.h"
 
 /*===   Version   ===*/
 unsigned FSE_versionNumber(void) { return FSE_VERSION_NUMBER; }

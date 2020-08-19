@@ -45,12 +45,8 @@
 /* **************************************************************
 *  Includes
 ****************************************************************/
-#include "bitstream.h"
 #include "fse.h"
-#include <linux/compiler.h>
-#include <linux/kernel.h>
 #include <linux/math64.h>
-#include <linux/string.h> /* memcpy, memset */
 
 /* **************************************************************
 *  Error Management

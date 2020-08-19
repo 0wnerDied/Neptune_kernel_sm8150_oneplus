@@ -27,11 +27,9 @@
 *  Dependencies
 ***************************************/
 #include "error_private.h"
-#include "mem.h"
 #include <linux/compiler.h>
 #include <linux/kernel.h>
 #include <linux/xxhash.h>
-#include <linux/zstd.h>
 
 /*-*************************************
 *  shared macros
