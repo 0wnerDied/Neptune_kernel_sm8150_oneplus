@@ -51,6 +51,7 @@
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
+#include <asm/cacheflush.h>
 #include <linux/fdtable.h>
 #include <linux/file.h>
 #include <linux/freezer.h>
@@ -63,7 +64,6 @@
 #include <linux/poll.h>
 #include <linux/debugfs.h>
 #include <linux/rbtree.h>
-#include <linux/sched.h>
 #include <linux/sched/signal.h>
 #include <linux/sched/mm.h>
 #include <linux/seq_file.h>
@@ -74,10 +74,7 @@
 #include <linux/ratelimit.h>
 
 #include <uapi/linux/android/binder.h>
-#include <uapi/linux/eventpoll.h>
 #include <uapi/linux/sched/types.h>
-
-#include <asm/cacheflush.h>
 
 #include "binder_alloc.h"
 #include "binder_internal.h"
@@ -4777,7 +4774,7 @@ static int binder_thread_release(struct binder_proc *proc,
 	 */
 	if ((thread->looper & BINDER_LOOPER_STATE_POLL) &&
 	    waitqueue_active(&thread->wait)) {
-		wake_up_poll(&thread->wait, EPOLLHUP | POLLFREE);
+		wake_up_poll(&thread->wait, POLLHUP | POLLFREE);
 	}
 
 	binder_inner_proc_unlock(thread->proc);
@@ -4818,7 +4815,7 @@ static unsigned int binder_poll(struct file *filp,
 	poll_wait(filp, &thread->wait, wait);
 
 	if (binder_has_work(thread, wait_for_proc_work))
-		return EPOLLIN;
+		return POLLIN;
 
 	return 0;
 }
