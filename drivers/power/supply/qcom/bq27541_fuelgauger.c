@@ -265,7 +265,6 @@ struct bq27541_device_info {
 #include <linux/workqueue.h>
 /* add to update fg node value on panel event */
 int panel_flag1;
-int panel_flag2;
 struct update_pre_capacity_data {
 	struct delayed_work work;
 	struct workqueue_struct *workqueue;
@@ -912,37 +911,6 @@ static int bq27541_remaining_capacity(struct bq27541_device_info *di)
 	return cap;
 }
 
-static int bq27541_full_chg_capacity(struct bq27541_device_info *di)
-{
-	int ret;
-	int cap = 0;
-
-	/* Add for get right soc when sleep long time */
-	if (atomic_read(&di->suspended) == 1)
-		return di->cap_pre;
-
-	if (di->allow_reading || panel_flag2) {
-#ifdef CONFIG_GAUGE_BQ27411
-		/* david.liu@bsp, 20161004 Add BQ27411 support */
-		ret = bq27541_read(BQ27411_REG_FCC,
-				&cap, 0, di);
-#else
-		ret = bq27541_read(BQ27541_REG_FCC, &cap, 0, di);
-#endif
-		if (ret) {
-			pr_err("error reading full chg capacity.\n");
-			return ret;
-		}
-		if (panel_flag2)
-			panel_flag2 = 0;
-	} else {
-		return di->cap_pre;
-	}
-
-	di->cap_pre = cap;
-	return cap;
-}
-
 static int bq27541_batt_health(struct bq27541_device_info *di)
 {
 	int ret;
@@ -973,12 +941,6 @@ static int bq27541_get_batt_remaining_capacity(void)
 {
 	return bq27541_remaining_capacity(bq27541_di);
 }
-
-static int bq27541_get_batt_full_chg_capacity(void)
-{
-	return bq27541_full_chg_capacity(bq27541_di);
-}
-
 
 static int bq27541_get_batt_health(void)
 {
@@ -1120,8 +1082,6 @@ static struct external_battery_gauge bq27541_batt_gauge = {
 	.is_battery_id_valid        = bq27541_is_battery_id_valid,
 	.get_batt_remaining_capacity
 		= bq27541_get_batt_remaining_capacity,
-	.get_batt_full_chg_capacity
-		= bq27541_get_batt_full_chg_capacity,
 	.get_batt_health        = bq27541_get_batt_health,
 	.get_batt_bq_soc		= bq27541_get_batt_bq_soc,
 #ifdef CONFIG_GAUGE_BQ27411

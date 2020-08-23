@@ -4406,15 +4406,9 @@ static int fg_psy_get_property(struct power_supply *psy,
 		pval->intval = chip->cl->init_cap_uah;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL:
-		if (!get_extern_fg_regist_done() && get_extern_bq_present())
-			pval->intval = -EINVAL;
-		else if (fg->use_external_fg && external_fg && external_fg->get_batt_full_chg_capacity)
-			pval->intval = external_fg->get_batt_full_chg_capacity();
-		else {
-			rc = fg_gen4_get_learned_capacity(chip, &temp);
-			if (!rc)
-				pval->intval = (int)temp;
-		}
+		rc = fg_gen4_get_learned_capacity(chip, &temp);
+		if (!rc)
+			pval->intval = (int)temp;
 		break;
 	case POWER_SUPPLY_PROP_REMAINING_CAPACITY:
 		if (!get_extern_fg_regist_done() && get_extern_bq_present())
