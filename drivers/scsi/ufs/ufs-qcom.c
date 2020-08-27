@@ -2733,11 +2733,17 @@ static void ufs_qcom_print_unipro_testbus(struct ufs_hba *hba)
 {
 	struct ufs_qcom_host *host = ufshcd_get_variant(hba);
 	u32 *testbus = NULL;
+	u32 testbus_onstack[256];
 	int i, nminor = 256, testbus_len = nminor * sizeof(u32);
 
-	testbus = kmalloc(testbus_len, GFP_KERNEL);
-	if (!testbus)
-		return;
+	if (testbus_len > ARRAY_SIZE(testbus_onstack)) {
+		testbus = kmalloc(testbus_len, GFP_KERNEL);
+		if (!testbus)
+			return;
+	} else {
+		testbus = testbus_onstack;
+		memset(testbus_onstack, 0, testbus_len);
+	}
 
 	host->testbus.select_major = TSTBUS_UNIPRO;
 	for (i = 0; i < nminor; i++) {
@@ -2747,18 +2753,25 @@ static void ufs_qcom_print_unipro_testbus(struct ufs_hba *hba)
 	}
 	print_hex_dump(KERN_ERR, "UNIPRO_TEST_BUS ", DUMP_PREFIX_OFFSET,
 			16, 4, testbus, testbus_len, false);
-	kfree(testbus);
+	if (testbus != testbus_onstack)
+		kfree(testbus);
 }
 
 static void ufs_qcom_print_utp_hci_testbus(struct ufs_hba *hba)
 {
 	struct ufs_qcom_host *host = ufshcd_get_variant(hba);
 	u32 *testbus = NULL;
+	u32 testbus_onstack[256];
 	int i, nminor = 32, testbus_len = nminor * sizeof(u32);
 
-	testbus = kmalloc(testbus_len, GFP_KERNEL);
-	if (!testbus)
-		return;
+	if (testbus_len > ARRAY_SIZE(testbus_onstack)) {
+		testbus = kmalloc(testbus_len, GFP_KERNEL);
+		if (!testbus)
+			return;
+	} else {
+		testbus = testbus_onstack;
+		memset(testbus_onstack, 0, testbus_len);
+	}
 
 	host->testbus.select_major = TSTBUS_UTP_HCI;
 	for (i = 0; i < nminor; i++) {
@@ -2768,7 +2781,8 @@ static void ufs_qcom_print_utp_hci_testbus(struct ufs_hba *hba)
 	}
 	print_hex_dump(KERN_ERR, "UTP_HCI_TEST_BUS ", DUMP_PREFIX_OFFSET,
 			16, 4, testbus, testbus_len, false);
-	kfree(testbus);
+	if (testbus != testbus_onstack)
+		kfree(testbus);
 }
 
 static void ufs_qcom_dump_dbg_regs(struct ufs_hba *hba, bool no_sleep)

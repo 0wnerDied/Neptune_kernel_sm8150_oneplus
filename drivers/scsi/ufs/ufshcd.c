@@ -8238,12 +8238,18 @@ static void ufshcd_set_active_icc_lvl(struct ufs_hba *hba)
 	int ret;
 	int buff_len = hba->desc_size.pwr_desc;
 	u8 *desc_buf = NULL;
+	u8 desc_buf_onstack[256];
 	u32 icc_level;
 
 	if (buff_len) {
-		desc_buf = kmalloc(buff_len, GFP_KERNEL);
-		if (!desc_buf)
-			return;
+		if (buff_len > ARRAY_SIZE(desc_buf_onstack)) {
+			desc_buf = kmalloc(buff_len, GFP_KERNEL);
+			if (!desc_buf)
+				return;
+		} else {
+			desc_buf = desc_buf_onstack;
+			memset(desc_buf_onstack, 0, buff_len);
+		}
 	}
 
 	ret = ufshcd_read_power_desc(hba, desc_buf, buff_len);
@@ -8266,7 +8272,8 @@ static void ufshcd_set_active_icc_lvl(struct ufs_hba *hba)
 			"%s: Failed configuring bActiveICCLevel = %d ret = %d",
 			__func__, icc_level, ret);
 out:
-	kfree(desc_buf);
+	if (desc_buf != desc_buf_onstack)
+		kfree(desc_buf);
 }
 
 static int ufshcd_set_low_vcc_level(struct ufs_hba *hba,
@@ -8405,13 +8412,19 @@ static int ufs_get_device_desc(struct ufs_hba *hba,
 	size_t buff_len;
 	u8 model_index;
 	u8 *desc_buf;
+	u8 desc_buf_onstack[256];
 
 	buff_len = max_t(size_t, hba->desc_size.dev_desc,
 			 QUERY_DESC_MAX_SIZE + 1);
-	desc_buf = kmalloc(buff_len, GFP_KERNEL);
-	if (!desc_buf) {
-		err = -ENOMEM;
-		goto out;
+	if (buff_len > ARRAY_SIZE(desc_buf_onstack)) {
+		desc_buf = kmalloc(buff_len, GFP_KERNEL);
+		if (!desc_buf) {
+			err = -ENOMEM;
+			goto out;
+		}
+	} else {
+		desc_buf = desc_buf_onstack;
+		memset(desc_buf_onstack, 0, buff_len);
 	}
 
 	err = ufshcd_read_device_desc(hba, desc_buf, hba->desc_size.dev_desc);
@@ -8453,7 +8466,8 @@ static int ufs_get_device_desc(struct ufs_hba *hba,
 				  desc_buf[DEVICE_DESC_PARAM_SPEC_VER + 1];
 
 out:
-	kfree(desc_buf);
+	if (desc_buf != desc_buf_onstack)
+		kfree(desc_buf);
 	return err;
 }
 
@@ -8811,14 +8825,20 @@ static int ufs_read_device_desc_data(struct ufs_hba *hba)
 {
 	int err = 0;
 	u8 *desc_buf = NULL;
+	u8 desc_buf_onstack[256];
 
 	if (hba->desc_size.dev_desc) {
-		desc_buf = kmalloc(hba->desc_size.dev_desc, GFP_KERNEL);
-		if (!desc_buf) {
-			err = -ENOMEM;
-			dev_err(hba->dev,
-				"%s: Failed to allocate desc_buf\n", __func__);
-			return err;
+		if (hba->desc_size.dev_desc > ARRAY_SIZE(desc_buf_onstack)) {
+			desc_buf = kmalloc(hba->desc_size.dev_desc, GFP_KERNEL);
+			if (!desc_buf) {
+				err = -ENOMEM;
+				dev_err(hba->dev,
+					"%s: Failed to allocate desc_buf\n", __func__);
+				return err;
+			}
+		} else {
+			desc_buf = desc_buf_onstack;
+			memset(desc_buf_onstack, 0, hba->desc_size.dev_desc);
 		}
 	}
 	err = ufshcd_read_device_desc(hba, desc_buf, hba->desc_size.dev_desc);
@@ -8840,7 +8860,8 @@ static int ufs_read_device_desc_data(struct ufs_hba *hba)
 		desc_buf[DEVICE_DESC_PARAM_SPEC_VER + 1];
 
 out:
-	kfree(desc_buf);
+	if (desc_buf != desc_buf_onstack)
+		kfree(desc_buf);
 	return err;
 }
 
@@ -9240,6 +9261,7 @@ static int ufshcd_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 	u32 att;
 	u8 index;
 	u8 *desc = NULL;
+	u8 desc_onstack[256];
 
 	ioctl_data = kzalloc(sizeof(struct ufs_ioctl_query_data), GFP_KERNEL);
 	if (!ioctl_data) {
@@ -9285,12 +9307,17 @@ static int ufshcd_query_ioctl(struct ufs_hba *hba, u8 lun, void __user *buffer)
 		}
 		length = min_t(int, QUERY_DESC_MAX_SIZE,
 				ioctl_data->buf_size);
-		desc = kzalloc(length, GFP_KERNEL);
-		if (!desc) {
-			dev_err(hba->dev, "%s: Failed allocating %d bytes\n",
-					__func__, length);
-			err = -ENOMEM;
-			goto out_release_mem;
+		if (length > ARRAY_SIZE(desc_onstack)) {
+			desc = kzalloc(length, GFP_KERNEL);
+			if (!desc) {
+				dev_err(hba->dev, "%s: Failed allocating %d bytes\n",
+						__func__, length);
+				err = -ENOMEM;
+				goto out_release_mem;
+			}
+		} else {
+			desc = desc_onstack;
+			memset(desc_onstack, 0, length);
 		}
 		err = ufshcd_query_descriptor_retry(hba, ioctl_data->opcode,
 				ioctl_data->idn, index, 0, desc, &length);
@@ -9425,7 +9452,8 @@ out_einval:
 	err = -EINVAL;
 out_release_mem:
 	kfree(ioctl_data);
-	kfree(desc);
+	if (desc != desc_onstack)
+		kfree(desc);
 out:
 	return err;
 }
