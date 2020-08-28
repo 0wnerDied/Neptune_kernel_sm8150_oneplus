@@ -1,3 +1,7 @@
+Version 1.1.11
+==============
+[ATLDRV-1567] - forwarding driver issue with adj_freq
+
 Version 1.1.10
 ==============
 [ATLDRV-1559] - Add support of icmp proto to the rx filters

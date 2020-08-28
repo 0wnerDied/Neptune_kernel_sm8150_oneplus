@@ -276,6 +276,23 @@ static int atl_ptp_adjfine(struct ptp_clock_info *ptp_info, long scaled_ppm)
 }
 #endif
 
+/* atl_ptp_adjfreq
+ * @ptp_info: the ptp clock structure
+ * @ppb: parts per billion adjustment from base
+ *
+ * adjust the frequency of the ptp cycle counter by the
+ * indicated ppb from the base frequency.
+ */
+static int atl_ptp_adjfreq(struct ptp_clock_info *ptp_info, s32 ppb)
+{
+	struct atl_ptp *ptp = container_of(ptp_info, struct atl_ptp, ptp_info);
+	struct atl_nic *nic = ptp->nic;
+
+	hw_atl_adj_clock_freq(&nic->hw, ppb);
+
+	return 0;
+}
+
 /* atl_ptp_adjtime
  * @ptp_info: the ptp clock structure
  * @delta: offset to adjust the cycle counter by
@@ -582,6 +599,7 @@ static struct ptp_clock_info atl_ptp_clock = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 	.adjfine	= atl_ptp_adjfine,
 #endif
+	.adjfreq	= atl_ptp_adjfreq,
 	.adjtime	= atl_ptp_adjtime,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 1, 0)
 	.gettime64	= atl_ptp_gettime,

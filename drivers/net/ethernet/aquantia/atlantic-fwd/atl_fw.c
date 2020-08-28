@@ -901,6 +901,7 @@ static int atl_fw2_update_thermal(struct atl_hw *hw)
 static int atl_fw2_send_ptp_request(struct atl_hw *hw,
 				    struct ptp_msg_fw_request *msg)
 {
+	u32 high_req, high_status;
 	size_t size;
 	int ret = 0;
 
@@ -924,10 +925,23 @@ static int atl_fw2_send_ptp_request(struct atl_hw *hw,
 
 	atl_lock_fw(hw);
 
-	/* Write macsec request to cfg memory */
+	/* Write ptp request to cfg memory */
 	ret = atl_write_mcp_mem(hw, 0, msg, (size + 3) & ~3, MCP_AREA_CONFIG);
 	if (ret) {
 		atl_dev_err("Failed to upload ptp request: %d\n", ret);
+		goto err_exit;
+	}
+
+	high_req = atl_read(hw, ATL_MCP_SCRATCH(FW2_LINK_REQ_HIGH));
+	high_req ^= atl_fw2_fw_request;
+	atl_write(hw, ATL_MCP_SCRATCH(FW2_LINK_REQ_HIGH), high_req);
+
+	busy_wait(1000, mdelay(1), high_status,
+		atl_read(hw, ATL_MCP_SCRATCH(FW2_LINK_RES_HIGH)),
+		((high_req ^ high_status) & atl_fw2_fw_request) != 0);
+	if (((high_req ^ high_status) & atl_fw2_fw_request) != 0) {
+		atl_dev_err("Timeout waiting for fw request\n");
+		ret = -EIO;
 		goto err_exit;
 	}
 
