@@ -179,11 +179,6 @@
 #define IS_OFDLCK(fl)	(fl->fl_flags & FL_OFDLCK)
 #define IS_REMOTELCK(fl)	(fl->fl_pid <= 0)
 
-static inline bool is_remote_lock(struct file *filp)
-{
-	return likely(!(filp->f_path.dentry->d_sb->s_flags & SB_NOREMOTELOCK));
-}
-
 static bool lease_breaking(struct file_lock *fl)
 {
 	return fl->fl_flags & (FL_UNLOCK_PENDING | FL_DOWNGRADE_PENDING);
@@ -1812,7 +1807,7 @@ check_conflicting_open(struct file *filp, const long arg, int flags)
 		return 0;
 
 	if (arg == F_RDLCK)
-		return inode_is_open_for_write(d_real_inode(dentry)) ? -EAGAIN : 0;
+		return inode_is_open_for_write(inode) ? -EAGAIN : 0;
 	else if (arg != F_WRLCK)
 		return 0;
 
@@ -2104,7 +2099,7 @@ vfs_setlease(struct file *filp, long arg, struct file_lock **lease, void **priv)
 {
 	if (lease)
 		setlease_notifier(arg, *lease);
-	if (filp->f_op->setlease && is_remote_lock(filp))
+	if (filp->f_op->setlease)
 		return filp->f_op->setlease(filp, arg, lease, priv);
 	else
 		return generic_setlease(filp, arg, lease, priv);
@@ -2250,7 +2245,7 @@ SYSCALL_DEFINE2(flock, unsigned int, fd, unsigned int, cmd)
 	if (error)
 		goto out_free;
 
-	if (f.file->f_op->flock && is_remote_lock(f.file))
+	if (f.file->f_op->flock)
 		error = f.file->f_op->flock(f.file,
 					  (can_sleep) ? F_SETLKW : F_SETLK,
 					  lock);
@@ -2276,7 +2271,7 @@ SYSCALL_DEFINE2(flock, unsigned int, fd, unsigned int, cmd)
  */
 int vfs_test_lock(struct file *filp, struct file_lock *fl)
 {
-	if (filp->f_op->lock && is_remote_lock(filp))
+	if (filp->f_op->lock)
 		return filp->f_op->lock(filp, F_GETLK, fl);
 	posix_test_lock(filp, fl);
 	return 0;
@@ -2426,7 +2421,7 @@ out:
  */
 int vfs_lock_file(struct file *filp, unsigned int cmd, struct file_lock *fl, struct file_lock *conf)
 {
-	if (filp->f_op->lock && is_remote_lock(filp))
+	if (filp->f_op->lock)
 		return filp->f_op->lock(filp, cmd, fl);
 	else
 		return posix_lock_file(filp, fl, conf);
@@ -2743,7 +2738,7 @@ locks_remove_flock(struct file *filp, struct file_lock_context *flctx)
 	flock_make_lock(filp, LOCK_UN, &fl);
 	fl.fl_flags |= FL_CLOSE;
 	
-	if (filp->f_op->flock && is_remote_lock(filp))
+	if (filp->f_op->flock)
 		filp->f_op->flock(filp, F_SETLKW, &fl);
 	else
 		flock_lock_inode(inode, &fl);
@@ -2809,7 +2804,7 @@ void locks_remove_file(struct file *filp)
  */
 int vfs_cancel_lock(struct file *filp, struct file_lock *fl)
 {
-	if (filp->f_op->lock && is_remote_lock(filp))
+	if (filp->f_op->lock)
 		return filp->f_op->lock(filp, F_CANCELLK, fl);
 	return 0;
 }
