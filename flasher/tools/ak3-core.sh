@@ -15,12 +15,8 @@ split_img=$home/split_img;
 # ui_print "<text>" [...]
 ui_print() {
   until [ ! "$1" ]; do
-    if $BOOTMODE; then
-      echo "$1";
-    else
-      echo -e "ui_print $1
-        ui_print" >> /proc/self/fd/$OUTFD;
-    fi;
+    echo -e "ui_print $1
+      ui_print" >> /proc/self/fd/$OUTFD;
     shift;
   done;
 }

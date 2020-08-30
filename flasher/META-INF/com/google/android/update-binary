@@ -5,24 +5,19 @@
 OUTFD=/proc/self/fd/$2;
 ZIPFILE="$3";
 
-ps | grep zygote | grep -v grep >/dev/null && export BOOTMODE=true || export BOOTMODE=false;
-$BOOTMODE || ps -A 2>/dev/null | grep zygote | grep -v grep >/dev/null && export BOOTMODE=true;
+ps | grep zygote | grep -v grep >/dev/null && BOOTMODE=true || BOOTMODE=false;
+$BOOTMODE || ps -A 2>/dev/null | grep zygote | grep -v grep >/dev/null && BOOTMODE=true;
 
 $BOOTMODE && DIR=/sdcard || DIR=$(dirname "$ZIPFILE");
 
 test -d /postinstall/tmp && POSTINSTALL=/postinstall;
 test "$AKHOME" || AKHOME=$POSTINSTALL/tmp/anykernel;
 test "$ANDROID_ROOT" || ANDROID_ROOT=/system;
-$BOOTMODE && AKHOME=/data/local$AKHOME;
 
 ui_print() {
   until [ ! "$1" ]; do
-    if $BOOTMODE; then
-      echo "$1";
-    else
-      echo "ui_print $1
-        ui_print" >> $OUTFD;
-    fi;
+    echo "ui_print $1
+      ui_print" >> $OUTFD;
     shift;
   done;
 }
@@ -31,7 +26,7 @@ ui_printfile() {
     ui_print "$line";
   done < $1;
 }
-show_progress() { $BOOTMODE || echo "progress $1 $2" >> $OUTFD; }
+show_progress() { echo "progress $1 $2" >> $OUTFD; }
 file_getprop() { $BB grep "^$2=" "$1" | $BB cut -d= -f2-; }
 setup_mountpoint() {
   test -L $1 && $BB mv -f $1 ${1}_link;
