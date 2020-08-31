@@ -17,7 +17,7 @@ ccflags-y += -nostdlib -Wl,-soname=linux-vdso64.so.1 \
 asflags-y := -D__VDSO64__ -s
 
 obj-y += vdso64_wrapper.o
-extra-y += vdso64.lds
+targets += vdso64.lds
 CPPFLAGS_vdso64.lds += -P -C -U$(ARCH)
 
 # Force dependency (incbin is bad)
