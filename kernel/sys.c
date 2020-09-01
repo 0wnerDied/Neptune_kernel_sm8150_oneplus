@@ -1184,9 +1184,9 @@ static int override_release(char __user *release, size_t len)
 
 static int override_version(struct new_utsname __user *name)
 {
-#ifdef CONFIG_F2FS_REPORT_FAKE_KERNEL_VERSION
-	int ret;
+	int ret = 0;
 
+#ifdef CONFIG_F2FS_REPORT_FAKE_KERNEL_VERSION
 	if (strcmp(current->comm, "fsck.f2fs"))
 		return 0;
 
@@ -1197,11 +1197,9 @@ static int override_version(struct new_utsname __user *name)
 
 	ret = copy_to_user(name->version, CONFIG_F2FS_FAKE_KERNEL_VERSION,
 			   strlen(CONFIG_F2FS_FAKE_KERNEL_VERSION) + 1);
+#endif
 
 	return ret;
-#else
-	return 0;
-#endif
 }
 
 SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
