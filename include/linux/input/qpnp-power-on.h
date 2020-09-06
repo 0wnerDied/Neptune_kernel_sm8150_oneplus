@@ -82,7 +82,6 @@ struct qpnp_pon {
 	int			num_pon_reg;
 	int			num_pon_config;
 	u32			dbc_time_us;
-	u32			sw_dbc_time_us;
 	u32			uvlo;
 	int			warm_reset_poff_type;
 	int			hard_reset_poff_type;
