@@ -17,14 +17,6 @@
 #include <dt-bindings/input/qcom,qpnp-power-on.h>
 #include <linux/errno.h>
 
-enum pon_type {
-	PON_KPDPWR	 = PON_POWER_ON_TYPE_KPDPWR,
-	PON_RESIN	 = PON_POWER_ON_TYPE_RESIN,
-	PON_CBLPWR	 = PON_POWER_ON_TYPE_CBLPWR,
-	PON_KPDPWR_RESIN = PON_POWER_ON_TYPE_KPDPWR_RESIN,
-	PON_KEY_MAX
-};
-
 /**
  * enum pon_trigger_source: List of PON trigger sources
  * %PON_SMPL:		PON triggered by Sudden Momentary Power Loss (SMPL)
@@ -101,10 +93,10 @@ struct qpnp_pon {
 	bool			resin_shutdown_disable;
 	bool			ps_hold_hard_reset_disable;
 	bool			ps_hold_shutdown_disable;
+	bool			kpdpwr_dbc_enable;
 	bool                    support_twm_config;
 	bool			resin_pon_reset;
-	bool			sw_dbc_enable;
-	ktime_t			sw_dbc_last_release_time[PON_KEY_MAX];
+	ktime_t			kpdpwr_last_release_time;
 	struct notifier_block   pon_nb;
 	bool			legacy_hard_reset_offset;
 };
