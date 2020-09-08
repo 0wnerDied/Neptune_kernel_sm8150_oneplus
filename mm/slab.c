@@ -2013,7 +2013,7 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
 	size_t ralign = BYTES_PER_WORD;
 	gfp_t gfp;
 	int err;
-	unsigned int size = cachep->size;
+	size_t size = cachep->size;
 
 #if DEBUG
 #if FORCED_DEBUG
