@@ -23,19 +23,19 @@
  * The ones marked DEBUG are only valid if CONFIG_DEBUG_SLAB is set.
  */
 /* DEBUG: Perform (expensive) checks on alloc/free */
-#define SLAB_CONSISTENCY_CHECKS	((slab_flags_t __force)0x00000100U)
+#define SLAB_CONSISTENCY_CHECKS	((slab_flags_t __force)0x00000100UL)
 /* DEBUG: Red zone objs in a cache */
-#define SLAB_RED_ZONE		((slab_flags_t __force)0x00000400U)
+#define SLAB_RED_ZONE		((slab_flags_t __force)0x00000400UL)
 /* DEBUG: Poison objects */
-#define SLAB_POISON		((slab_flags_t __force)0x00000800U)
+#define SLAB_POISON		((slab_flags_t __force)0x00000800UL)
 /* Align objs on cache lines */
-#define SLAB_HWCACHE_ALIGN	((slab_flags_t __force)0x00002000U)
+#define SLAB_HWCACHE_ALIGN	((slab_flags_t __force)0x00002000UL)
 /* Use GFP_DMA memory */
-#define SLAB_CACHE_DMA		((slab_flags_t __force)0x00004000U)
+#define SLAB_CACHE_DMA		((slab_flags_t __force)0x00004000UL)
 /* DEBUG: Store the last owner for bug hunting */
-#define SLAB_STORE_USER		((slab_flags_t __force)0x00010000U)
+#define SLAB_STORE_USER		((slab_flags_t __force)0x00010000UL)
 /* Panic if kmem_cache_create() fails */
-#define SLAB_PANIC		((slab_flags_t __force)0x00040000U)
+#define SLAB_PANIC		((slab_flags_t __force)0x00040000UL)
 /*
  * SLAB_TYPESAFE_BY_RCU - **WARNING** READ THIS!
  *
@@ -74,43 +74,43 @@
  * Note that SLAB_TYPESAFE_BY_RCU was originally named SLAB_DESTROY_BY_RCU.
  */
 /* Defer freeing slabs to RCU */
-#define SLAB_TYPESAFE_BY_RCU	((slab_flags_t __force)0x00080000U)
+#define SLAB_TYPESAFE_BY_RCU	((slab_flags_t __force)0x00080000UL)
 /* Spread some memory over cpuset */
-#define SLAB_MEM_SPREAD		((slab_flags_t __force)0x00100000U)
+#define SLAB_MEM_SPREAD		((slab_flags_t __force)0x00100000UL)
 /* Trace allocations and frees */
-#define SLAB_TRACE		((slab_flags_t __force)0x00200000U)
+#define SLAB_TRACE		((slab_flags_t __force)0x00200000UL)
 
 /* Flag to prevent checks on free */
 #ifdef CONFIG_DEBUG_OBJECTS
-# define SLAB_DEBUG_OBJECTS	((slab_flags_t __force)0x00400000U)
+# define SLAB_DEBUG_OBJECTS	((slab_flags_t __force)0x00400000UL)
 #else
-# define SLAB_DEBUG_OBJECTS	0
+# define SLAB_DEBUG_OBJECTS	((slab_flags_t __force)0x00000000UL)
 #endif
 
 /* Avoid kmemleak tracing */
-#define SLAB_NOLEAKTRACE	((slab_flags_t __force)0x00800000U)
+#define SLAB_NOLEAKTRACE	((slab_flags_t __force)0x00800000UL)
 
 #ifdef CONFIG_FAILSLAB
-# define SLAB_FAILSLAB		((slab_flags_t __force)0x02000000U)
+# define SLAB_FAILSLAB		((slab_flags_t __force)0x02000000UL)
 #else
-# define SLAB_FAILSLAB		0
+# define SLAB_FAILSLAB		((slab_flags_t __force)0x00000000UL)
 #endif
 /* Account to memcg */
 #if defined(CONFIG_MEMCG) && !defined(CONFIG_SLOB)
-# define SLAB_ACCOUNT		((slab_flags_t __force)0x04000000U)
+# define SLAB_ACCOUNT		((slab_flags_t __force)0x04000000UL)
 #else
-# define SLAB_ACCOUNT		0
+# define SLAB_ACCOUNT		((slab_flags_t __force)0x00000000UL)
 #endif
 
 #ifdef CONFIG_KASAN
-#define SLAB_KASAN		((slab_flags_t __force)0x08000000U)
+#define SLAB_KASAN		((slab_flags_t __force)0x08000000UL)
 #else
-#define SLAB_KASAN		0
+#define SLAB_KASAN		((slab_flags_t __force)0x00000000UL)
 #endif
 
 /* The following flags affect the page allocator grouping pages by mobility */
 /* Objects are reclaimable */
-#define SLAB_RECLAIM_ACCOUNT	((slab_flags_t __force)0x00020000U)
+#define SLAB_RECLAIM_ACCOUNT	((slab_flags_t __force)0x00020000UL)
 #define SLAB_TEMPORARY		SLAB_RECLAIM_ACCOUNT	/* Objects are short-lived */
 /*
  * ZERO_SIZE_PTR will be returned for zero sized kmalloc requests.
