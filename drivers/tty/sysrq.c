@@ -58,11 +58,10 @@
 static int __read_mostly sysrq_enabled = CONFIG_MAGIC_SYSRQ_DEFAULT_ENABLE;
 static bool __read_mostly sysrq_always_enabled;
 
-bool sysrq_on(void)
+static bool sysrq_on(void)
 {
 	return sysrq_enabled || sysrq_always_enabled;
 }
-EXPORT_SYMBOL(sysrq_on);
 
 /*
  * A value of 1 means 'all', other nonzero values are an op mask:
@@ -135,17 +134,10 @@ static struct sysrq_key_op sysrq_unraw_op = {
 
 static void sysrq_handle_crash(int key)
 {
-	char *killer = NULL;
-
-	/* we need to release the RCU read lock here,
-	 * otherwise we get an annoying
-	 * 'BUG: sleeping function called from invalid context'
-	 * complaint from the kernel before the panic.
-	 */
+	/* release the RCU read lock before crashing */
 	rcu_read_unlock();
-	panic_on_oops = 1;	/* force panic */
-	wmb();
-	*killer = 1;
+
+	panic("sysrq triggered crash\n");
 }
 static struct sysrq_key_op sysrq_crash_op = {
 	.handler	= sysrq_handle_crash,

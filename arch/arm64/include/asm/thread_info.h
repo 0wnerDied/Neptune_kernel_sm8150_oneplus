@@ -55,6 +55,9 @@ struct thread_info {
 #endif
 		} preempt;
 	};
+#ifdef CONFIG_SHADOW_CALL_STACK
+	void			*shadow_call_stack;
+#endif
 };
 
 #define INIT_THREAD_INFO(tsk)						\
@@ -106,6 +109,7 @@ void arch_setup_new_exec(void);
 #define TIF_32BIT		22	/* 32bit process */
 #define TIF_SSBD		23	/* Wants SSB mitigation */
 #define TIF_MM_RELEASED		24
+#define TIF_TAGGED_ADDR		25	/* Allow tagged user addresses */
 
 #define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
 #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)

@@ -30,6 +30,22 @@ config CONSOLE_LOGLEVEL_DEFAULT
 	  usage in the kernel. That is controlled by the MESSAGE_LOGLEVEL_DEFAULT
 	  option.
 
+config PRINTK_CPU_ID
+	bool "Show CPU number on printks"
+	default y
+	depends on PRINTK
+	help
+	  Selecting this option adds CPU number to printk() messages.
+	  It can be turned off by writing 0 to printk module parameter cpu.
+
+config PRINTK_PID
+	bool "Show process ID on printks"
+	default y
+	depends on PRINTK
+	help
+	  Selecting this option adds process ID to printk() messages.
+	  It can be turned off by writing 0 to printk module parameter pid.
+
 config MESSAGE_LOGLEVEL_DEFAULT
 	int "Default message log level (1-7)"
 	range 1 7
@@ -145,6 +161,14 @@ config DEBUG_MODULE_LOAD_INFO
 
 	  If unsure, say N.
 
+config DEBUG_CONSOLE_UNHASHED_POINTERS
+	bool "Display unhashed kernel pointers"
+	depends on DEBUG_KERNEL
+	help
+	  Pointers %p and %pK are normally hashed prior to being displayed to
+	  prevent leaking kernel addresses. On debug builds, always print
+	  actual pointer values, ignoring the kptr_restrict setting.
+	  Not to be enabled on production builds.
 
 endmenu # "printk and dmesg options"
 
@@ -230,7 +254,6 @@ config ENABLE_MUST_CHECK
 config FRAME_WARN
 	int "Warn for stack frames larger than (needs gcc 4.4)"
 	range 0 8192
-	default 3072 if KASAN_EXTRA
 	default 2048 if GCC_PLUGIN_LATENT_ENTROPY
 	default 1280 if (!64BIT && PARISC)
 	default 1024 if (!64BIT && !PARISC)
@@ -778,6 +801,11 @@ config ARCH_HAS_KCOV
 	  An architecture should select this when it can successfully
 	  build and run with CONFIG_KCOV. This typically requires
 	  disabling instrumentation for some early boot code.
+
+# Upstream uses $(cc-option, -fsanitize-coverage=trace-pc), which requires
+# cc-option support. Here we instead check CC in scripts/Makefile.kcov.
+config CC_HAS_SANCOV_TRACE_PC
+	def_bool ARCH_HAS_KCOV
 
 # Upstream uses $(cc-option, -fsanitize-coverage=trace-pc), which requires
 # cc-option support. Here we instead check CC in scripts/Makefile.kcov.
@@ -2067,6 +2095,24 @@ config TEST_DEBUG_VIRTUAL
 	  Test the kernel's ability to detect incorrect calls to
 	  virt_to_phys() done against the non-linear part of the
 	  kernel's virtual address map.
+
+	  If unsure, say N.
+
+config TEST_MEMINIT
+	tristate "Test heap/page initialization"
+	help
+	  Test if the kernel is zero-initializing heap and page allocations.
+	  This can be useful to test init_on_alloc and init_on_free features.
+
+	  If unsure, say N.
+
+config TEST_STACKINIT
+	tristate "Test level of stack variable initialization"
+	help
+	  Test if the kernel is zero-initializing stack variables and
+	  padding. Coverage is controlled by compiler flags,
+	  CONFIG_GCC_PLUGIN_STRUCTLEAK, CONFIG_GCC_PLUGIN_STRUCTLEAK_BYREF,
+	  or CONFIG_GCC_PLUGIN_STRUCTLEAK_BYREF_ALL.
 
 	  If unsure, say N.
 
