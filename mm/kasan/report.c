@@ -326,7 +326,8 @@ static void print_shadow_for_address(const void *addr)
 	}
 }
 
-void kasan_report_invalid_free(void *object, void *ip)
+void kasan_report_double_free(struct kmem_cache *cache, void *object,
+				void *ip)
 {
 	unsigned long flags;
 
