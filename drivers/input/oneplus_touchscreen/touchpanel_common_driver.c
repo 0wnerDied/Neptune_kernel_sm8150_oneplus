@@ -168,7 +168,7 @@ static void operate_mode_switch(struct touchpanel_data *ts)
 	if (ts->is_suspended) {
 		if (ts->game_switch_support)
 			ts->ts_ops->mode_switch(ts->chip_data, MODE_GAME,
-						true);
+						false);
 
 		if (ts->black_gesture_support) {
 			if (ts->gesture_enable == 1) {
@@ -3226,7 +3226,6 @@ int register_common_touch_device(struct touchpanel_data *pdata)
 	ts->charge_detect = 0;
 	ts->firmware_update_type = 0;
 	ts->corner_delay_up = -1;
-	ts->noise_level = 1;
 	if (ts->is_noflash_ic) {
 		ts->irq = ts->s_client->irq;
 	} else {
