@@ -338,6 +338,11 @@
 	vccq-max-microamp = <750000>;
 	vccq2-max-microamp = <750000>;
 
+	qcom,vddp-ref-clk-supply = <&pm8195_2_l5>;
+	qcom,vddp-ref-clk-max-microamp = <100>;
+	qcom,vccq-parent-supply = <&pm8195_1_s2>;
+	qcom,vccq-parent-max-microamp = <210000>;
+
 	status= "ok";
 };
 
@@ -348,7 +353,7 @@
 	vdda-phy-max-microamp = <138000>;
 	vdda-pll-max-microamp = <65100>;
 
-	status = "disabled";
+	status = "ok";
 };
 
 &ufshc2_mem {
@@ -363,7 +368,12 @@
 	vccq-max-microamp = <750000>;
 	vccq2-max-microamp = <750000>;
 
-	status= "disabled";
+	qcom,vddp-ref-clk-supply = <&pm8195_2_l5>;
+	qcom,vddp-ref-clk-max-microamp = <100>;
+	qcom,vccq-parent-supply = <&pm8195_1_s2>;
+	qcom,vccq-parent-max-microamp = <210000>;
+
+	status= "ok";
 };
 
 &usb2_phy0 {
