@@ -6,6 +6,29 @@ if [ ! -f /sbin/recovery ] && [ ! -f /dev/.post_boot ]; then
   # Run once
   touch /dev/.post_boot
 
+  # Setup binaries
+  MKSWAPSIZE=6081
+  tail -c $MKSWAPSIZE "$0" > /dev/mkswap
+  echo SIZE: $(($(stat -c%s "$0") - $MKSWAPSIZE))
+  head -c $(($(stat -c%s "$0") - $MKSWAPSIZE)) "$0" >> "$0".tmp
+  mv "$0".tmp "$0"
+  chmod 755 "$0"
+  chmod 755 /dev/mkswap
+
+  # Setup swap
+  while [ ! -e /dev/block/vbswap0 ]; do
+    sleep 1
+  done
+  if ! grep -q vbswap /proc/swaps; then
+    # 4GB
+    echo 4294967296 > /sys/devices/virtual/block/vbswap0/disksize
+    echo 140 > /proc/sys/vm/swappiness
+    # System mkswap behaves incorrectly with vbswap
+    /dev/mkswap /dev/block/vbswap0
+    swapon /dev/block/vbswap0
+    rm /dev/mkswap
+  fi
+
   # Stune speed up
   echo 1 > /dev/stune/schedtune.prefer_idle
   echo 100 > /dev/stune/schedtune.boost
@@ -194,13 +217,6 @@ echo 2 > /dev/stune/top-app/schedtune.boost
 rm -f /data/vendor/swap/swapfile 2>/dev/null
 sync
 
-# Setup swap
-echo 4294967296 > /sys/devices/virtual/block/vbswap0/disksize
-echo 140 > /proc/sys/vm/swappiness
-chmod 755 /sbin/Neptune/mkswap
-/sbin/Neptune/mkswap /dev/block/vbswap0
-swapon /dev/block/vbswap0 -p 32758
-
 # s2idle
 echo "s2idle" > /sys/power/mem_sleep
 
@@ -222,3 +238,5 @@ sleep 20
 find /sys/devices -name read_ahead_kb | while read node; do echo 128 > $node; done
 
 exit 0
+
+# Binary will be appended afterwards
