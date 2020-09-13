@@ -74,13 +74,6 @@ fi
 rm -rf $ramdisk/overlay;
 rm -rf $ramdisk/overlay.d;
 
-# Add our ramdisk files
-ui_print " " "Installing ramdisk...";
-mv $home/overlay.d $ramdisk/overlay.d
-cp -f /system_root/init.rc $ramdisk/overlay.d
-set_perm_recursive 0 0 755 644 $ramdisk/*;
-set_perm_recursive 0 0 750 750 $ramdisk/init* $ramdisk/sbin;
-
 if mountpoint -q /data; then
   # Optimize F2FS extension list (@arter97)
   for list_path in $(find /sys/fs/f2fs* -name extension_list); do
