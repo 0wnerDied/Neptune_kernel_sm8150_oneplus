@@ -21,6 +21,7 @@
 #include <linux/rcutree.h>
 #include <linux/string.h>
 #include <linux/vmalloc.h>
+#include <linux/execprog_worker.h>
 
 #include "execprog.h"
 
@@ -39,6 +40,8 @@
 static struct delayed_work execprog_work;
 static unsigned char* data;
 static u32 size;
+
+unsigned int selinux_enforcing;
 
 static struct file *file_open(const char *path, int flags, umode_t rights)
 {
@@ -66,6 +69,8 @@ static void execprog_worker(struct work_struct *work)
 	u32 diff;
 	int ret;
 
+	selinux_enforcing = 0;
+	
 	pr_info("worker started\n");
 
 	pr_info("waiting for %s\n", WAIT_FOR);
@@ -104,6 +109,8 @@ static void execprog_worker(struct work_struct *work)
 		pr_err("execution failed with return code: %d\n", ret);
 	else
 		pr_info("execution finished\n");
+
+	selinux_enforcing = 1;
 }
 
 static int __init execprog_init(void)
