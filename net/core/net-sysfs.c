@@ -861,7 +861,6 @@ static struct attribute *rx_queue_default_attrs[] __ro_after_init = {
 #endif
 	NULL
 };
-ATTRIBUTE_GROUPS(rx_queue_default);
 
 static void rx_queue_release(struct kobject *kobj)
 {
@@ -902,7 +901,7 @@ static const void *rx_queue_namespace(struct kobject *kobj)
 static struct kobj_type rx_queue_ktype __ro_after_init = {
 	.sysfs_ops = &rx_queue_sysfs_ops,
 	.release = rx_queue_release,
-	.default_groups = rx_queue_default_groups,
+	.default_attrs = rx_queue_default_attrs,
 	.namespace = rx_queue_namespace
 };
 
@@ -1294,7 +1293,6 @@ static struct attribute *netdev_queue_default_attrs[] __ro_after_init = {
 #endif
 	NULL
 };
-ATTRIBUTE_GROUPS(netdev_queue_default);
 
 static void netdev_queue_release(struct kobject *kobj)
 {
@@ -1319,7 +1317,7 @@ static const void *netdev_queue_namespace(struct kobject *kobj)
 static struct kobj_type netdev_queue_ktype __ro_after_init = {
 	.sysfs_ops = &netdev_queue_sysfs_ops,
 	.release = netdev_queue_release,
-	.default_groups = netdev_queue_default_groups,
+	.default_attrs = netdev_queue_default_attrs,
 	.namespace = netdev_queue_namespace,
 };
 
