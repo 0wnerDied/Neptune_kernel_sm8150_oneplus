@@ -635,16 +635,15 @@ static struct governor_attr up_rate_limit_us = __ATTR_RW(up_rate_limit_us);
 static struct governor_attr down_rate_limit_us = __ATTR_RW(down_rate_limit_us);
 static struct governor_attr iowait_boost_enable = __ATTR_RW(iowait_boost_enable);
 
-static struct attribute *sugov_attrs[] = {
+static struct attribute *sugov_attributes[] = {
 	&up_rate_limit_us.attr,
 	&down_rate_limit_us.attr,
 	&iowait_boost_enable.attr,
 	NULL
 };
-ATTRIBUTE_GROUPS(sugov);
 
 static struct kobj_type sugov_tunables_ktype = {
-	.default_groups = sugov_groups,
+	.default_attrs = sugov_attributes,
 	.sysfs_ops = &governor_sysfs_ops,
 };
 
