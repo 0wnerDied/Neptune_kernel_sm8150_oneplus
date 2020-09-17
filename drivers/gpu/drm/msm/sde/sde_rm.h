@@ -279,8 +279,7 @@ int sde_rm_cont_splash_res_init(struct msm_drm_private *priv,
  * @topology: topology selected for the display
  * @return: 0 on success or error
  */
-int sde_rm_update_topology(struct sde_rm *rm,
-	struct drm_connector_state *conn_state,
+int sde_rm_update_topology(struct drm_connector_state *conn_state,
 	struct msm_display_topology *topology);
 
 /**

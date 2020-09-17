@@ -1645,8 +1645,7 @@ static struct drm_connector *_sde_rm_get_connector(
 	return NULL;
 }
 
-int sde_rm_update_topology(struct sde_rm *rm,
-	struct drm_connector_state *conn_state,
+int sde_rm_update_topology(struct drm_connector_state *conn_state,
 	struct msm_display_topology *topology)
 {
 	int i, ret = 0;
@@ -1659,8 +1658,8 @@ int sde_rm_update_topology(struct sde_rm *rm,
 	if (topology) {
 		top = *topology;
 		for (i = 0; i < SDE_RM_TOPOLOGY_MAX; i++)
-			if (RM_IS_TOPOLOGY_MATCH(rm->topology_tbl[i], top)) {
-				top_name = rm->topology_tbl[i].top_name;
+			if (RM_IS_TOPOLOGY_MATCH(g_top_table[i], top)) {
+				top_name = g_top_table[i].top_name;
 				break;
 			}
 	}
