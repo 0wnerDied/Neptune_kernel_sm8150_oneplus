@@ -1,4 +1,4 @@
-/* Copyright (c) 2017, 2019 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2020 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -10,18 +10,15 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __BATTERY_H
-#define __BATTERY_H
+#ifndef _QCOM_ETH_SMMU_H_
+#define _QCOM_ETH_SMMU_H_
 
-struct charger_param {
-	u32 fcc_step_delay_ms;
-	u32 fcc_step_size_ua;
-	u32 smb_version;
-	u32 hvdcp3_max_icl_ua;
-	u32 forced_main_fcc;
-	u32 qc4_max_icl_ua;
-};
+#include <linux/pci.h>
 
-int qcom_batt_init(struct charger_param *param);
-void qcom_batt_deinit(void);
-#endif /* __BATTERY_H */
+
+int qcom_smmu_register(struct pci_driver *pdrv);
+void qcom_smmu_unregister(struct pci_driver *pdrv);
+
+
+#endif // _QCOM_ETH_SMMU_H_
+
