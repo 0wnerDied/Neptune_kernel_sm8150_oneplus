@@ -1218,8 +1218,7 @@ static void handle_fifo_timeout(struct spi_master *spi,
 	}
 dma_unprep:
 	if (mas->cur_xfer_mode == SE_DMA) {
-<<<<<<< HEAD
-		if (xfer->tx_buf) {
+		if (xfer->tx_buf && xfer->tx_dma) {
 			reinit_completion(&mas->xfer_done);
 			writel_relaxed(1, mas->base +
 				SE_DMA_TX_FSM_RST);
@@ -1231,7 +1230,7 @@ dma_unprep:
 			geni_se_tx_dma_unprep(mas->wrapper_dev,
 				xfer->tx_dma, xfer->len);
 		}
-		if (xfer->rx_buf) {
+		if (xfer->rx_buf && xfer->rx_dma) {
 			reinit_completion(&mas->xfer_done);
 			writel_relaxed(1, mas->base +
 				SE_DMA_RX_FSM_RST);
@@ -1240,12 +1239,6 @@ dma_unprep:
 			if (!timeout)
 				dev_err(mas->dev,
 					"DMA RX RESET failed\n");
-=======
-		if (xfer->tx_buf && xfer->tx_dma)
-			geni_se_tx_dma_unprep(mas->wrapper_dev,
-					xfer->tx_dma, xfer->len);
-		if (xfer->rx_buf && xfer->rx_dma)
->>>>>>> 48b365d1ab8192e1aa03e3020aba3a7f6bf3dcbc
 			geni_se_rx_dma_unprep(mas->wrapper_dev,
 				xfer->rx_dma, xfer->len);
 		}
