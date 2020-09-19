@@ -769,14 +769,13 @@ static int ufs_qcom_config_vreg(struct device *dev,
 		ret = regulator_set_load(vreg->reg, uA_load);
 		if (ret)
 			goto out;
-		if (vreg->min_uV && vreg->max_uV) {
-			min_uV = on ? vreg->min_uV : 0;
-			ret = regulator_set_voltage(reg, min_uV, vreg->max_uV);
-			if (ret) {
-				dev_err(dev, "%s: %s failed, err=%d\n",
+
+		min_uV = on ? vreg->min_uV : 0;
+		ret = regulator_set_voltage(reg, min_uV, vreg->max_uV);
+		if (ret) {
+			dev_err(dev, "%s: %s set voltage failed, err=%d\n",
 					__func__, vreg->name, ret);
-				goto out;
-			}
+			goto out;
 		}
 	}
 out:
@@ -836,15 +835,13 @@ static int ufs_qcom_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	 */
 	if (!ufs_qcom_is_link_active(hba)) {
 		ufs_qcom_disable_lane_clks(host);
-		phy_power_off(phy);
-
+		if (host->is_phy_pwr_on) {
+			phy_power_off(phy);
+			host->is_phy_pwr_on = false;
+		}
 		if (host->vddp_ref_clk && ufs_qcom_is_link_off(hba))
 			ret = ufs_qcom_disable_vreg(hba->dev,
 					host->vddp_ref_clk);
-		if (host->vccq_parent && !hba->auto_bkops_enabled)
-			ufs_qcom_config_vreg(hba->dev,
-					host->vccq_parent, false);
-
 		ufs_qcom_ice_suspend(host);
 		if (ufs_qcom_is_link_off(hba)) {
 			/* Assert PHY soft reset */
@@ -865,19 +862,19 @@ static int ufs_qcom_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 	struct phy *phy = host->generic_phy;
 	int err;
 
-	err = phy_power_on(phy);
-	if (err) {
-		dev_err(hba->dev, "%s: failed enabling regs, err = %d\n",
-			__func__, err);
-		goto out;
+	if (!host->is_phy_pwr_on) {
+		err = phy_power_on(phy);
+		if (err) {
+			dev_err(hba->dev, "%s: failed enabling regs, err = %d\n",
+				__func__, err);
+			goto out;
+		}
+		host->is_phy_pwr_on = true;
 	}
-
 	if (host->vddp_ref_clk && (hba->rpm_lvl > UFS_PM_LVL_3 ||
 				   hba->spm_lvl > UFS_PM_LVL_3))
 		ufs_qcom_enable_vreg(hba->dev,
 				      host->vddp_ref_clk);
-	if (host->vccq_parent)
-		ufs_qcom_config_vreg(hba->dev, host->vccq_parent, true);
 
 	err = ufs_qcom_enable_lane_clks(host);
 	if (err)
@@ -1633,8 +1630,10 @@ static int ufs_qcom_setup_clocks(struct ufs_hba *hba, bool on,
 		return 0;
 
 	if (on && (status == POST_CHANGE)) {
-		phy_power_on(host->generic_phy);
-
+		if (!host->is_phy_pwr_on) {
+			phy_power_on(host->generic_phy);
+			host->is_phy_pwr_on = true;
+		}
 		/* enable the device ref clock for HS mode*/
 		if (ufshcd_is_hs_mode(&hba->pwr_info))
 			ufs_qcom_dev_ref_clk_ctrl(host, true);
@@ -1658,7 +1657,10 @@ static int ufs_qcom_setup_clocks(struct ufs_hba *hba, bool on,
 			ufs_qcom_dev_ref_clk_ctrl(host, false);
 
 			/* powering off PHY during aggressive clk gating */
-			phy_power_off(host->generic_phy);
+			if (host->is_phy_pwr_on) {
+				phy_power_off(host->generic_phy);
+				host->is_phy_pwr_on = false;
+			}
 		}
 	}
 
@@ -2113,10 +2115,7 @@ static int ufs_qcom_parse_reg_info(struct ufs_qcom_host *host, char *name,
 	if (ret) {
 		dev_dbg(dev, "%s: unable to find %s err %d, using default\n",
 			__func__, prop_name, ret);
-		if (!strcmp(name, "qcom,vddp-ref-clk"))
-			vreg->min_uV = VDDP_REF_CLK_MIN_UV;
-		else if (!strcmp(name, "qcom,vccq-parent"))
-			vreg->min_uV = 0;
+		vreg->min_uV = VDDP_REF_CLK_MIN_UV;
 		ret = 0;
 	}
 
@@ -2125,10 +2124,7 @@ static int ufs_qcom_parse_reg_info(struct ufs_qcom_host *host, char *name,
 	if (ret) {
 		dev_dbg(dev, "%s: unable to find %s err %d, using default\n",
 			__func__, prop_name, ret);
-		if (!strcmp(name, "qcom,vddp-ref-clk"))
-			vreg->max_uV = VDDP_REF_CLK_MAX_UV;
-		else if (!strcmp(name, "qcom,vccq-parent"))
-			vreg->max_uV = 0;
+		vreg->max_uV = VDDP_REF_CLK_MAX_UV;
 		ret = 0;
 	}
 
@@ -2267,8 +2263,6 @@ static int ufs_qcom_init(struct ufs_hba *hba)
 			host->dev_ref_clk_en_mask = BIT(5);
 		}
 	}
-	/* use binary power_count to avoid race condition of phy on/off */
-	host->generic_phy->is_binary_power_count = true;
 
 	/* update phy revision information before calling phy_init() */
 	ufs_qcom_phy_save_controller_version(host->generic_phy,
@@ -2277,32 +2271,19 @@ static int ufs_qcom_init(struct ufs_hba *hba)
 	err = ufs_qcom_parse_reg_info(host, "qcom,vddp-ref-clk",
 				      &host->vddp_ref_clk);
 	phy_init(host->generic_phy);
-	err = phy_power_on(host->generic_phy);
-	if (err)
-		goto out_unregister_bus;
+
 	if (host->vddp_ref_clk) {
 		err = ufs_qcom_enable_vreg(dev, host->vddp_ref_clk);
 		if (err) {
 			dev_err(dev, "%s: failed enabling ref clk supply: %d\n",
 				__func__, err);
-			goto out_disable_phy;
-		}
-	}
-
-	err = ufs_qcom_parse_reg_info(host, "qcom,vccq-parent",
-				      &host->vccq_parent);
-	if (host->vccq_parent) {
-		err = ufs_qcom_config_vreg(hba->dev, host->vccq_parent, true);
-		if (err) {
-			dev_err(dev, "%s: failed vccq-parent set load: %d\n",
-				__func__, err);
-			goto out_disable_vddp;
+			goto out_unregister_bus;
 		}
 	}
 
 	err = ufs_qcom_init_lane_clks(host);
 	if (err)
-		goto out_set_load_vccq_parent;
+		goto out_disable_vddp;
 
 	ufs_qcom_parse_lpm(host);
 	if (host->disable_lpm)
@@ -2326,14 +2307,9 @@ static int ufs_qcom_init(struct ufs_hba *hba)
 
 	goto out;
 
-out_set_load_vccq_parent:
-	if (host->vccq_parent)
-		ufs_qcom_config_vreg(hba->dev, host->vccq_parent, false);
 out_disable_vddp:
 	if (host->vddp_ref_clk)
 		ufs_qcom_disable_vreg(dev, host->vddp_ref_clk);
-out_disable_phy:
-	phy_power_off(host->generic_phy);
 out_unregister_bus:
 	phy_exit(host->generic_phy);
 	msm_bus_scale_unregister_client(host->bus_vote.client_handle);
@@ -2350,7 +2326,10 @@ static void ufs_qcom_exit(struct ufs_hba *hba)
 
 	msm_bus_scale_unregister_client(host->bus_vote.client_handle);
 	ufs_qcom_disable_lane_clks(host);
-	phy_power_off(host->generic_phy);
+	if (host->is_phy_pwr_on) {
+		phy_power_off(host->generic_phy);
+		host->is_phy_pwr_on = false;
+	}
 	phy_exit(host->generic_phy);
 	ufs_qcom_pm_qos_remove(host);
 }
@@ -2922,7 +2901,6 @@ static struct platform_driver ufs_qcom_pltform = {
 		.name	= "ufshcd-qcom",
 		.pm	= &ufs_qcom_pm_ops,
 		.of_match_table = of_match_ptr(ufs_qcom_of_match),
-		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
 	},
 };
 module_platform_driver(ufs_qcom_pltform);
