@@ -2646,7 +2646,7 @@ static int sde_encoder_resource_control(struct drm_encoder *drm_enc,
 					SDE_EVTLOG_ERROR);
 			mutex_unlock(&sde_enc->rc_lock);
 			return 0;
-		} else if (sde_crtc_frame_pending(sde_enc->crtc) > 1) {
+		} else if (sde_crtc_frame_pending(sde_enc->crtc)) {
 			SDE_DEBUG_ENC(sde_enc, "skip idle entry");
 			SDE_EVT32(DRMID(drm_enc), sw_event, sde_enc->rc_state,
 					sde_crtc_frame_pending(sde_enc->crtc),
@@ -3655,8 +3655,7 @@ static void sde_encoder_frame_done_callback(
 
 		/* One of the physical encoders has become idle */
 		for (i = 0; i < sde_enc->num_phys_encs; i++) {
-			if ((sde_enc->phys_encs[i] == ready_phys) ||
-				(event & SDE_ENCODER_FRAME_EVENT_ERROR)) {
+			if (sde_enc->phys_encs[i] == ready_phys) {
 				SDE_EVT32_VERBOSE(DRMID(drm_enc), i,
 					atomic_read(
 						&sde_enc->frame_done_cnt[i]));

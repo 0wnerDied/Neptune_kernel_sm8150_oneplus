@@ -146,15 +146,15 @@ static ssize_t
 gpumem_mapped_show(struct kgsl_process_private *priv,
 				int type, char *buf)
 {
-	return scnprintf(buf, PAGE_SIZE, "%llu\n",
-			(u64)atomic64_read(&priv->gpumem_mapped));
+	return scnprintf(buf, PAGE_SIZE, "%ld\n",
+			atomic_long_read(&priv->gpumem_mapped));
 }
 
 static ssize_t
 gpumem_unmapped_show(struct kgsl_process_private *priv, int type, char *buf)
 {
-	u64 gpumem_total = atomic64_read(&priv->stats[type].cur);
-	u64 gpumem_mapped = atomic64_read(&priv->gpumem_mapped);
+	u64 gpumem_total = atomic_long_read(&priv->stats[type].cur);
+	u64 gpumem_mapped = atomic_long_read(&priv->gpumem_mapped);
 
 	if (gpumem_mapped > gpumem_total)
 		return -EIO;
@@ -177,8 +177,8 @@ static struct kgsl_mem_entry_attribute debug_memstats[] = {
 static ssize_t
 mem_entry_show(struct kgsl_process_private *priv, int type, char *buf)
 {
-	return scnprintf(buf, PAGE_SIZE, "%llu\n",
-			(u64)atomic64_read(&priv->stats[type].cur));
+	return scnprintf(buf, PAGE_SIZE, "%ld\n",
+			atomic_long_read(&priv->stats[type].cur));
 }
 
 /**
@@ -189,8 +189,7 @@ mem_entry_show(struct kgsl_process_private *priv, int type, char *buf)
 static ssize_t
 mem_entry_max_show(struct kgsl_process_private *priv, int type, char *buf)
 {
-	return scnprintf(buf, PAGE_SIZE, "%llu\n",
-			(u64)atomic64_read(&priv->stats[type].max));
+	return snprintf(buf, PAGE_SIZE, "%llu\n", priv->stats[type].max);
 }
 
 static ssize_t mem_entry_sysfs_show(struct kobject *kobj,
@@ -454,7 +453,7 @@ static int kgsl_page_alloc_vmfault(struct kgsl_memdesc *memdesc,
 		get_page(page);
 		vmf->page = page;
 
-		atomic64_add(PAGE_SIZE, &memdesc->mapsize);
+		atomic_long_add(PAGE_SIZE, &memdesc->mapsize);
 
 		return 0;
 	}
@@ -616,7 +615,7 @@ static int kgsl_contiguous_vmfault(struct kgsl_memdesc *memdesc,
 	else if (ret == -EFAULT)
 		return VM_FAULT_SIGBUS;
 
-	atomic64_add(PAGE_SIZE, &memdesc->mapsize);
+	atomic_long_add(PAGE_SIZE, &memdesc->mapsize);
 
 	return VM_FAULT_NOPAGE;
 }

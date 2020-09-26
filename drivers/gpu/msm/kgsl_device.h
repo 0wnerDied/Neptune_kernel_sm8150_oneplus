@@ -473,10 +473,10 @@ struct kgsl_process_private {
 	struct kobject kobj;
 	struct dentry *debug_root;
 	struct {
-		atomic64_t cur;
-		atomic64_t max;
+		atomic_long_t cur;
+		uint64_t max;
 	} stats[KGSL_MEM_ENTRY_MAX];
-	atomic64_t gpumem_mapped;
+	atomic_long_t gpumem_mapped;
 	struct idr syncsource_idr;
 	spinlock_t syncsource_lock;
 	int fd_count;
@@ -570,10 +570,10 @@ struct kgsl_device *kgsl_get_device(int dev_idx);
 static inline void kgsl_process_add_stats(struct kgsl_process_private *priv,
 	unsigned int type, uint64_t size)
 {
-	u64 ret = atomic64_add_return(size, &priv->stats[type].cur);
+	u64 ret = atomic_long_add_return(size, &priv->stats[type].cur);
 
-	if (ret > atomic64_read(&priv->stats[type].max))
-		atomic64_set(&priv->stats[type].max, ret);
+	if (ret > priv->stats[type].max)
+		priv->stats[type].max = ret;
 	add_mm_counter(current->mm, MM_UNRECLAIMABLE, (size >> PAGE_SHIFT));
 }
 
@@ -584,7 +584,7 @@ static inline void kgsl_process_sub_stats(struct kgsl_process_private *priv,
 	struct task_struct *task;
 	struct mm_struct *mm;
 
-	atomic64_sub(size, &priv->stats[type].cur);
+	atomic_long_sub(size, &priv->stats[type].cur);
 	pid_struct = find_get_pid(priv->pid);
 	if (pid_struct) {
 		task = get_pid_task(pid_struct, PIDTYPE_PID);

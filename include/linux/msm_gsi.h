@@ -103,6 +103,7 @@ enum gsi_intr_type {
  * @user_data:  cookie used for notifications
  * @clk_status_cb: callback to update the current msm bus clock vote
  * @enable_clk_bug_on: enable IPA clock for dump saving before assert
+ *
  * All the callbacks are in interrupt context
  *
  */

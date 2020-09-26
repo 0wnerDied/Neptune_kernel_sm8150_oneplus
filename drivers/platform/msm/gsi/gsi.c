@@ -836,11 +836,10 @@ static irqreturn_t gsi_isr(int irq, void *ctxt)
 			gsi_ctx->per.rel_clk_cb(gsi_ctx->per.user_data);
 		}
 	} else if (!gsi_ctx->per.clk_status_cb()) {
-	/* we only want to capture the gsi isr storm here */
 		if (atomic_read(&gsi_ctx->num_unclock_irq) ==
 			GSI_IRQ_STORM_THR)
 			gsi_ctx->per.enable_clk_bug_on();
-		atomic_inc(&gsi_ctx->num_unclock_irq);
+			atomic_inc(&gsi_ctx->num_unclock_irq);
 		return IRQ_HANDLED;
 	} else {
 		atomic_set(&gsi_ctx->num_unclock_irq, 0);

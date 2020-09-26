@@ -235,7 +235,7 @@ struct kgsl_memdesc {
 	uint64_t gpuaddr;
 	phys_addr_t physaddr;
 	uint64_t size;
-	atomic64_t mapsize;
+	atomic_long_t mapsize;
 	uint64_t pad_to;
 	unsigned int priv;
 	struct sg_table *sgt;
