@@ -13,4 +13,4 @@ obj-$(CONFIG_QPNP_SMB5)		+= step-chg-jeita.o battery.o qpnp-smb5.o smb5-lib.o pm
 obj-$(CONFIG_SMB1390_CHARGE_PUMP)	+= smb1390-charger.o pmic-voter.o
 obj-$(CONFIG_SMB1390_CHARGE_PUMP_PSY)	+= smb1390-charger-psy.o pmic-voter.o
 
-obj-y += battery_capacity.o
+obj-$(CONFIG_REMOVE_OP_CAPACITY) += battery_capacity.o

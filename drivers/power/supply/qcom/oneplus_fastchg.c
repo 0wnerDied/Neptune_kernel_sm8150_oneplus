@@ -30,7 +30,9 @@
 
 #define SHOW_FW_VERSION_DELAY_MS 18000
 
+#ifdef CONFIG_REMOVE_OP_CAPACITY
 extern unsigned int remove_op_capacity;
+#endif /* CONFIG_REMOVE_OP_CAPACITY */
 
 struct fastchg_device_info {
 	struct i2c_client		*client;
@@ -1200,11 +1202,16 @@ static long  dash_dev_ioctl(struct file *filp, unsigned int cmd,
 				di->fast_chg_ing = true;
 				volt = onplus_get_battery_mvolts();
 				temp = onplus_get_battery_temperature();
+#ifdef CONFIG_REMOVE_OP_CAPACITY
 				if (!remove_op_capacity) {
 					remain_cap = onplus_get_batt_remaining_capacity();
 				} else {
 					remain_cap = -EINVAL;
 				}
+#else /* CONFIG_REMOVE_OP_CAPACITY */
+				remain_cap = 
+					onplus_get_batt_remaining_capacity();
+#endif /* CONFIG_REMOVE_OP_CAPACITY */
 				soc = onplus_get_battery_soc();
 				current_now = onplus_get_average_current();
 				pr_debug("volt:%d,temp:%d,remain_cap:%d,soc:%d,current:%d\n",
