@@ -92,7 +92,10 @@
 #define BQ27411_REG_AI                  0x10
 #define BQ27411_REG_SOC                 0x1c
 #define BQ27411_REG_HEALTH              0x20
+
+#ifndef CONFIG_REMOVE_OP_CAPACITY
 #define BQ27411_REG_FCC                 0xE
+#endif /* CONFIG_REMOVE_OP_CAPACITY */
 
 #define CONTROL_CMD                 0x00
 #define CONTROL_STATUS              0x00
@@ -230,8 +233,10 @@ struct bq27541_device_info {
 	int soc_pre;
 	int  batt_vol_pre;
 	int current_pre;
+#ifndef CONFIG_REMOVE_OP_CAPACITY
 	int cap_pre;
 	int remain_pre;
+#endif /* CONFIG_REMOVE_OP_CAPACITY */
 	int health_pre;
 	unsigned long rtc_resume_time;
 	unsigned long rtc_suspend_time;
@@ -263,9 +268,11 @@ struct bq27541_device_info {
 };
 
 #include <linux/workqueue.h>
+#ifndef CONFIG_REMOVE_OP_CAPACITY
 /* add to update fg node value on panel event */
 int panel_flag1;
 int panel_flag2;
+#endif /* CONFIG_REMOVE_OP_CAPACITY */
 struct update_pre_capacity_data {
 	struct delayed_work work;
 	struct workqueue_struct *workqueue;
@@ -881,6 +888,7 @@ static int bq27541_average_current(struct bq27541_device_info *di)
 	return -curr * 1000;
 }
 
+#ifndef CONFIG_REMOVE_OP_CAPACITY
 static int bq27541_remaining_capacity(struct bq27541_device_info *di)
 {
 	int ret;
@@ -942,6 +950,7 @@ static int bq27541_full_chg_capacity(struct bq27541_device_info *di)
 	di->cap_pre = cap;
 	return cap;
 }
+#endif /* CONFIG_REMOVE_OP_CAPACITY */
 
 static int bq27541_batt_health(struct bq27541_device_info *di)
 {
@@ -969,6 +978,7 @@ static int bq27541_get_battery_mvolts(void)
 	return bq27541_battery_voltage(bq27541_di);
 }
 
+#ifndef CONFIG_REMOVE_OP_CAPACITY
 static int bq27541_get_batt_remaining_capacity(void)
 {
 	return bq27541_remaining_capacity(bq27541_di);
@@ -978,7 +988,7 @@ static int bq27541_get_batt_full_chg_capacity(void)
 {
 	return bq27541_full_chg_capacity(bq27541_di);
 }
-
+#endif /* CONFIG_REMOVE_OP_CAPACITY */
 
 static int bq27541_get_batt_health(void)
 {
@@ -1118,10 +1128,12 @@ static struct external_battery_gauge bq27541_batt_gauge = {
 	.is_battery_present     = bq27541_is_battery_present,
 	.is_battery_temp_within_range   = bq27541_is_battery_temp_within_range,
 	.is_battery_id_valid        = bq27541_is_battery_id_valid,
+#ifndef CONFIG_REMOVE_OP_CAPACITY
 	.get_batt_remaining_capacity
 		= bq27541_get_batt_remaining_capacity,
 	.get_batt_full_chg_capacity
 		= bq27541_get_batt_full_chg_capacity,
+#endif /* CONFIG_REMOVE_OP_CAPACITY */
 	.get_batt_health        = bq27541_get_batt_health,
 	.get_batt_bq_soc		= bq27541_get_batt_bq_soc,
 #ifdef CONFIG_GAUGE_BQ27411
@@ -1220,7 +1232,9 @@ static void update_battery_soc_work(struct work_struct *work)
 	bq27541_get_average_current();
 	temp = bq27541_get_battery_temperature();
 	bq27541_get_battery_soc();
+#ifndef CONFIG_REMOVE_OP_CAPACITY
 	bq27541_get_batt_remaining_capacity();
+#endif /* CONFIG_REMOVE_OP_CAPACITY */
 	bq27541_set_allow_reading(false);
 	bq27541_temperature_thrshold_update(temp);
 	if (!bq27541_di->already_modify_smooth)
