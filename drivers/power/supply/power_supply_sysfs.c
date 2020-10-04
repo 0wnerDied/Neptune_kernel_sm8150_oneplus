@@ -354,9 +354,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(system_temp_level),
 	POWER_SUPPLY_ATTR(battery_health),
 	POWER_SUPPLY_ATTR(op_disable_charge),
-#ifndef CONFIG_REMOVE_OP_CAPACITY
 	POWER_SUPPLY_ATTR(remaining_capacity),
-#endif /* CONFIG_REMOVE_OP_CAPACITY */
 	POWER_SUPPLY_ATTR(resistance),
 	POWER_SUPPLY_ATTR(resistance_capacitive),
 	POWER_SUPPLY_ATTR(resistance_id),
