@@ -36,6 +36,8 @@ struct external_battery_gauge {
 	bool (*is_battery_id_valid)(void);
 	bool (*is_usb_switch_on)(void);
 	int (*get_battery_status)(void);
+	int (*get_batt_remaining_capacity)(void);
+	int (*get_batt_full_chg_capacity)(void);
 	int (*get_batt_health)(void);
 	int (*get_batt_bq_soc)(void);
 	int (*monitor_for_recharging)(void);

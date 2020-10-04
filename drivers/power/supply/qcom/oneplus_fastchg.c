@@ -844,6 +844,14 @@ static int onplus_get_battery_temperature(void)
 		return 255; /* retrun 25.5 for default temp */
 }
 
+static int onplus_get_batt_remaining_capacity(void)
+{
+	if (bq27541_data && bq27541_data->get_batt_remaining_capacity)
+		return bq27541_data->get_batt_remaining_capacity();
+	else
+		return 5; /* retrun 5 for default remaining_capacity */
+}
+
 static int onplus_get_battery_soc(void)
 {
 	if (bq27541_data && bq27541_data->get_battery_soc)
@@ -1190,7 +1198,8 @@ static long  dash_dev_ioctl(struct file *filp, unsigned int cmd,
 				di->fast_chg_ing = true;
 				volt = onplus_get_battery_mvolts();
 				temp = onplus_get_battery_temperature();
-				remain_cap = -EINVAL;
+				remain_cap =
+				onplus_get_batt_remaining_capacity();
 				soc = onplus_get_battery_soc();
 				current_now = onplus_get_average_current();
 				pr_debug("volt:%d,temp:%d,remain_cap:%d,soc:%d,current:%d\n",
