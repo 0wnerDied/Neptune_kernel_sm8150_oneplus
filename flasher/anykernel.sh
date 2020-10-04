@@ -74,6 +74,18 @@ fi
 rm -rf $ramdisk/overlay;
 rm -rf $ramdisk/overlay.d;
 
+# Choose whether or not remove limit to learn battery capacity
+case "$ZIPFILE" in
+  *BATTERY*)
+    ui_print " " "Removing limit to learn battery capacity..."
+    patch_cmdline "battery_capacity.remove_op_capacity" "battery_capacity.remove_op_capacity=1"
+    ;;
+  *)
+    ui_print " " "Keeping the limit for learning battery capacity..."
+    patch_cmdline "battery_capacity.remove_op_capacity" "battery_capacity.remove_op_capacity=0"
+    ;;
+esac
+
 if mountpoint -q /data; then
   # Optimize F2FS extension list (@arter97)
   for list_path in $(find /sys/fs/f2fs* -name extension_list); do
