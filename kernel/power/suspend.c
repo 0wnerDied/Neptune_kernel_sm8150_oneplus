@@ -611,8 +611,6 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	stop_suspend_mon();
 #endif
 
-	system_state = SYSTEM_SUSPEND;
-
 	error = syscore_suspend();
 	if (!error) {
 		*wakeup = pm_wakeup_pending();
@@ -637,8 +635,6 @@ Enable_irq:
 #ifdef CONFIG_PM_SLEEP_MONITOR
 	start_suspend_mon();
 #endif
-
-	system_state = SYSTEM_RUNNING;
 
 	arch_suspend_enable_irqs();
 	BUG_ON(irqs_disabled());
