@@ -836,9 +836,6 @@ static int parse_options(struct super_block *sb, char *options)
 			} else if (!strcmp(name, "zstd")) {
 				F2FS_OPTION(sbi).compress_algorithm =
 								COMPRESS_ZSTD;
-			} else if (!strcmp(name, "lzo-rle")) {
-				F2FS_OPTION(sbi).compress_algorithm =
-								COMPRESS_LZORLE;
 			} else {
 				kfree(name);
 				return -EINVAL;
@@ -1467,9 +1464,6 @@ static inline void f2fs_show_compress_options(struct seq_file *seq,
 		break;
 	case COMPRESS_ZSTD:
 		algtype = "zstd";
-		break;
-	case COMPRESS_LZORLE:
-		algtype = "lzo-rle";
 		break;
 	}
 	seq_printf(seq, ",compress_algorithm=%s", algtype);
