@@ -58,6 +58,30 @@
 
 #define MAX_S2IDLE_CPU_ATTEMPTS  32   /* divide by # cpus for max suspends */
 
+enum {
+	MSM_LPM_LVL_DBG_SUSPEND_LIMITS = BIT(0),
+	MSM_LPM_LVL_DBG_IDLE_LIMITS = BIT(1),
+};
+
+enum debug_event {
+	CPU_ENTER,
+	CPU_EXIT,
+	CLUSTER_ENTER,
+	CLUSTER_EXIT,
+	CPU_HP_STARTING,
+	CPU_HP_DYING,
+};
+
+struct lpm_debug {
+	u64 time;
+	enum debug_event evt;
+	int cpu;
+	uint32_t arg1;
+	uint32_t arg2;
+	uint32_t arg3;
+	uint32_t arg4;
+};
+
 static struct system_pm_ops *sys_pm_ops;
 
 
