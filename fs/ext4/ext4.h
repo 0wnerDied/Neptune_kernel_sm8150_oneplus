@@ -397,7 +397,7 @@ struct flex_groups {
 #define EXT4_HUGE_FILE_FL               0x00040000 /* Set to each huge file */
 #define EXT4_EXTENTS_FL			0x00080000 /* Inode uses extents */
 #define EXT4_EA_INODE_FL	        0x00200000 /* Inode used for large EA */
-/* 0x00400000 was formerly EXT4_EOFBLOCKS_FL */
+#define EXT4_EOFBLOCKS_FL		0x00400000 /* Blocks allocated beyond EOF */
 #define EXT4_INLINE_DATA_FL		0x10000000 /* Inode has inline data. */
 #define EXT4_PROJINHERIT_FL		0x20000000 /* Create with parents projid */
 #define EXT4_CASEFOLD_FL		0x40000000 /* Casefolded file */
@@ -468,7 +468,7 @@ enum {
 	EXT4_INODE_HUGE_FILE	= 18,	/* Set to each huge file */
 	EXT4_INODE_EXTENTS	= 19,	/* Inode uses extents */
 	EXT4_INODE_EA_INODE	= 21,	/* Inode used for large EA */
-/* 22 was formerly EXT4_INODE_EOFBLOCKS */
+	EXT4_INODE_EOFBLOCKS	= 22,	/* Blocks allocated beyond EOF */
 	EXT4_INODE_INLINE_DATA	= 28,	/* Data in inode. */
 	EXT4_INODE_PROJINHERIT	= 29,	/* Create with parents projid */
 	EXT4_INODE_RESERVED	= 31,	/* reserved for ext4 lib */
@@ -513,6 +513,7 @@ static inline void ext4_check_flag_values(void)
 	CHECK_FLAG_VALUE(HUGE_FILE);
 	CHECK_FLAG_VALUE(EXTENTS);
 	CHECK_FLAG_VALUE(EA_INODE);
+	CHECK_FLAG_VALUE(EOFBLOCKS);
 	CHECK_FLAG_VALUE(INLINE_DATA);
 	CHECK_FLAG_VALUE(PROJINHERIT);
 	CHECK_FLAG_VALUE(RESERVED);
@@ -718,7 +719,7 @@ struct fsxattr {
 #define EXT4_MAX_BLOCK_FILE_PHYS	0xFFFFFFFF
 
 /* Max logical block we can support */
-#define EXT4_MAX_LOGICAL_BLOCK		0xFFFFFFFE
+#define EXT4_MAX_LOGICAL_BLOCK		0xFFFFFFFF
 
 /*
  * Structure of an inode on the disk
@@ -2686,6 +2687,8 @@ extern struct buffer_head *ext4_sb_bread(struct super_block *sb,
 extern int ext4_seq_options_show(struct seq_file *seq, void *offset);
 extern int ext4_calculate_overhead(struct super_block *sb);
 extern void ext4_superblock_csum_set(struct super_block *sb);
+extern void *ext4_kvmalloc(size_t size, gfp_t flags);
+extern void *ext4_kvzalloc(size_t size, gfp_t flags);
 extern int ext4_alloc_flex_bg_array(struct super_block *sb,
 				    ext4_group_t ngroup);
 extern const char *ext4_decode_error(struct super_block *sb, int errno,
@@ -3248,6 +3251,7 @@ struct ext4_extent;
 #define EXT_MAX_BLOCKS	0xffffffff
 
 extern int ext4_ext_tree_init(handle_t *handle, struct inode *);
+extern int ext4_ext_writepage_trans_blocks(struct inode *, int);
 extern int ext4_ext_index_trans_blocks(struct inode *inode, int extents);
 extern int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
 			       struct ext4_map_blocks *map, int flags);
@@ -3267,6 +3271,9 @@ extern int ext4_ext_calc_metadata_amount(struct inode *inode,
 extern int ext4_ext_calc_credits_for_single_extent(struct inode *inode,
 						   int num,
 						   struct ext4_ext_path *path);
+extern int ext4_can_extents_be_merged(struct inode *inode,
+				      struct ext4_extent *ex1,
+				      struct ext4_extent *ex2);
 extern int ext4_ext_insert_extent(handle_t *, struct inode *,
 				  struct ext4_ext_path **,
 				  struct ext4_extent *, int);
@@ -3283,6 +3290,8 @@ extern ext4_lblk_t ext4_ext_next_allocated_block(struct ext4_ext_path *path);
 extern int ext4_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
 			__u64 start, __u64 len);
 extern int ext4_ext_precache(struct inode *inode);
+extern int ext4_collapse_range(struct inode *inode, loff_t offset, loff_t len);
+extern int ext4_insert_range(struct inode *inode, loff_t offset, loff_t len);
 extern int ext4_swap_extents(handle_t *handle, struct inode *inode1,
 				struct inode *inode2, ext4_lblk_t lblk1,
 			     ext4_lblk_t lblk2,  ext4_lblk_t count,

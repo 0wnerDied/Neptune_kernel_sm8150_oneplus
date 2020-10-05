@@ -292,7 +292,6 @@ int __ext4_handle_dirty_metadata(const char *where, unsigned int line,
 					 handle->h_buffer_credits, err);
 		}
 	} else {
-		set_buffer_uptodate(bh);
 		if (inode)
 			mark_buffer_dirty_inode(bh, inode);
 		else

@@ -93,7 +93,6 @@ static const struct xattr_handler * const ext4_xattr_handler_map[] = {
 #ifdef CONFIG_EXT4_FS_SECURITY
 	[EXT4_XATTR_INDEX_SECURITY]	     = &ext4_xattr_security_handler,
 #endif
-	[EXT4_XATTR_INDEX_HURD]		     = &ext4_xattr_hurd_handler,
 };
 
 const struct xattr_handler *ext4_xattr_handlers[] = {
@@ -106,7 +105,6 @@ const struct xattr_handler *ext4_xattr_handlers[] = {
 #ifdef CONFIG_EXT4_FS_SECURITY
 	&ext4_xattr_security_handler,
 #endif
-	&ext4_xattr_hurd_handler,
 	NULL
 };
 
@@ -1482,7 +1480,7 @@ ext4_xattr_inode_cache_find(struct inode *inode, const void *value,
 	if (!ce)
 		return NULL;
 
-	ea_data = kvmalloc(value_len, GFP_KERNEL);
+	ea_data = ext4_kvmalloc(value_len, GFP_NOFS);
 	if (!ea_data) {
 		mb_cache_entry_put(ea_inode_cache, ce);
 		return NULL;

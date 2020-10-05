@@ -48,6 +48,8 @@
 
 #include <trace/events/ext4.h>
 
+#define MPAGE_DA_EXTENT_TAIL 0x01
+
 static __u32 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw,
 			      struct ext4_inode_info *ei)
 {
@@ -2123,7 +2125,7 @@ static int ext4_writepage(struct page *page,
 	bool keep_towrite = false;
 
 	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode->i_sb)))) {
-		inode->i_mapping->a_ops->invalidatepage(page, 0, PAGE_SIZE);
+		ext4_invalidatepage(page, 0, PAGE_SIZE);
 		unlock_page(page);
 		return -EIO;
 	}
@@ -4189,6 +4191,9 @@ int ext4_punch_hole(struct inode *inode, loff_t offset, loff_t length)
 	unsigned int credits;
 	int ret = 0;
 
+	if (!S_ISREG(inode->i_mode))
+		return -EOPNOTSUPP;
+
 	trace_ext4_punch_hole(inode, offset, length, 0);
 
 	ext4_clear_inode_state(inode, EXT4_STATE_MAY_INLINE_DATA);
@@ -4398,6 +4403,8 @@ int ext4_truncate(struct inode *inode)
 	if (!ext4_can_truncate(inode))
 		return 0;
 
+	ext4_clear_inode_flag(inode, EXT4_INODE_EOFBLOCKS);
+
 	if (inode->i_size == 0 && !test_opt(inode->i_sb, NO_AUTO_DA_ALLOC))
 		ext4_set_inode_state(inode, EXT4_STATE_DA_ALLOC_CLOSE);
 
@@ -4598,7 +4605,7 @@ make_io:
 			if (end > table)
 				end = table;
 			while (b <= end)
-				sb_breadahead_unmovable(sb, b++);
+				sb_breadahead(sb, b++);
 		}
 
 		/*
@@ -4997,7 +5004,7 @@ static int ext4_inode_blocks_set(handle_t *handle,
 				struct ext4_inode_info *ei)
 {
 	struct inode *inode = &(ei->vfs_inode);
-	u64 i_blocks = READ_ONCE(inode->i_blocks);
+	u64 i_blocks = inode->i_blocks;
 	struct super_block *sb = inode->i_sb;
 
 	if (i_blocks <= ~0U) {
@@ -5167,7 +5174,7 @@ static int ext4_do_update_inode(handle_t *handle,
 		raw_inode->i_file_acl_high =
 			cpu_to_le16(ei->i_file_acl >> 32);
 	raw_inode->i_file_acl_lo = cpu_to_le32(ei->i_file_acl);
-	if (READ_ONCE(ei->i_disksize) != ext4_isize(inode->i_sb, raw_inode)) {
+	if (ei->i_disksize != ext4_isize(inode->i_sb, raw_inode)) {
 		ext4_isize_set(raw_inode, ei->i_disksize);
 		need_datasync = 1;
 	}
