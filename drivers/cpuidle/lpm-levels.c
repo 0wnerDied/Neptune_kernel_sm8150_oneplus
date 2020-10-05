@@ -488,7 +488,7 @@ static uint64_t lpm_cpuidle_predict(struct cpuidle_device *dev,
 		history->hinvalid = 0;
 		history->htmr_wkup = 1;
 		history->stime = 0;
-		return 1;
+		return 0;
 	}
 
 	/*
