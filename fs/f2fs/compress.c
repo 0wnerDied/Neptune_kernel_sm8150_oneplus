@@ -1491,8 +1491,8 @@ void f2fs_decompress_end_io(struct page **rpages,
 		if (err || PageError(rpage))
 			goto clear_uptodate;
 
-			SetPageUptodate(rpage);
-			goto unlock;
+		SetPageUptodate(rpage);
+		goto unlock;
 
 clear_uptodate:
 		ClearPageUptodate(rpage);

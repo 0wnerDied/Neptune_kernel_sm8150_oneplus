@@ -973,8 +973,7 @@ static int f2fs_submit_page_read(struct inode *inode, struct page *page,
 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
 	struct bio *bio;
 
-	bio = f2fs_grab_read_bio(inode, blkaddr, 1, op_flags,
-					for_write);
+	bio = f2fs_grab_read_bio(inode, blkaddr, 1, op_flags, for_write);
 	if (IS_ERR(bio))
 		return PTR_ERR(bio);
 
@@ -1744,7 +1743,6 @@ static int f2fs_xattr_fiemap(struct inode *inode,
 			f2fs_put_page(page, 1);
 			return err;
 		}
-
 
 		phys = (__u64)blk_to_logical(inode, ni.blk_addr);
 		offset = offsetof(struct f2fs_inode, i_addr) +
@@ -2997,12 +2995,8 @@ result:
 					ret = 0;
 					if (wbc->sync_mode == WB_SYNC_ALL) {
 						cond_resched();
-#if (CONFIG_HZ > 100)
 						congestion_wait(BLK_RW_ASYNC,
 							DEFAULT_IO_TIMEOUT);
-#else
-						congestion_wait(BLK_RW_ASYNC, 1);
-#endif
 						goto retry_write;
 					}
 					goto next;

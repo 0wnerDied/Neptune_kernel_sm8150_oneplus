@@ -3932,7 +3932,7 @@ static int __init init_f2fs_fs(void)
 	if (err)
 		goto free_bioset;
 	f2fs_init_rapid_gc();
-	
+
 	return 0;
 free_bioset:
 	f2fs_destroy_bioset();
