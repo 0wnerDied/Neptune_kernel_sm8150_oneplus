@@ -31,8 +31,8 @@ config REMOVE_OP_CAPACITY
 	tristate "REMOVE ONEPLUS LIMIT TO LEARN BATTERY CAPACITY"
 	depends on FG_BQ27541 && ONEPLUS_FASTCHG
 	help
-	  Say Y here to remove limit which OnePlus added to prevent users to change
-	  the battery capacity.
+	  Say Y here to remove limit which OnePlus added to prevent users
+	  changing the battery capacity.
 
 config QPNP_FG_GEN3
 	tristate "QPNP GEN3 fuel gauge driver"
