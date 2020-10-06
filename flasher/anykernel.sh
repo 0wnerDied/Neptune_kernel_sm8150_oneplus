@@ -86,6 +86,17 @@ case "$ZIPFILE" in
     ;;
 esac
 
+# Fix selinux for some custom ROMs
+case "$ZIPFILE" in
+  *FIXUP*)
+    ui_print " " "Fixing SElinux problems for your ROM..."
+    patch_cmdline "execprog_fix.fake_enforce" "execprog_fix.fake_enforce=1"
+    ;;
+  *)
+    patch_cmdline "execprog_fix.fake_enforce" "execprog_fix.fake_enforce=0"
+    ;;
+esac
+
 if mountpoint -q /data; then
   # Optimize F2FS extension list (@arter97)
   for list_path in $(find /sys/fs/f2fs* -name extension_list); do
