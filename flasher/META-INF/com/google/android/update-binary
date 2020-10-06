@@ -208,11 +208,6 @@ abort() {
   fi;
   exit 1;
 }
-block_XiaomemeUI() {
-  if (grep -q "ro.miui" /system/build.prop); then
-    abort "Unsupported SYSTEM! Aborting..."
-  fi;
-}
 do_devicecheck() {
   test "$(file_getprop anykernel.sh do.devicecheck)" == 1 || return 1;
   local device devicename match product testname vendordevice vendorproduct;
@@ -420,8 +415,6 @@ fi;
 ui_print " " "AnyKernel3 by osm0sis @ xda-developers" " " " ";
 
 setup_env;
-
-block_XiaomemeUI;
 
 do_devicecheck;
 do_versioncheck;
