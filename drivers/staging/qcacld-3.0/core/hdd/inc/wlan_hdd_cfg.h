@@ -13868,7 +13868,7 @@ enum hdd_external_acs_policy {
  */
 
 #define CFG_IS_SAE_ENABLED_NAME    "sae_enabled"
-#define CFG_IS_SAE_ENABLED_DEFAULT (0)
+#define CFG_IS_SAE_ENABLED_DEFAULT (1)
 #define CFG_IS_SAE_ENABLED_MIN     (0)
 #define CFG_IS_SAE_ENABLED_MAX     (1)
 
@@ -15336,7 +15336,7 @@ enum hdd_external_acs_policy {
 #define CFG_ENABLE_GCMP_NAME    "gcmp_enabled"
 #define CFG_ENABLE_GCMP_MIN     (0)
 #define CFG_ENABLE_GCMP_MAX     (1)
-#define CFG_ENABLE_GCMP_DEFAULT (0)
+#define CFG_ENABLE_GCMP_DEFAULT (1)
 
 /*
  * <ini>
