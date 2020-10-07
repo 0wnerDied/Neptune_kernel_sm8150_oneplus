@@ -461,17 +461,6 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(irq_status),
 	POWER_SUPPLY_ATTR(parallel_output_mode),
 	POWER_SUPPLY_ATTR(charger_status),
-	POWER_SUPPLY_ATTR(cp_disable_cur_sens),
-	/* @bsp, 2019/08/30 Wireless Charging porting */
-	/* wireless properties */
-	POWER_SUPPLY_ATTR(wireless_mode),
-	POWER_SUPPLY_ATTR(wireless_type),
-	POWER_SUPPLY_ATTR(tx_voltage_now),
-	POWER_SUPPLY_ATTR(tx_current_now),
-	POWER_SUPPLY_ATTR(cp_voltage_now),
-	POWER_SUPPLY_ATTR(cp_current_now),
-	POWER_SUPPLY_ATTR(icon_delay),
-
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */
