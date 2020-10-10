@@ -556,7 +556,7 @@
 	};
 
 	chosen {
-		bootargs = "androidboot.selinux=permissive noirqdebug rcupdate.rcu_expedited=1 rcu_nocbs=0-7 cgroup.memory=nokmem,nosocket";
+		bootargs = "noirqdebug rcupdate.rcu_expedited=1 rcu_nocbs=0-7 cgroup.memory=nokmem,nosocket";
 	};
 
 	soc: soc { };
