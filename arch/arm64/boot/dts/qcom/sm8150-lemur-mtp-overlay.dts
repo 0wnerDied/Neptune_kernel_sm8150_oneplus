@@ -13,18 +13,16 @@
 /dts-v1/;
 /plugin/;
 
-#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/clock/qcom,camcc-sm8150.h>
 
-#include "qcm6125-iot-idp.dtsi"
-#include "qcm6125-iot-usbc-idp.dtsi"
+#include "sm8150-mtp.dtsi"
+
+#include "sdx5xm-external-soc.dtsi"
+#include "sm8150-lemur.dtsi"
 
 / {
-	model = "USBC Audio IDP";
-	compatible = "qcom,qcm6125-idp", "qcom,qcm6125", "qcom,idp";
-	qcom,msm-id = <467 0x10000>;
-	qcom,board-id = <34 2>;
+	model = "SM8150 LEMUR MTP";
+	compatible = "qcom,sm8150-mtp", "qcom,sm8150", "qcom,mtp";
+	qcom,board-id = <0x06010008 0x6>;
 };
 
-&dsi_td4330_truly_cmd_display {
-	qcom,dsi-display-active;
-};

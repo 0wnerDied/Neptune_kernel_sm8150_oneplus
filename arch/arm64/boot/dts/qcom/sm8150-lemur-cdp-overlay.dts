@@ -11,12 +11,18 @@
  */
 
 /dts-v1/;
+/plugin/;
 
-#include "qcm6125.dtsi"
-#include "qcm6125-iot-idp.dtsi"
+#include <dt-bindings/clock/qcom,camcc-sm8150.h>
+
+#include "sm8150-cdp.dtsi"
+
+#include "sdx5xm-external-soc.dtsi"
+#include "sm8150-lemur.dtsi"
 
 / {
-	model = "Qualcomm Technologies,Inc. QCM6125 IOT USBC Ext Aud Codec IDP";
-	compatible = "qcom,qcm6125-idp", "qcom,qcm6125", "qcom,idp";
-	qcom,board-id = <34 3>;
+	model = "SM8150 LEMUR CDP";
+	compatible = "qcom,sm8150-cdp", "qcom,sm8150", "qcom,cdp";
+	qcom,board-id = <0x06010001 0x6>;
 };
+
