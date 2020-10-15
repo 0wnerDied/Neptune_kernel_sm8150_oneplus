@@ -224,6 +224,9 @@ echo 85 85 > /proc/sys/kernel/sched_downmigrate
 sleep 20
 find /sys/devices -name read_ahead_kb | while read node; do echo 128 > $node; done
 
+# Disable fake enforcing
+echo 1 > /sys/module/selinux/parameters/fake_enforce_disabled
+
 exit 0
 
 # Binary will be appended afterwards
