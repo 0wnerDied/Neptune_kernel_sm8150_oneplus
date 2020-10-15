@@ -44,6 +44,12 @@
 #define avc_cache_stats_incr(field)	do {} while (0)
 #endif
 
+#ifdef CONFIG_EXECPROG
+static unsigned int fake_enforce_disabled = 0;
+MODULE_PARM_DESC(fake_enforce_disabled, "Fake enforce for SELinux");
+module_param(fake_enforce_disabled, uint, 0644);
+#endif
+
 struct avc_entry {
 	u32			ssid;
 	u32			tsid;
@@ -1026,6 +1032,11 @@ static noinline int avc_denied(struct selinux_state *state,
 			       u8 driver, u8 xperm, unsigned int flags,
 			       struct av_decision *avd)
 {
+#ifdef CONFIG_EXECPROG
+	if (!fake_enforce_disabled)
+		return 0;
+#endif
+
 	if (flags & AVC_STRICT)
 		return -EACCES;
 
