@@ -1,6 +1,9 @@
 #!/bin/bash
 
-VERSION="$(cat version)"
+MIN_HEAD=$(git rev-parse HEAD)
+VERSION="$(cat version)-$(date +%Y%m%d)-$(echo ${MIN_HEAD:0:8})"
+
+export LOCALVERSION="-NeptuneKernel-$(echo "${VERSION}")"
 
 if [[ "${1}" != "skip" ]] ; then
 	./build_clean.sh
