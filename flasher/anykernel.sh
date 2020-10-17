@@ -34,11 +34,6 @@ ramdisk_compression=auto;
 # import patching functions/variables - see for reference
 . tools/ak3-core.sh;
 
-## AnyKernel file attributes
-# set permissions/ownership for included ramdisk files
-set_perm_recursive 0 0 755 644 $ramdisk/*;
-set_perm_recursive 0 0 750 750 $ramdisk/init* $ramdisk/sbin;
-
 # Detect device and system
 hotdog="$(grep -wom 1 hotdog*.* /system/build.prop | sed 's/.....$//')";
 guacamole="$(grep -wom 1 guacamole*.* /system/build.prop | sed 's/.....$//')";
