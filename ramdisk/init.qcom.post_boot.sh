@@ -239,6 +239,7 @@ find /sys/devices -name read_ahead_kb | while read node; do echo 128 > $node; do
 if [ $os == "stock" ]; then
   echo 1 > /sys/module/selinux/parameters/fake_enforce_disabled
 fi
+chmod 0000 -R /sys/module/selinux/
 
 exit 0
 
