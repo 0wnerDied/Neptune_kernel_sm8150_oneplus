@@ -77,6 +77,17 @@ IGNORED_IRQ=19,38,21,115,332,188" > /dev/ep/msm_irqbalance.conf
   exit
 fi
 
+# Check ROM
+file_getprop() { grep "^$2=" "$1" | cut -d= -f2-; }
+file_getprop2() { grep "^$2=" "$1" | cut -d= -f2- | sed -n 2p; }
+hotdog="$(grep -wom 1 hotdog*.* /system/build.prop | sed 's/.....$//')";
+guacamole="$(grep -wom 1 guacamole*.* /system/build.prop | sed 's/.....$//')";
+userflavor="$(file_getprop /system/build.prop "ro.build.user"):$(file_getprop /system/build.prop "ro.build.flavor")";
+userflavor2="$(file_getprop2 /system/build.prop "ro.build.user"):$(file_getprop2 /system/build.prop "ro.build.flavor")";
+if [ "$userflavor" == "jenkins:$hotdog-user" ] || [ "$userflavor2" == "jenkins:$guacamole-user" ]; then
+  os="stock";
+fi
+
 # Disable wsf, beacause we are using efk.
 # wsf Range : 1..1000 So set to bare minimum value 1.
 echo 1 > /proc/sys/vm/watermark_scale_factor
@@ -224,8 +235,10 @@ echo 85 85 > /proc/sys/kernel/sched_downmigrate
 sleep 20
 find /sys/devices -name read_ahead_kb | while read node; do echo 128 > $node; done
 
-# Disable fake enforcing
-echo 1 > /sys/module/selinux/parameters/fake_enforce_disabled
+# Only disable fake enforcing for OxygenOS/HydrogenOS users
+if [ $os == "stock" ]; then
+  echo 1 > /sys/module/selinux/parameters/fake_enforce_disabled
+fi
 
 exit 0
 
