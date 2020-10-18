@@ -2,6 +2,17 @@
 
 exec > /dev/kmsg 2>&1
 
+# Check ROM
+file_getprop() { grep "^$2=" "$1" | cut -d= -f2-; }
+file_getprop2() { grep "^$2=" "$1" | cut -d= -f2- | sed -n 2p; }
+hotdog="$(grep -wom 1 hotdog*.* /system/build.prop | sed 's/.....$//')";
+guacamole="$(grep -wom 1 guacamole*.* /system/build.prop | sed 's/.....$//')";
+userflavor="$(file_getprop /system/build.prop "ro.build.user"):$(file_getprop /system/build.prop "ro.build.flavor")";
+userflavor2="$(file_getprop2 /system/build.prop "ro.build.user"):$(file_getprop2 /system/build.prop "ro.build.flavor")";
+if [ "$userflavor" == "jenkins:$hotdog-user" ] || [ "$userflavor2" == "jenkins:$guacamole-user" ]; then
+  os="stock";
+fi
+
 if ! grep -v '#' /vendor/etc/fstab.qcom | grep -q f2fs; then
   # ECD18g== is the f2fs magic code under little-endian
   if [[ $(dd if=/dev/block/platform/soc/1d84000.ufshc/by-name/userdata bs=4 skip=256 count=1 2>/dev/null | base64) == "ECD18g==" ]]; then
@@ -74,18 +85,13 @@ IGNORED_IRQ=19,38,21,115,332,188" > /dev/ep/msm_irqbalance.conf
   # lazy unmount /dev/ep for invisibility
   umount -l /dev/ep
 
-  exit
-fi
+  # Only disable fake enforcing for OxygenOS/HydrogenOS users
+  if [ $os == "stock" ]; then
+    echo 1 > /sys/module/selinux/parameters/fake_enforce_disabled
+  fi
+  chmod 000 -R /sys/module/selinux/
 
-# Check ROM
-file_getprop() { grep "^$2=" "$1" | cut -d= -f2-; }
-file_getprop2() { grep "^$2=" "$1" | cut -d= -f2- | sed -n 2p; }
-hotdog="$(grep -wom 1 hotdog*.* /system/build.prop | sed 's/.....$//')";
-guacamole="$(grep -wom 1 guacamole*.* /system/build.prop | sed 's/.....$//')";
-userflavor="$(file_getprop /system/build.prop "ro.build.user"):$(file_getprop /system/build.prop "ro.build.flavor")";
-userflavor2="$(file_getprop2 /system/build.prop "ro.build.user"):$(file_getprop2 /system/build.prop "ro.build.flavor")";
-if [ "$userflavor" == "jenkins:$hotdog-user" ] || [ "$userflavor2" == "jenkins:$guacamole-user" ]; then
-  os="stock";
+  exit
 fi
 
 # Disable wsf, beacause we are using efk.
@@ -234,12 +240,6 @@ echo 85 85 > /proc/sys/kernel/sched_downmigrate
 # Set readahead
 sleep 20
 find /sys/devices -name read_ahead_kb | while read node; do echo 128 > $node; done
-
-# Only disable fake enforcing for OxygenOS/HydrogenOS users
-if [ $os == "stock" ]; then
-  echo 1 > /sys/module/selinux/parameters/fake_enforce_disabled
-fi
-chmod 0000 -R /sys/module/selinux/
 
 exit 0
 
