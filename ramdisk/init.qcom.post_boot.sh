@@ -89,7 +89,6 @@ IGNORED_IRQ=19,38,21,115,332,188" > /dev/ep/msm_irqbalance.conf
   if [ $os == "stock" ]; then
     echo 1 > /sys/module/selinux/parameters/fake_enforce_disabled
   fi
-  chmod 000 -R /sys/module/selinux/
 
   exit
 fi
