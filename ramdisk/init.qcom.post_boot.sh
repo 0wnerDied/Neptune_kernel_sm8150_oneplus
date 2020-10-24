@@ -85,8 +85,8 @@ IGNORED_IRQ=19,38,21,115,332,188" > /dev/ep/msm_irqbalance.conf
   # lazy unmount /dev/ep for invisibility
   umount -l /dev/ep
 
-  # Only disable fake enforcing for OxygenOS/HydrogenOS users
-  if [ $os == "stock" ]; then
+  # Disable fake enforcing for OxygenOS/HydrogenOS or MIUI users
+  if [ $os == "stock" ] || (grep -q "ro.miui" /system/build.prop); then
     echo 1 > /sys/module/selinux/parameters/fake_enforce_disabled
   fi
 
