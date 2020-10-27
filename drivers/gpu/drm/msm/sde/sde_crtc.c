@@ -70,7 +70,6 @@
 #include <drm/drm_mipi_dsi.h>
 
 #include <linux/cpu_input_boost.h>
-#include <linux/devfreq_boost.h>
 
 extern int msm_drm_notifier_call_chain(unsigned long val, void *v);
 
@@ -5780,8 +5779,6 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 
 	if (fppressed_index > 0 || fp_mode == 1) {
 		cpu_input_boost_kick_max(400);
-		devfreq_boost_kick_max(DEVFREQ_MSM_LLCCBW_DDR, 400);
-		devfreq_boost_kick_max(DEVFREQ_MSM_CPU_LLCCBW, 400);
 	}
 
 	if (aod_index < 0) {
