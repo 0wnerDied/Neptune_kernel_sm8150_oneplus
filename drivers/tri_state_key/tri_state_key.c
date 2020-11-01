@@ -131,8 +131,28 @@ static void extcon_dev_work(struct work_struct *work)
 		}
 		/*op add to fix ISTRACKING-34823 end*/
 		/*op add to fix GCE-7551 begin*/
-		if (key[0] && key[1] && key[2])
+		if (key[0] && key[1] && key[2]) {
+			KEY_LOG("key[0]=%d,key[1]=%d,key[2]=%d***pre_key0=%d, pre_key1=%d, pre_key2=%d\n",
+			key[0], key[1], key[2],pre_key0,pre_key1,pre_key2);
+			if (pre_key0 ==1 && pre_key1==1 && pre_key2 == 0)
+				return;
+			if (pre_key0 && pre_key1 && pre_key2) {
+				KEY_LOG("Debounce timeout: Set the extconstate to 0,1,1\n");
+				extcon_set_state_sync(extcon_data->edev, 1, 0);
+				extcon_set_state_sync(extcon_data->edev, 2, 1);
+				extcon_set_state_sync(extcon_data->edev, 3, 1);
+			} else {
+				mod_timer(&extcon_data->s_timer, jiffies + HZ/5);
+				pre_key0 = key[0];
+				pre_key1 = key[1];
+				pre_key2 = key[2];
+				KEY_LOG("Wait for debounce timeout\n");
+			}
 			return;
+		} else {
+			if (!del_timer(&extcon_data->s_timer))
+				KEY_LOG("timer already expired for Floating state\n");
+		}
 		if (!key[0] && !key[1] && !key[2])
 			return;
 		if (!key[0] && !key[1] && key[2])
