@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * drivers/base/dma-mapping.c - arch-independent dma-mapping routines
  *
  * Copyright (c) 2006  SUSE Linux Products GmbH
  * Copyright (c) 2006  Tejun Heo <teheo@suse.de>
+ *
+ * This file is released under the GPLv2.
  */
 
 #include <linux/acpi.h>
@@ -334,13 +335,36 @@ void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags,
 #endif
 
 /*
- * enables DMA API use for a device
+ * Common configuration to enable DMA API use for a device
  */
+#include <linux/pci.h>
+
 int dma_configure(struct device *dev)
 {
-	if (dev->bus->dma_configure)
-		return dev->bus->dma_configure(dev);
-	return 0;
+	struct device *bridge = NULL, *dma_dev = dev;
+	enum dev_dma_attr attr;
+	int ret = 0;
+
+	if (dev_is_pci(dev)) {
+		bridge = pci_get_host_bridge_device(to_pci_dev(dev));
+		dma_dev = bridge;
+		if (IS_ENABLED(CONFIG_OF) && dma_dev->parent &&
+		    dma_dev->parent->of_node)
+			dma_dev = dma_dev->parent;
+	}
+
+	if (dma_dev->of_node) {
+		ret = of_dma_configure(dev, dma_dev->of_node);
+	} else if (has_acpi_companion(dma_dev)) {
+		attr = acpi_get_dma_attr(to_acpi_device_node(dma_dev->fwnode));
+		if (attr != DEV_DMA_NOT_SUPPORTED)
+			ret = acpi_dma_configure(dev, attr);
+	}
+
+	if (bridge)
+		pci_put_host_bridge_device(bridge);
+
+	return ret;
 }
 
 void dma_deconfigure(struct device *dev)

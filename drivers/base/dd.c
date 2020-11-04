@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0
 /*
  * drivers/base/dd.c - The core device/driver interactions.
  *
@@ -14,6 +13,8 @@
  * Copyright (c) 2002-3 Open Source Development Labs
  * Copyright (c) 2007-2009 Greg Kroah-Hartman <gregkh@suse.de>
  * Copyright (c) 2007-2009 Novell Inc.
+ *
+ * This file is released under the GPLv2
  */
 
 #include <linux/device.h>
@@ -122,7 +123,9 @@ static void deferred_probe_work_func(struct work_struct *work)
 		 * the list is a good order for suspend but deferred
 		 * probe makes that very unsafe.
 		 */
-		device_pm_move_to_tail(dev);
+		device_pm_lock();
+		device_pm_move_last(dev);
+		device_pm_unlock();
 
 		dev_dbg(dev, "Retrying from deferred list\n");
 		if (initcall_debug && !initcalls_done)
@@ -138,7 +141,7 @@ static void deferred_probe_work_func(struct work_struct *work)
 }
 static DECLARE_WORK(deferred_probe_work, deferred_probe_work_func);
 
-void driver_deferred_probe_add(struct device *dev)
+static void driver_deferred_probe_add(struct device *dev)
 {
 	mutex_lock(&deferred_probe_mutex);
 	if (list_empty(&dev->p->deferred_probe)) {
@@ -182,11 +185,6 @@ static void driver_deferred_probe_trigger(void)
 	if (!driver_deferred_probe_enable)
 		return;
 
-	driver_deferred_probe_force_trigger();
-}
-
-void driver_deferred_probe_force_trigger(void)
-{
 	/*
 	 * A successful probe means that all the devices in the pending list
 	 * should be triggered to be reprobed.  Move all the deferred devices
@@ -203,11 +201,6 @@ void driver_deferred_probe_force_trigger(void)
 	 * safe to kick it again.
 	 */
 	schedule_work(&deferred_probe_work);
-}
-
-void driver_deferred_probe_flush(void)
-{
-	flush_work(&deferred_probe_work);
 }
 
 /**
@@ -645,6 +638,15 @@ static int __device_attach_driver(struct device_driver *drv, void *_data)
 	bool async_allowed;
 	int ret;
 
+	/*
+	 * Check if device has already been claimed. This may
+	 * happen with driver loading, device discovery/registration,
+	 * and deferred probe processing happens all at once with
+	 * multiple threads.
+	 */
+	if (dev->driver)
+		return -EBUSY;
+
 	ret = driver_match_device(drv, dev);
 	if (ret == 0) {
 		/* no match */
@@ -679,15 +681,6 @@ static void __device_attach_async_helper(void *_dev, async_cookie_t cookie)
 
 	device_lock(dev);
 
-	/*
-	 * Check if device has already been removed or claimed. This may
-	 * happen with driver loading, device discovery/registration,
-	 * and deferred probe processing happens all at once with
-	 * multiple threads.
-	 */
-	if (dev->p->dead || dev->driver)
-		goto out_unlock;
-
 	if (dev->parent)
 		pm_runtime_get_sync(dev->parent);
 
@@ -698,7 +691,7 @@ static void __device_attach_async_helper(void *_dev, async_cookie_t cookie)
 
 	if (dev->parent)
 		pm_runtime_put(dev->parent);
-out_unlock:
+
 	device_unlock(dev);
 
 	put_device(dev);
@@ -811,7 +804,7 @@ static int __driver_attach(struct device *dev, void *data)
 	if (dev->parent)	/* Needed for USB */
 		device_lock(dev->parent);
 	device_lock(dev);
-	if (!dev->p->dead && !dev->driver)
+	if (!dev->driver)
 		driver_probe_device(drv, dev);
 	device_unlock(dev);
 	if (dev->parent)

@@ -41,8 +41,6 @@ void sysfs_warn_dup(struct kernfs_node *parent, const char *name)
 int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
 {
 	struct kernfs_node *parent, *kn;
-	kuid_t uid;
-	kgid_t gid;
 
 	if (WARN_ON(!kobj))
 		return -EINVAL;
@@ -55,11 +53,8 @@ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
 	if (!parent)
 		return -ENOENT;
 
-	kobject_get_ownership(kobj, &uid, &gid);
-
 	kn = kernfs_create_dir_ns(parent, kobject_name(kobj),
-				  S_IRWXU | S_IRUGO | S_IXUGO, uid, gid,
-				  kobj, ns);
+				  S_IRWXU | S_IRUGO | S_IXUGO, kobj, ns);
 	if (IS_ERR(kn)) {
 		if (PTR_ERR(kn) == -EEXIST)
 			sysfs_warn_dup(parent, kobject_name(kobj));

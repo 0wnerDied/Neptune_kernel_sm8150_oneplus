@@ -898,20 +898,11 @@ static const void *rx_queue_namespace(struct kobject *kobj)
 	return ns;
 }
 
-static void rx_queue_get_ownership(struct kobject *kobj,
-				   kuid_t *uid, kgid_t *gid)
-{
-	const struct net *net = rx_queue_namespace(kobj);
-
-	net_ns_get_ownership(net, uid, gid);
-}
-
 static struct kobj_type rx_queue_ktype __ro_after_init = {
 	.sysfs_ops = &rx_queue_sysfs_ops,
 	.release = rx_queue_release,
 	.default_attrs = rx_queue_default_attrs,
-	.namespace = rx_queue_namespace,
-	.get_ownership = rx_queue_get_ownership,
+	.namespace = rx_queue_namespace
 };
 
 static int rx_queue_add_kobject(struct net_device *dev, int index)
@@ -1077,9 +1068,6 @@ static ssize_t tx_maxrate_store(struct netdev_queue *queue,
 	struct net_device *dev = queue->dev;
 	int err, index = get_netdev_queue_index(queue);
 	u32 rate = 0;
-
-	if (!capable(CAP_NET_ADMIN))
-		return -EPERM;
 
 	err = kstrtou32(buf, 10, &rate);
 	if (err < 0)
@@ -1326,20 +1314,11 @@ static const void *netdev_queue_namespace(struct kobject *kobj)
 	return ns;
 }
 
-static void netdev_queue_get_ownership(struct kobject *kobj,
-				       kuid_t *uid, kgid_t *gid)
-{
-	const struct net *net = netdev_queue_namespace(kobj);
-
-	net_ns_get_ownership(net, uid, gid);
-}
-
 static struct kobj_type netdev_queue_ktype __ro_after_init = {
 	.sysfs_ops = &netdev_queue_sysfs_ops,
 	.release = netdev_queue_release,
 	.default_attrs = netdev_queue_default_attrs,
 	.namespace = netdev_queue_namespace,
-	.get_ownership = netdev_queue_get_ownership,
 };
 
 static int netdev_queue_add_kobject(struct net_device *dev, int index)
@@ -1534,14 +1513,6 @@ static const void *net_namespace(struct device *d)
 	return dev_net(dev);
 }
 
-static void net_get_ownership(struct device *d, kuid_t *uid, kgid_t *gid)
-{
-	struct net_device *dev = to_net_dev(d);
-	const struct net *net = dev_net(dev);
-
-	net_ns_get_ownership(net, uid, gid);
-}
-
 static struct class net_class __ro_after_init = {
 	.name = "net",
 	.dev_release = netdev_release,
@@ -1549,7 +1520,6 @@ static struct class net_class __ro_after_init = {
 	.dev_uevent = netdev_uevent,
 	.ns_type = &net_ns_type_operations,
 	.namespace = net_namespace,
-	.get_ownership = net_get_ownership,
 };
 
 #ifdef CONFIG_OF_NET

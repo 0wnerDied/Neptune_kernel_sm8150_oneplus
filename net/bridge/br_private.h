@@ -270,8 +270,6 @@ struct net_bridge_port {
 #endif
 };
 
-#define kobj_to_brport(obj)	container_of(obj, struct net_bridge_port, kobj)
-
 #define br_auto_port(p) ((p)->flags & BR_AUTO_MASK)
 #define br_promisc_port(p) ((p)->flags & BR_PROMISC)
 
