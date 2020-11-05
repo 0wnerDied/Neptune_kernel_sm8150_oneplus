@@ -57,6 +57,8 @@ ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
 		sm8150-sdxprairie-v3-mtp-overlay.dtbo \
 		sm8150-marmot-cdp-overlay.dtbo \
 		sm8150-marmot-mtp-overlay.dtbo \
+		sm8150-lemur-cdp-overlay.dtbo \
+		sm8150-lemur-mtp-overlay.dtbo \
 		sm8150-hdk-overlay.dtbo
 
 sm8150-cdp-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
@@ -82,6 +84,8 @@ sm8150-sdxprairie-v2-mtp-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.d
 sm8150-sdxprairie-v3-mtp-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
 sm8150-marmot-cdp-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
 sm8150-marmot-mtp-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
+sm8150-lemur-cdp-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
+sm8150-lemur-mtp-overlay.dtbo-base := sm8150.dtb sm8150-v2.dtb sm8150p.dtb sm8150p-v2.dtb
 else
 dtb-$(CONFIG_ARCH_SM8150)	+= sm8150-rumi.dtb \
 	sm8150-mtp.dtb \
@@ -173,14 +177,15 @@ sa6155p-adp-star-overlay.dtbo-base := sa6155p.dtb
 sa6155p-v2-adp-star-overlay.dtbo-base := sa6155p.dtb
 sa6155-adp-air-overlay.dtbo-base := sa6155.dtb
 sa6155p-adp-air-overlay.dtbo-base := sa6155p.dtb
+qcs610-ipc-overlay.dtbo-base := qcs610.dtb
 sa6155p-v2-adp-air-overlay.dtbo-base := sa6155p.dtb
-qcs610-iot-overlay.dtbo-base := sm6150.dtb
-qcs410-iot-overlay.dtbo-base := sm6150.dtb
 prairie-iot-idp-overlay.dtbo-base := qcs610.dtb
 prairie-iot-external-codec-idp-overlay.dtbo-base := qcs610.dtb
 prairie-iot-usbc-idp-overlay.dtbo-base := qcs610.dtb
 prairie-iot-cmd-mode-display-idp-overlay.dtbo-base := qcs610.dtb
 prairie-iot-usbc-minidp-idp-overlay.dtbo-base := qcs610.dtb
+qcs610-iot-overlay.dtbo-base := qcs610.dtb
+qcs410-iot-overlay.dtbo-base := qcs410.dtb
 else
 dtb-$(CONFIG_ARCH_SM6150)	+= sm6150-rumi.dtb \
 	sm6150-qrd.dtb \
