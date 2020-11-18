@@ -225,6 +225,10 @@ echo 0 > /dev/blkio/background/blkio.group_idle
 echo 1000 > /dev/blkio/blkio.weight
 echo 200 > /dev/blkio/background/blkio.weight
 
+# Report max freq to unity tasks
+echo "UnityMain,libunity.so" > /proc/sys/kernel/sched_lib_name
+echo 255 > /proc/sys/kernel/sched_lib_mask_force
+
 # VM
 echo 10 > /proc/sys/vm/dirty_background_ratio
 echo 3000 > /proc/sys/vm/dirty_expire_centisecs
