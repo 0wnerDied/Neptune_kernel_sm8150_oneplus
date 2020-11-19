@@ -235,6 +235,13 @@ echo 3000 > /proc/sys/vm/dirty_expire_centisecs
 echo 0 > /proc/sys/vm/page-cluster
 echo 32768 > /proc/sys/vm/min_free_kbytes
 
+# Net
+echo 262144 > /proc/sys/net/core/rmem_max
+echo 262144 > /proc/sys/net/core/wmem_max
+
+# Prefetch value
+echo 0 > /sys/module/dm_verity/parameters/prefetch_cluster
+
 # Remove unused swapfile
 rm -f /data/vendor/swap/swapfile 2>/dev/null
 sync
