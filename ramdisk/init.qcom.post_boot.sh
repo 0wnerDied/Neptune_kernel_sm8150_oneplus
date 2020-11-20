@@ -235,6 +235,9 @@ echo 3000 > /proc/sys/vm/dirty_expire_centisecs
 echo 0 > /proc/sys/vm/page-cluster
 echo 32768 > /proc/sys/vm/min_free_kbytes
 
+# F2FS
+echo 3000 > /sys/fs/f2fs_dev/dm-0/cp_interval
+
 # Net
 echo 262144 > /proc/sys/net/core/rmem_max
 echo 262144 > /proc/sys/net/core/wmem_max
