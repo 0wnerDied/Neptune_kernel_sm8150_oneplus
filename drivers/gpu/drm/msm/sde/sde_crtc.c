@@ -69,8 +69,6 @@
 #include <linux/init.h>
 #include <drm/drm_mipi_dsi.h>
 
-#include <linux/cpu_input_boost.h>
-
 extern int msm_drm_notifier_call_chain(unsigned long val, void *v);
 
 #define SDE_PSTATES_MAX (SDE_STAGE_MAX * 4)
@@ -5776,10 +5774,6 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 	}
 
 	display->panel->dim_status = fp_index >= 0 && dim_mode != 0;
-
-	if (fppressed_index > 0 || fp_mode == 1) {
-		cpu_input_boost_kick_max(400);
-	}
 
 	if (aod_index < 0) {
 		oneplus_aod_hid = 0;
