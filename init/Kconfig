@@ -528,6 +528,18 @@ config PSI_DEFAULT_DISABLED
 
 	  Say N if unsure.
 
+config TOUCH_BOOST
+	bool "Speed up the experience of operating devices"
+	default n
+	help
+	  Speed up the device on touchscreen and touchpad input. May
+	  increase some power consumption.
+
+	  If you want to get better experience of operating your
+	  device, say Y.
+
+	  Say N if unsure.
+
 endmenu # "CPU/Task time and stats accounting"
 
 source "kernel/rcu/Kconfig"
