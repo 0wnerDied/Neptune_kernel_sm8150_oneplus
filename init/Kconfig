@@ -540,6 +540,26 @@ config TOUCH_BOOST
 
 	  Say N if unsure.
 
+if TOUCH_BOOST
+
+config TOUCH_BOOST_LPM
+	bool "Make LPM sleep_disabled(Y) when touch screen"
+	default n
+	help
+	  Set LPM sleep_disabled(Y) when touching screen.
+	  May increase some power consumption.
+
+	  Say N if unsure.
+
+config TOUCH_BOOST_LPM_DURATION_MS
+	int "Disable LPM sleep_disabled(Y) duration"
+	default "100"
+	help
+	  LPM sleep_disabled(Y) duration in milliseconds after touching
+	  screen.
+
+endif # TOUCH_BOOST
+
 endmenu # "CPU/Task time and stats accounting"
 
 source "kernel/rcu/Kconfig"
