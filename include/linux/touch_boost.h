@@ -7,6 +7,7 @@
 #include <linux/kthread.h>
 #include <linux/moduleparam.h>
 #include <linux/msm_drm_notify.h>
+#include <linux/pm_qos.h>
 #include <linux/slab.h>
 #include <uapi/linux/sched/types.h>
 
@@ -14,13 +15,17 @@
 #define _TOUCH_BOOST_H_
 
 enum {
-	SCREEN_ON
+	SCREEN_ON,
+	TOUCH_LPM
 };
 
 struct boost_drv {
+	struct delayed_work lpm_unboost;
 	struct notifier_block msm_drm_notif;
 	wait_queue_head_t boost_waitq;
 	unsigned long state;
 };
+
+extern bool touch_lpm_boost __read_mostly;
 
 #endif /* _TOUCH_BOOST_H_ */

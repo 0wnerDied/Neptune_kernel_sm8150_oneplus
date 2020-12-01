@@ -7,9 +7,53 @@
 
 #include <linux/touch_boost.h>
 
+bool touch_lpm_boost __read_mostly =
+	CONFIG_TOUCH_BOOST_LPM;
+static unsigned short lpm_boost_duration __read_mostly = 
+	CONFIG_TOUCH_BOOST_LPM_DURATION_MS;
+
+module_param(touch_lpm_boost, bool, 0644);
+module_param(lpm_boost_duration, short, 0644);
+
+static void lpm_unboost_worker(struct work_struct *work);
+
 static struct boost_drv boost_drv_g __read_mostly = {
+	.lpm_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.lpm_unboost,
+						  lpm_unboost_worker, 0),
 	.boost_waitq = __WAIT_QUEUE_HEAD_INITIALIZER(boost_drv_g.boost_waitq)
 };
+
+static void __touch_boost_kick_lpm(struct boost_drv *boost)
+{
+	if (!test_bit(SCREEN_ON, &boost->state))
+		return;
+
+	if (touch_lpm_boost)
+		set_bit(TOUCH_LPM, &boost->state);
+	else
+		return;
+
+	if (!mod_delayed_work(system_unbound_wq, &boost->lpm_unboost,
+			      msecs_to_jiffies(lpm_boost_duration)))
+		wake_up(&boost->boost_waitq);
+}
+
+static void touch_boost_lpm_event(struct boost_drv *boost)
+{
+	if (!test_bit(TOUCH_LPM, &boost->state))
+		msm_cpuidle_set_sleep_disable(false);
+	else
+		msm_cpuidle_set_sleep_disable(true);
+}
+
+static void lpm_unboost_worker(struct work_struct *work)
+{
+	struct boost_drv *boost = container_of(to_delayed_work(work),
+					   typeof(*boost), lpm_unboost);
+
+	clear_bit(TOUCH_LPM, &boost->state);
+	wake_up(&boost->boost_waitq);
+}
 
 static int touch_boost_thread(void *data)
 {
@@ -33,6 +77,7 @@ static int touch_boost_thread(void *data)
 			break;
 
 		state_bef = state_nex;
+		touch_boost_lpm_event(boost);
 	}
 
 	return 0;
@@ -63,6 +108,8 @@ static void touch_boost_input_event(struct input_handle *handle,
 					int value)
 {
 	struct boost_drv *boost = handle->handler->private;
+
+	__touch_boost_kick_lpm(boost);
 }
 
 static int touch_boost_input_connect(struct input_handler *handler,
