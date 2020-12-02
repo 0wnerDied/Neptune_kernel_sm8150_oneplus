@@ -16,16 +16,19 @@
 
 enum {
 	SCREEN_ON,
+	TOUCH_CLKGATE,
 	TOUCH_LPM
 };
 
 struct boost_drv {
+	struct delayed_work clkgate_unboost;
 	struct delayed_work lpm_unboost;
 	struct notifier_block msm_drm_notif;
 	wait_queue_head_t boost_waitq;
 	unsigned long state;
 };
 
+extern bool touch_clkgate_boost __read_mostly;
 extern bool touch_lpm_boost __read_mostly;
 
 void ufshcd_clkgate_enable_status(u32 value);
