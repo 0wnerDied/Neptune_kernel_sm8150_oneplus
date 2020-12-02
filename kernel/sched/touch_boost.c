@@ -7,21 +7,62 @@
 
 #include <linux/touch_boost.h>
 
+bool touch_clkgate_boost __read_mostly =
+	CONFIG_TOUCH_BOOST_CLKGATE;
 bool touch_lpm_boost __read_mostly =
 	CONFIG_TOUCH_BOOST_LPM;
+static unsigned short clkgate_boost_duration __read_mostly =
+	CONFIG_TOUCH_BOOST_CLKGATE_DURATION_MS;
 static unsigned short lpm_boost_duration __read_mostly = 
 	CONFIG_TOUCH_BOOST_LPM_DURATION_MS;
 
+module_param(touch_clkgate_boost, bool, 0644);
 module_param(touch_lpm_boost, bool, 0644);
+module_param(clkgate_boost_duration, short, 0644);
 module_param(lpm_boost_duration, short, 0644);
 
+static void clkgate_unboost_worker(struct work_struct *work);
 static void lpm_unboost_worker(struct work_struct *work);
 
 static struct boost_drv boost_drv_g __read_mostly = {
+	.clkgate_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.clkgate_unboost,
+						  clkgate_unboost_worker, 0),
 	.lpm_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.lpm_unboost,
 						  lpm_unboost_worker, 0),
 	.boost_waitq = __WAIT_QUEUE_HEAD_INITIALIZER(boost_drv_g.boost_waitq)
 };
+
+static void __touch_boost_kick_clkgate(struct boost_drv *boost)
+{
+	if (!test_bit(SCREEN_ON, &boost->state))
+		return;
+
+	if (touch_clkgate_boost)
+		set_bit(TOUCH_CLKGATE, &boost->state);
+	else
+		return;
+
+	if (!mod_delayed_work(system_unbound_wq, &boost->clkgate_unboost,
+			      msecs_to_jiffies(clkgate_boost_duration)))
+		wake_up(&boost->boost_waitq);
+}
+
+static void touch_boost_clkgate_event(struct boost_drv *boost)
+{
+	if (!test_bit(TOUCH_CLKGATE, &boost->state))
+		ufshcd_clkgate_enable_status(1);
+	else
+		ufshcd_clkgate_enable_status(0);
+}
+
+static void clkgate_unboost_worker(struct work_struct *work)
+{
+	struct boost_drv *boost = container_of(to_delayed_work(work),
+					   typeof(*boost), clkgate_unboost);
+
+	clear_bit(TOUCH_CLKGATE, &boost->state);
+	wake_up(&boost->boost_waitq);
+}
 
 static void __touch_boost_kick_lpm(struct boost_drv *boost)
 {
@@ -77,6 +118,7 @@ static int touch_boost_thread(void *data)
 			break;
 
 		state_bef = state_nex;
+		touch_boost_clkgate_event(boost);
 		touch_boost_lpm_event(boost);
 	}
 
@@ -109,6 +151,7 @@ static void touch_boost_input_event(struct input_handle *handle,
 {
 	struct boost_drv *boost = handle->handler->private;
 
+	__touch_boost_kick_clkgate(boost);
 	__touch_boost_kick_lpm(boost);
 }
 

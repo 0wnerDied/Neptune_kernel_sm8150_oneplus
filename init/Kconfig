@@ -542,6 +542,15 @@ config TOUCH_BOOST
 
 if TOUCH_BOOST
 
+config TOUCH_BOOST_CLKGATE
+	bool "Disable ufs clkgate when touch screen"
+	default n
+	help
+	  Disable ufs clkgate when touching screen.
+	  May increase some power consumption.
+
+	  Say N if unsure.
+
 config TOUCH_BOOST_LPM
 	bool "Make LPM sleep_disabled(Y) when touch screen"
 	default n
@@ -550,6 +559,13 @@ config TOUCH_BOOST_LPM
 	  May increase some power consumption.
 
 	  Say N if unsure.
+
+config TOUCH_BOOST_CLKGATE_DURATION_MS
+	int "Disable ufs clkgate duration"
+	default "100"
+	help
+	  Set ufs clkgate status to disabled duration in milliseconds
+	  after touching screen.
 
 config TOUCH_BOOST_LPM_DURATION_MS
 	int "Disable LPM sleep_disabled(Y) duration"
