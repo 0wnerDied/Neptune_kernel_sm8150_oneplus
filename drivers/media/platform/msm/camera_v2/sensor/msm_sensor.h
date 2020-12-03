@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2016, 2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2016, 2018, 2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -47,6 +47,7 @@ enum msm_sensor_sensor_slave_info_type {
 };
 
 struct msm_sensor_ctrl_t;
+extern struct msm_sensor_ctrl_t *g_sctrl[MAX_CAMERAS];
 
 enum msm_sensor_state_t {
 	MSM_SENSOR_POWER_DOWN,
@@ -90,6 +91,7 @@ struct msm_sensor_ctrl_t {
 	uint8_t is_csid_tg_mode;
 	uint32_t is_secure;
 	uint8_t bypass_video_node_creation;
+	struct msm_sensor_ctrl_t *peer_sensor_ctrl;
 };
 
 int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void *argp);
