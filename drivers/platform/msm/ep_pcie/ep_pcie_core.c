@@ -1982,7 +1982,6 @@ out:
 int ep_pcie_core_disable_endpoint(void)
 {
 	int rc = 0;
-	u32 val = 0;
 	unsigned long irqsave_flags;
 	struct ep_pcie_dev_t *dev = &ep_pcie_dev;
 
@@ -2010,10 +2009,8 @@ int ep_pcie_core_disable_endpoint(void)
 		EP_PCIE_DBG(dev, "PCIe V%d: shut down the link\n",
 			dev->rev);
 	}
+	dev->conf_ipa_msi_iatu = false;
 
-	val =  readl_relaxed(dev->elbi + PCIE20_ELBI_SYS_STTS);
-	EP_PCIE_DBG(dev, "PCIe V%d: LTSSM_STATE during disable:0x%x\n",
-		dev->rev, (val >> 0xC) & 0x3f);
 	ep_pcie_pipe_clk_deinit(dev);
 	ep_pcie_clk_deinit(dev);
 	ep_pcie_vreg_deinit(dev);
@@ -2359,6 +2356,18 @@ static irqreturn_t ep_pcie_handle_perst_irq(int irq, void *data)
 			dev->rev, perst ? "de" : "");
 		atomic_set(&dev->perst_deast, perst ? 1 : 0);
 		if (perst) {
+			/*
+			 * Hold a wakelock to avoid delay during
+			 * link enablement in PCIE layer in non
+			 * enumerated scenario.
+			 */
+			if (!atomic_read(&dev->ep_pcie_dev_wake)) {
+				pm_stay_awake(&dev->pdev->dev);
+				atomic_set(&dev->ep_pcie_dev_wake, 1);
+				EP_PCIE_DBG(dev,
+					"PCIe V%d: Acquired wakelock\n",
+					dev->rev);
+			}
 			/* start work for link enumeration with the host side */
 			queue_work(system_highpri_wq, &dev->handle_perst_work);
 		} else {
@@ -2930,6 +2939,24 @@ int ep_pcie_core_get_msi_config(struct ep_pcie_msi_config *cfg)
 			ep_pcie_dev.msi_cfg.upper = upper;
 			ep_pcie_dev.msi_cfg.data = data;
 			ep_pcie_dev.msi_cfg.msg_num = cfg->msg_num;
+			ep_pcie_dev.conf_ipa_msi_iatu = false;
+		}
+		/*
+		 * All transactions originating from IPA have the RO
+		 * bit set by default. Setup another ATU region to clear
+		 * the RO bit for MSIs triggered via IPA DMA.
+		 */
+		if (ep_pcie_dev.active_config &&
+				!ep_pcie_dev.conf_ipa_msi_iatu) {
+			ep_pcie_config_outbound_iatu_entry(&ep_pcie_dev,
+				EP_PCIE_OATU_INDEX_IPA_MSI,
+				lower, 0,
+				(lower + resource_size(msi) - 1),
+				lower, upper);
+			ep_pcie_dev.conf_ipa_msi_iatu = true;
+			EP_PCIE_DBG(&ep_pcie_dev,
+				"PCIe V%d: Conf iATU for IPA MSI info: lower:0x%x; upper:0x%x\n",
+				ep_pcie_dev.rev, lower, upper);
 		}
 		return 0;
 	}
