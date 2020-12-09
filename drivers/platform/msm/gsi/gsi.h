@@ -33,7 +33,7 @@
 #define GSI_NO_EVT_ERINDEX 31
 
 #define gsi_readl(c)	(readl(c))
-#define gsi_writel(v, c)	({ __iowmb(); writel_relaxed((v), (c)); })
+#define gsi_writel(v, c)	(writel((v), (c)))
 
 #define GSI_IPC_LOGGING(buf, fmt, args...) \
 	do { \
