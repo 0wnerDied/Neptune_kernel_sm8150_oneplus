@@ -252,7 +252,8 @@ sync
 # Disable sleep_disabled
 echo N > /sys/module/lpm_levels/parameters/sleep_disabled
 
-# Set governor for big and prime clusters
+# Set governor for all clusters
+echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor
 echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy4/scaling_governor
 echo 2323200 > /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq
 echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy7/scaling_governor
