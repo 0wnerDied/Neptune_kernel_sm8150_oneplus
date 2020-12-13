@@ -256,7 +256,7 @@ echo N > /sys/module/lpm_levels/parameters/sleep_disabled
 echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy4/scaling_governor
 echo 2323200 > /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq
 echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy7/scaling_governor
-echo 2649600 > /sys/devices/system/cpu/cpu7/cpufreq/scaling_max_freq
+echo 2534400 > /sys/devices/system/cpu/cpu7/cpufreq/scaling_max_freq
 
 # Setting b.L scheduler parameters
 echo 95 95 > /proc/sys/kernel/sched_upmigrate
