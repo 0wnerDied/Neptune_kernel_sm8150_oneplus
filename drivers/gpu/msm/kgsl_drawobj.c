@@ -47,7 +47,6 @@ static struct kmem_cache *drawobj_sparse_cache;
 static struct kmem_cache *drawobj_sync_cache;
 static struct kmem_cache *drawobj_cmd_cache;
 
-#ifdef CONFIG_FENCE_DEBUG
 static void free_fence_names(struct kgsl_drawobj_sync *syncobj)
 {
 	unsigned int i;
@@ -59,7 +58,6 @@ static void free_fence_names(struct kgsl_drawobj_sync *syncobj)
 			kfree(event->info.fences);
 	}
 }
-#endif
 
 void kgsl_drawobj_destroy_object(struct kref *kref)
 {
@@ -72,9 +70,7 @@ void kgsl_drawobj_destroy_object(struct kref *kref)
 	switch (drawobj->type) {
 	case SYNCOBJ_TYPE:
 		syncobj = SYNCOBJ(drawobj);
-#ifdef CONFIG_FENCE_DEBUG
 		free_fence_names(syncobj);
-#endif
 		kfree(syncobj->synclist);
 		kmem_cache_free(drawobj_sync_cache, syncobj);
 		break;
@@ -115,14 +111,12 @@ void kgsl_dump_syncpoints(struct kgsl_device *device,
 			break;
 		}
 		case KGSL_CMD_SYNCPOINT_TYPE_FENCE: {
-#ifdef CONFIG_FENCE_DEBUG
 			int j;
 			struct event_fence_info *info = &event->info;
 
 			for (j = 0; j < info->num_fences; j++)
 				dev_err(device->dev, "[%d]  fence: %s\n",
 					i, info->fences[j].name);
-#endif
 			break;
 		}
 		}
@@ -170,14 +164,12 @@ static void syncobj_timer(unsigned long data)
 				i, event->context->id, event->timestamp);
 			break;
 		case KGSL_CMD_SYNCPOINT_TYPE_FENCE: {
-#ifdef CONFIG_FENCE_DEBUG
 			int j;
 			struct event_fence_info *info = &event->info;
 
 			for (j = 0; j < info->num_fences; j++)
 				dev_err(device->dev, "       [%u] FENCE %s\n",
 					i, info->fences[j].name);
-#endif
 			break;
 		}
 		}
@@ -363,13 +355,11 @@ EXPORT_SYMBOL(kgsl_drawobj_destroy);
 static bool drawobj_sync_fence_func(void *priv)
 {
 	struct kgsl_drawobj_sync_event *event = priv;
-#ifdef CONFIG_FENCE_DEBUG
 	int i;
 
 	for (i = 0; i < event->info.num_fences; i++)
 		trace_syncpoint_fence_expire(event->syncobj,
 			event->info.fences[i].name);
-#endif
 
 	/*
 	 * Only call kgsl_drawobj_put() if it's not marked for cancellation
@@ -433,10 +423,8 @@ static int drawobj_add_sync_fence(struct kgsl_device *device,
 		return ret;
 	}
 
-#ifdef CONFIG_FENCE_DEBUG
 	for (i = 0; i < event->info.num_fences; i++)
 		trace_syncpoint_fence(syncobj, event->info.fences[i].name);
-#endif
 
 	return 0;
 }
