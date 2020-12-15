@@ -21,4 +21,8 @@ cc_library {
         "acpi.c",
     ],
     export_include_dirs: ["."],
+    apex_available: [
+        "//apex_available:platform",
+        "com.android.virt",
+    ],
 }
