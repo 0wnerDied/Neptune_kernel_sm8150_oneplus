@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2020 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2021 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -2314,6 +2314,53 @@ int ipa3_nat_del_cmd(struct ipa_ioc_v4_nat_del *del)
 	tmp.table_index = del->table_index;
 
 	return ipa3_del_nat_table(&tmp);
+}
+
+/**
+ * ipa3_nat_cleanup_cmd() - Delete a NAT table
+ *
+ * Called by NAT client driver to delete the nat table
+ * as part of cleanup if IPACM restart
+ *
+ * Returns:     0 on success, negative on failure
+ */
+
+int ipa3_nat_cleanup_cmd(void)
+{
+	struct ipa3_nat_ipv6ct_common_mem *dev = &ipa3_ctx->nat_mem.dev;
+	struct ipa3_nat_mem *nm_ptr;
+	struct ipa_ioc_nat_ipv6ct_table_del del;
+
+	int result = 0;
+
+	IPADBG("In\n");
+
+	if (!dev->is_dev_init) {
+		IPAERR("NAT hasn't been initialized\n");
+		result = -EPERM;
+		goto bail;
+	}
+	if (dev->is_nat_mem) {
+		nm_ptr = (struct ipa3_nat_mem *) dev;
+		if (nm_ptr->sram_in_use) {
+			memset(&del, 0, sizeof(del));
+			del.mem_type = IPA_NAT_MEM_IN_SRAM;
+			ipa3_del_nat_table(&del);
+		}
+		if (nm_ptr->ddr_in_use) {
+			memset(&del, 0, sizeof(del));
+			del.mem_type = IPA_NAT_MEM_IN_DDR;
+			ipa3_del_nat_table(&del);
+		}
+	}
+	if (dev->is_ipv6ct_mem) {
+		memset(&del, 0, sizeof(del));
+		ipa3_del_nat_table(&del);
+	}
+
+bail:
+	IPADBG("Out\n");
+	return result;
 }
 
 /**
