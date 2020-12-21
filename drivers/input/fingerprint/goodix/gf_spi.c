@@ -341,8 +341,8 @@ static int irq_setup(struct gf_dev *gf_dev)
 
 	gf_dev->irq = gf_irq_num(gf_dev);
 	status = request_threaded_irq(gf_dev->irq, NULL, gf_irq,
-			IRQF_TRIGGER_RISING | IRQF_ONESHOT,
-			"gf", gf_dev);
+			IRQF_TRIGGER_RISING | IRQF_ONESHOT |
+			IRQF_PERF_AFFINE, "gf", gf_dev);
 
 	if (status) {
 		pr_err("failed to request IRQ:%d\n", gf_dev->irq);
