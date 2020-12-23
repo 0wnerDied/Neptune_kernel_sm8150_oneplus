@@ -1271,7 +1271,7 @@ static void bq27541_hw_config(struct work_struct *work)
 		/* Add for retry when config fail */
 		di->retry_count--;
 		if (di->retry_count > 0)
-			schedule_delayed_work(&di->hw_config, HZ);
+			schedule_delayed_work(&di->hw_config, 250);
 		else
 			bq27541_registered = true;
 
