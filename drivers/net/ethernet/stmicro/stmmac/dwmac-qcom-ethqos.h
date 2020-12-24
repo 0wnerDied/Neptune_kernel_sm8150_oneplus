@@ -518,10 +518,14 @@ struct qcom_ethqos {
 	struct cdev *avb_class_b_cdev;
 	struct class *avb_class_b_class;
 
+	/* Mac recovery dev node variables*/
 	dev_t emac_dev_t;
 	struct cdev *emac_cdev;
 	struct class *emac_class;
 
+	dev_t emac_rec_dev_t;
+	struct cdev *emac_rec_cdev;
+	struct class *emac_rec_class;
 	unsigned long avb_class_a_intr_cnt;
 	unsigned long avb_class_b_intr_cnt;
 	struct dentry *debugfs_dir;
@@ -584,6 +588,16 @@ struct qcom_ethqos {
 	/* SSR over ethernet parameters */
 	struct work_struct eth_ssr;
 	unsigned long action;
+
+	/* Mac recovery parameters */
+	int mac_err_cnt[MAC_ERR_CNT];
+	bool mac_rec_en[MAC_ERR_CNT];
+	bool mac_rec_fail[MAC_ERR_CNT];
+	int mac_rec_cnt[MAC_ERR_CNT];
+	int mac_rec_threshold[MAC_ERR_CNT];
+	struct delayed_work tdu_rec;
+	bool tdu_scheduled;
+	int tdu_chan;
 };
 
 struct pps_cfg {
