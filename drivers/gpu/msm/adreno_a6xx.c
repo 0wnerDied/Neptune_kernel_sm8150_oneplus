@@ -1502,7 +1502,8 @@ static void a6xx_count_throttles(struct adreno_device *adreno_dev,
 static int a6xx_reset(struct kgsl_device *device, int fault)
 {
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
-	int ret;
+	int ret = -EINVAL;
+	int i = 0;
 
 	/* Use the regular reset sequence for No GMU */
 	if (!gmu_core_gpmu_isenabled(device))
@@ -1514,20 +1515,32 @@ static int a6xx_reset(struct kgsl_device *device, int fault)
 	/* since device is officially off now clear start bit */
 	clear_bit(ADRENO_DEVICE_STARTED, &adreno_dev->priv);
 
-	ret = adreno_start(device, 0);
+	/* Keep trying to start the device until it works */
+	for (i = 0; i < NUM_TIMES_RESET_RETRY; i++) {
+		ret = adreno_start(device, 0);
+		if (!ret)
+			break;
+
+		msleep(20);
+	}
+
 	if (ret)
 		return ret;
 
-	kgsl_pwrctrl_change_state(device, KGSL_STATE_ACTIVE);
+	if (i != 0)
+		KGSL_DRV_WARN(device, "Device hard reset tried %d tries\n", i);
 
 	/*
-	 * If active_cnt is zero, there is no need to keep the GPU active. So,
-	 * we should transition to SLUMBER.
+	 * If active_cnt is non-zero then the system was active before
+	 * going into a reset - put it back in that state
 	 */
-	if (!atomic_read(&device->active_cnt))
-		kgsl_pwrctrl_change_state(device, KGSL_STATE_SLUMBER);
 
-	return 0;
+	if (atomic_read(&device->active_cnt))
+		kgsl_pwrctrl_change_state(device, KGSL_STATE_ACTIVE);
+	else
+		kgsl_pwrctrl_change_state(device, KGSL_STATE_NAP);
+
+	return ret;
 }
 
 static void a6xx_cp_hw_err_callback(struct adreno_device *adreno_dev, int bit)
