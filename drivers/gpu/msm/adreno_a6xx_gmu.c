@@ -1260,18 +1260,15 @@ static int a6xx_gmu_suspend(struct kgsl_device *device)
 			ADRENO_GPU_DEVICE(adreno_dev);
 
 		/* Halt GX traffic */
-		if (a6xx_gmu_gx_is_on(adreno_dev))
-			do_gbif_halt(device, A6XX_RBBM_GBIF_HALT,
-				A6XX_RBBM_GBIF_HALT_ACK,
-				gpudev->gbif_gx_halt_mask,
-				"GX");
+		do_gbif_halt(device, A6XX_RBBM_GBIF_HALT,
+			A6XX_RBBM_GBIF_HALT_ACK, gpudev->gbif_gx_halt_mask,
+			"GX");
 		/* Halt CX traffic */
 		do_gbif_halt(device, A6XX_GBIF_HALT, A6XX_GBIF_HALT_ACK,
 			gpudev->gbif_arb_halt_mask, "CX");
 	}
 
-	if (a6xx_gmu_gx_is_on(adreno_dev))
-		kgsl_regwrite(device, A6XX_RBBM_SW_RESET_CMD, 0x1);
+	kgsl_regwrite(device, A6XX_RBBM_SW_RESET_CMD, 0x1);
 
 	/* Allow the software reset to complete */
 	udelay(100);
