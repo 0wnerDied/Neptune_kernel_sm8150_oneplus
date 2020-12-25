@@ -1723,19 +1723,11 @@ static const char *a6xx_iommu_fault_block(struct kgsl_device *device,
 	else if (!mid || (mid > 3))
 		return fault_block[mid];
 
-	/*
-	 * Smmu driver takes a vote on CX gdsc before calling the kgsl pagefault
-	 * handler. If there is contention for device mutex in this path and the
-	 * dispatcher fault handler is holding this lock, trying to turn off CX
-	 * gdsc will fail during the reset. So to avoid blocking here, try to
-	 * lock device mutex and return if it fails.
-	 */
-	if (!mutex_trylock(&device->mutex))
-		return "UCHE";
+	mutex_lock(&device->mutex);
 
 	if (!kgsl_state_is_awake(device)) {
 		mutex_unlock(&device->mutex);
-		return "UCHE";
+		return "UCHE: unknown";
 	}
 
 	kgsl_regread(device, A6XX_UCHE_CLIENT_PF, &uche_client_id);
@@ -1743,7 +1735,7 @@ static const char *a6xx_iommu_fault_block(struct kgsl_device *device,
 
 	/* Ignore the value if the gpu is in IFPC */
 	if (uche_client_id == 0x5c00bd00)
-		return "UCHE";
+		return "UCHE: unknown";
 
 	uche_client_id &= A6XX_UCHE_CLIENT_PF_CLIENT_ID_MASK;
 	snprintf(str, sizeof(str), "UCHE: %s",
