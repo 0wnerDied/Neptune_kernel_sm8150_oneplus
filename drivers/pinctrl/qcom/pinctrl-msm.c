@@ -734,13 +734,13 @@ static void msm_gpio_irq_enable(struct irq_data *d)
 	 * any erraneous interrupts that would have got latched
 	 * when the intterupt is not in use.
 	 */
-	val = readl(base + g->intr_status_reg);
+	val = readl_relaxed(base + g->intr_status_reg);
 	val &= ~BIT(g->intr_status_bit);
-	writel(val, base + g->intr_status_reg);
+	writel_relaxed(val, base + g->intr_status_reg);
 
-	val = readl(base + g->intr_cfg_reg);
+	val = readl_relaxed(base + g->intr_cfg_reg);
 	val |= BIT(g->intr_enable_bit);
-	writel(val, base + g->intr_cfg_reg);
+	writel_relaxed(val, base + g->intr_cfg_reg);
 
 	set_bit(d->hwirq, pctrl->enabled_irqs);
 
