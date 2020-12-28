@@ -188,6 +188,7 @@ static bool migrate_one_irq(struct irq_desc *desc)
  */
 void irq_migrate_all_off_this_cpu(void)
 {
+	unsigned int cpu = smp_processor_id();
 	struct irq_desc *desc;
 	unsigned int irq;
 
@@ -197,6 +198,18 @@ void irq_migrate_all_off_this_cpu(void)
 		desc = irq_to_desc(irq);
 		if (!desc)
 			continue;
+			
+		if (irqd_has_set(&desc->irq_data, IRQD_PERF_CRITICAL)) {
+			bool on_cpu;
+
+			raw_spin_lock(&desc->lock);
+			on_cpu = cpumask_test_cpu(cpu,
+				irq_data_get_affinity_mask(&desc->irq_data));
+			raw_spin_unlock(&desc->lock);
+			if (on_cpu)
+				reaffine_perf_irqs();
+			continue;
+		}
 
 		raw_spin_lock(&desc->lock);
 		affinity_broken = migrate_one_irq(desc);
@@ -238,12 +251,17 @@ static void irq_restore_affinity_of_irq(struct irq_desc *desc, unsigned int cpu)
  */
 int irq_affinity_online_cpu(unsigned int cpu)
 {
+	bool perf = !cpumask_test_cpu(cpu, cpu_lp_mask);
 	struct irq_desc *desc;
 	unsigned int irq;
 
 	irq_lock_sparse();
 	for_each_active_irq(irq) {
 		desc = irq_to_desc(irq);
+		if (perf && irqd_has_set(&desc->irq_data, IRQD_PERF_CRITICAL)) {
+			reaffine_perf_irqs();
+			continue;
+		}
 		raw_spin_lock_irq(&desc->lock);
 		irq_restore_affinity_of_irq(desc, cpu);
 		raw_spin_unlock_irq(&desc->lock);
