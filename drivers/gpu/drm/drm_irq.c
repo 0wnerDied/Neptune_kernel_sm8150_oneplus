@@ -101,7 +101,7 @@
 int drm_irq_install(struct drm_device *dev, int irq)
 {
 	int ret;
-	unsigned long sh_flags = 0;
+	unsigned long sh_flags = IRQF_PERF_AFFINE;
 
 	if (!drm_core_check_feature(dev, DRIVER_HAVE_IRQ))
 		return -EINVAL;
@@ -125,7 +125,7 @@ int drm_irq_install(struct drm_device *dev, int irq)
 
 	/* Install handler */
 	if (drm_core_check_feature(dev, DRIVER_IRQ_SHARED))
-		sh_flags = IRQF_SHARED;
+		sh_flags &= IRQF_SHARED;
 
 	ret = request_irq(irq, dev->driver->irq_handler,
 			  sh_flags, dev->driver->name, dev);
