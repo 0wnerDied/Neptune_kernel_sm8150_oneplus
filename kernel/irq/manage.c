@@ -34,7 +34,6 @@ static LIST_HEAD(perf_crit_irqs);
 static DEFINE_RAW_SPINLOCK(perf_irqs_lock);
 static int perf_cpu_index = -1;
 static int prime_cpu_index = -1;
-static int strong_cpu_index = -1;
 
 #ifdef CONFIG_IRQ_FORCED_THREADING
 __read_mostly bool force_irqthreads;
@@ -1231,8 +1230,6 @@ static void affine_one_perf_thread(struct irqaction *action)
 		mask = cpu_perf_mask;
 	else if (action->flags & IRQF_PRIME_AFFINE)
 		mask = cpu_prime_mask;
-	else if (action->flags & IRQF_STRONG_AFFINE)
-		mask = cpu_strong_mask;
 	else
 		return;
 
@@ -1255,12 +1252,9 @@ static void affine_one_perf_irq(struct irq_desc *desc, unsigned int perf_flag)
 	if (perf_flag == IRQF_PERF_AFFINE) {
 		mask = cpu_perf_mask;
 		mask_index = &perf_cpu_index;
-	} else if (perf_flag == IRQF_PRIME_AFFINE) {
+	} else {
 		mask = cpu_prime_mask;
 		mask_index = &prime_cpu_index;
-	} else {
-		mask = cpu_strong_mask;
-		mask_index = &strong_cpu_index;
 	}
 
 	/* Balance the performance-critical IRQs across the given CPUs */
@@ -1277,7 +1271,7 @@ static void affine_one_perf_irq(struct irq_desc *desc, unsigned int perf_flag)
 
 int setup_perf_irq_locked(struct irq_desc *desc, unsigned int perf_flag)
 {
-	if (!(perf_flag &= (IRQF_PERF_AFFINE | IRQF_PRIME_AFFINE | IRQF_STRONG_AFFINE)))
+	if (!(perf_flag &= (IRQF_PERF_AFFINE | IRQF_PRIME_AFFINE)))
 		return -EINVAL;
 
 	add_desc_to_perf_list(desc, perf_flag);
@@ -1324,7 +1318,6 @@ void unaffine_perf_irqs(void)
 	}
 	perf_cpu_index = -1;
 	prime_cpu_index = -1;
-	strong_cpu_index = -1;
 	raw_spin_unlock_irqrestore(&perf_irqs_lock, flags);
 }
 
@@ -1773,7 +1766,7 @@ static struct irqaction *__free_irq(struct irq_desc *desc, void *dev_id)
 		action_ptr = &action->next;
 	}
 
-	if (action->flags & (IRQF_PERF_AFFINE | IRQF_PRIME_AFFINE | IRQF_STRONG_AFFINE)) {
+	if (action->flags & (IRQF_PERF_AFFINE | IRQF_PRIME_AFFINE)) {
 		struct irq_desc_list *data;
 
 		raw_spin_lock(&perf_irqs_lock);

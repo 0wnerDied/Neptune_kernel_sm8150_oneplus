@@ -1045,8 +1045,7 @@ static int do_cpu_down(unsigned int cpu, enum cpuhp_state target)
 	/* One big, LITTLE, and prime CPU must remain online */
 	if (!cpumask_intersects(&newmask, cpu_lp_mask) ||
 	    !cpumask_intersects(&newmask, cpu_perf_mask) ||
-	    !cpumask_intersects(&newmask, cpu_prime_mask) ||
-	    !cpumask_intersects(&newmask, cpu_strong_mask))
+	    !cpumask_intersects(&newmask, cpu_prime_mask))
 		return -EINVAL;
 
 	/*
@@ -2394,10 +2393,6 @@ const struct cpumask *const cpu_prime_mask = to_cpumask(&prime_cpu_bits);
 const struct cpumask *const cpu_prime_mask = cpu_possible_mask;
 #endif
 EXPORT_SYMBOL(cpu_prime_mask);
-
-static const unsigned long strong_cpu_bits = perf_cpu_bits + prime_cpu_bits;
-const struct cpumask *const cpu_strong_mask = to_cpumask(&strong_cpu_bits);
-EXPORT_SYMBOL(cpu_strong_mask);
 
 void init_cpu_present(const struct cpumask *src)
 {
