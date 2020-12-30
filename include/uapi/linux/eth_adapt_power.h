@@ -1,0 +1,38 @@
+/* Eth Adaption Power Management definitions */
+#ifndef _UAPI_ETH_ADAPT_POWER_H_
+#define _UAPI_ETH_ADAPT_POWER_H_
+
+#include <linux/types.h>
+
+/**
+ * Power management ioctls
+ * Unique magic number for ioctl creation
+ */
+
+#define ETH_ADAPTION_IOC_MAGIC 0xA5
+#define ETH_ADAPTION_IOCTL_DEVICE_NAME "/dev/eth-pwr"
+
+#define ETH_ADAPTION_IOC_MDM_SUSPEND _IOWR(ETH_ADAPTION_IOC_MAGIC, \
+	ETH_ADAPTION_IOCTL_MDM_SUSPEND, \
+	uint32_t)
+
+#define ETH_ADAPTION_IOC_MDM_RESUME _IOWR(ETH_ADAPTION_IOC_MAGIC, \
+	ETH_ADAPTION_IOCTL_MDM_RESUME, \
+	uint32_t)
+
+#define ETH_ADAPTION_IOC_EAP_SUSPEND _IOWR(ETH_ADAPTION_IOC_MAGIC, \
+	ETH_ADAPTION_IOCTL_EAP_SUSPEND, \
+	uint32_t)
+
+#define ETH_ADAPTION_IOC_EAP_RESUME _IOWR(ETH_ADAPTION_IOC_MAGIC, \
+	ETH_ADAPTION_IOCTL_EAP_RESUME, \
+	uint32_t)
+
+enum eth_adaption_power_ioctl {
+	ETH_ADAPTION_IOCTL_MDM_SUSPEND = 0,
+	ETH_ADAPTION_IOCTL_MDM_RESUME,
+	ETH_ADAPTION_IOCTL_EAP_SUSPEND,
+	ETH_ADAPTION_IOCTL_EAP_RESUME,
+};
+
+#endif /* _UAPI_ETH_ADAPT_POWER_H_ */
