@@ -558,6 +558,12 @@ int mmc_queue_suspend(struct mmc_queue *mq, int wait)
 			 * cmdq shutdown to avoid race between issuing
 			 * requests and shutdown of cmdq.
 			 */
+
+			/*
+			 * Remove sysfs attributes
+			 * before calling  blk_cleanup_queue
+			 */
+			kobject_del(&q->kobj);
 			blk_cleanup_queue(q);
 
 			if (host->cmdq_ctx.active_reqs)
@@ -590,6 +596,12 @@ int mmc_queue_suspend(struct mmc_queue *mq, int wait)
 			spin_unlock_irqrestore(q->queue_lock, flags);
 		} else {
 			/* shutdown the queue in case of shutdown/reboot */
+
+			/*
+			 * Remove sysfs attributes
+			 * before calling  blk_cleanup_queue
+			 */
+			kobject_del(&q->kobj);
 			blk_cleanup_queue(q);
 		}
 
