@@ -1,26 +1,32 @@
 #!/bin/bash
 
+# Kernel version configuration
 KNAME="NeptuneKernel"
 MIN_HEAD=$(git rev-parse HEAD)
-VERSION="$(cat version)-$(date +%Y%m%d)-$(echo ${MIN_HEAD:0:8})"
+VERSION="$(cat version)-$(date +%m.%d.%y)-$(echo ${MIN_HEAD:0:8})"
 ZIPNAME="${KNAME}-$(cat version)-$(echo ${MIN_HEAD:0:8})"
 
 export LOCALVERSION="-${KNAME}-$(echo "${VERSION}")"
 
+# Never dirty compile
 if [[ "${1}" != "skip" ]] ; then
 	./build_clean.sh
 fi
 
+# Let's build
+START=$(date +"%s")
 ./build_kernel.sh || exit 1
 
+# Kernel Output
 if [ -e arch/arm64/boot/Image.gz ] ; then
 	echo
 	echo "Building Kernel Package"
 	echo
 	rm $ZIPNAME.zip 2>/dev/null
 	rm -rf kernelzip 2>/dev/null
+	# Import Anykernel3 folder
 	mkdir kernelzip
-	echo "kernel.string=Neptune Kernel $(cat version) by Ciel_U.T
+	echo "kernel.string=Neptune Kernel $(cat version) by Vwool0xE9
 do.devicecheck=1
 do.modules=0
 do.systemless=1
@@ -52,3 +58,8 @@ ramdisk_compression=auto;" > kernelzip/props
 	cd ..
 	ls -al $ZIPNAME.zip
 fi
+
+# Show compilation time
+END=$(date +"%s")
+DIFF=$((END - START))
+echo -e "Kernel compiled successfully in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
