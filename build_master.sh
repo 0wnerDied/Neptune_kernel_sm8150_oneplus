@@ -48,7 +48,7 @@ supported.versions=10
 block=/dev/block/bootdevice/by-name/boot;
 is_slot_device=1;
 ramdisk_compression=auto;" > kernelzip/props
-	cp -rp flasher/* kernelzip/
+	cp -rp scripts/AnyKernel3/* kernelzip/
 	find arch/arm64/boot/dts -name '*.dtb' -exec cat {} + > kernelzip/dtb
 	cd kernelzip/
 	7z a -mx9 $ZIPNAME-tmp.zip *
