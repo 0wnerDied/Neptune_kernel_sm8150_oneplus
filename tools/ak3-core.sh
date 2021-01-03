@@ -30,6 +30,12 @@ file_getprop() {
 }
 ###
 
+# file_getprop2 <file> <property>
+file_getprop2() {
+  grep "^$2=" "$1" | cut -d= -f2- | sed -n 2p;
+}
+###
+
 ### file/directory attributes functions:
 # set_perm <owner> <group> <mode> <file> [<file2> ...]
 set_perm() {
