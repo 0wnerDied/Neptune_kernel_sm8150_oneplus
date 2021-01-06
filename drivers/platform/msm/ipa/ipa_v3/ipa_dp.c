@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -2933,6 +2933,9 @@ begin:
 				sys->drop_packet = true;
 			}
 
+			if (ipa3_ctx->ep[status.endp_src_idx].client
+				== IPA_CLIENT_USB2_PROD)
+				sys->drop_packet = true;
 			skb2 = ipa3_skb_copy_for_client(skb,
 				min(status.pkt_len + pkt_status_sz, skb->len));
 			if (likely(skb2)) {
