@@ -1,0 +1,27 @@
+kind: pipeline
+type: docker
+name: Neptune Kernel CI
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  depth: 1
+
+steps:
+- name: kernel_build
+  image: ubuntu:latest
+  environment:
+    GITID:
+        from_secret: GIT_SECRET
+  commands:
+    - apt-get update && apt-get install -y cpio liblz4-dev zipalign p7zip fakeroot liblz4-tool liblz4-1 gcc make bc curl git zip flex
+    - git clone https://github.com/atndko/Drone-scripts.git -b master script && cd script
+    - bash ./setup.sh
+    - bash ./build.sh
+  when:
+    branch:
+      - new/caf-4.14
+    event:
+      - push
