@@ -1218,6 +1218,7 @@ static inline bool ufshcd_keep_autobkops_enabled_except_suspend(
 	return hba->caps & UFSHCD_CAP_KEEP_AUTO_BKOPS_ENABLED_EXCEPT_SUSPEND;
 }
 
+extern void ufshcd_apply_pm_quirks(struct ufs_hba *hba);
 extern int ufshcd_system_thaw(struct ufs_hba *hba);
 extern int ufshcd_system_restore(struct ufs_hba *hba);
 extern int ufshcd_system_freeze(struct ufs_hba *hba);
@@ -1552,5 +1553,7 @@ static inline void ufshcd_vops_pm_qos_req_end(struct ufs_hba *hba,
 	if (hba->var && hba->var->pm_qos_vops && hba->var->pm_qos_vops->req_end)
 		hba->var->pm_qos_vops->req_end(hba, req, lock);
 }
+
+extern struct ufs_pm_lvl_states ufs_pm_lvl_states[];
 
 #endif /* End of Header */
