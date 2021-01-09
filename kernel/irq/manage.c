@@ -1225,25 +1225,31 @@ static void add_desc_to_perf_list(struct irq_desc *desc, unsigned int perf_flag)
 
 static void affine_one_perf_thread(struct irqaction *action)
 {
-	if (action->thread) {
-		const struct cpumask *mask;
+	const struct cpumask *mask;
 
-		if (action->flags & IRQF_PERF_AFFINE)
-			mask = cpu_perf_mask;
-		else
-			mask = cpu_prime_mask;
+	if (!action->thread)
+		return;
 
-		action->thread->flags |= PF_PERF_CRITICAL;
-		set_cpus_allowed_ptr(action->thread, mask);
-	}
+	if (action->flags & IRQF_PERF_AFFINE)
+		mask = cpu_perf_mask;
+	else
+		mask = cpu_prime_mask;
+
+	/* This can happen when resuming from suspend. It's not an issue. */
+	if (!cpumask_intersects(mask, cpu_online_mask))
+		return;
+
+	action->thread->flags |= PF_PERF_CRITICAL;
+	set_cpus_allowed_ptr(action->thread, mask);
 }
 
 static void unaffine_one_perf_thread(struct irqaction *action)
 {
-	if (action->thread) {
-		action->thread->flags &= ~PF_PERF_CRITICAL;
-		set_cpus_allowed_ptr(action->thread, cpu_all_mask);
-	}
+	if (!action->thread)
+		return;
+
+	action->thread->flags &= ~PF_PERF_CRITICAL;
+	set_cpus_allowed_ptr(action->thread, cpu_all_mask);
 }
 
 static void affine_one_perf_irq(struct irq_desc *desc, unsigned int perf_flag)
@@ -1259,6 +1265,10 @@ static void affine_one_perf_irq(struct irq_desc *desc, unsigned int perf_flag)
 		mask = cpu_prime_mask;
 		mask_index = &prime_cpu_index;
 	}
+
+	/* This can happen when resuming from suspend. It's not an issue. */
+	if (!cpumask_intersects(mask, cpu_online_mask))
+		return;
 
 	/* Balance the performance-critical IRQs across the given CPUs */
 	while (1) {
