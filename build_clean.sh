@@ -3,4 +3,4 @@
 git clean -fdx
 git reset --hard
 
-cp defconfig .config
+cp ./arch/arm64/configs/neptune_defconfig .config

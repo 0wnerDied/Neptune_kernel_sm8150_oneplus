@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # HOME path
-export HOME=/home/zhulitao
+export HOME=/home/atndko
 
 # Compiler environment
 export ARCH=arm64
