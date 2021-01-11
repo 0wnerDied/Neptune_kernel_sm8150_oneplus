@@ -193,8 +193,14 @@ struct qmi_info {
  * @scratch_buf: Scratch Buffer used by remote subsystem during the backup
  *		 or restore.
  * @qmi: Details of the QMI client on the kernel side.
+ * @request_handler_work: Worker thread to handle backup/restore indications.
  * @cdev: Device used by the Userspace to read/write the image buffer.
- * @open_count: Account open instances.
+ * @last_notif_sent: Event type of the last event that is sent to remote
+ *		     subsystem and userspace.
+ * @backup_type: Bakcup type received in the QMI indication.
+ * @remote_status: Status of backup/restore received from remote subsystem.
+ * @sysfs_dev: Device pointer to the sysfs device node.
+ * @open_count: Account open instances of cdev.
  */
 struct subsys_backup {
 	struct device *dev;
@@ -631,6 +637,46 @@ const char *status_to_str(enum qmi_remote_status remote_status)
 	}
 }
 
+static ssize_t event_show(struct device *dev, struct device_attribute *attr,
+				char *buf)
+{
+	struct subsys_backup *backup_dev = dev_get_drvdata(dev);
+
+	return snprintf(buf, PAGE_SIZE, "%s\n",
+			event_to_str(backup_dev->last_notif_sent));
+}
+static DEVICE_ATTR_RO(event);
+
+static ssize_t backup_type_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	struct subsys_backup *backup_dev = dev_get_drvdata(dev);
+
+	return snprintf(buf, PAGE_SIZE, "%s\n",
+			backup_type_to_str(backup_dev->backup_type));
+}
+static DEVICE_ATTR_RO(backup_type);
+
+static ssize_t remote_status_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct subsys_backup *backup_dev = dev_get_drvdata(dev);
+
+	return snprintf(buf, PAGE_SIZE, "%s\n",
+			status_to_str(backup_dev->remote_status));
+}
+static DEVICE_ATTR_RO(remote_status);
+
+static struct attribute *subsys_backup_attrs[] = {
+	&dev_attr_event.attr,
+	&dev_attr_backup_type.attr,
+	&dev_attr_remote_status.attr,
+	NULL,
+};
+
+static struct attribute_group subsys_backup_attr_group = {
+	.attrs = subsys_backup_attrs,
+};
 static int hyp_assign_buffers(struct subsys_backup *backup_dev, int dest,
 				int src)
 {
@@ -1461,6 +1507,12 @@ static int subsys_backup_init_device(struct platform_device *pdev,
 	}
 	backup_dev->sysfs_dev = backup_dev->dev;
 	dev_set_drvdata(backup_dev->sysfs_dev, backup_dev);
+
+	ret = sysfs_create_group(&device->kobj, &subsys_backup_attr_group);
+	if (ret) {
+		dev_err(&pdev->dev, "sysfs_create_group failed: %d\n", ret);
+		goto device_create_err;
+	}
 
 	class->dev_uevent = subsys_backup_uevent;
 	return 0;
