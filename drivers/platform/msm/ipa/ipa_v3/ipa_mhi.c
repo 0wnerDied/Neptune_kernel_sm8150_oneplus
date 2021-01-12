@@ -441,10 +441,10 @@ static int ipa_mhi_start_gsi_channel(enum ipa_client_type client,
 			ipa3_is_modem_up())) {
 		res = gsi_enable_flow_control_ee(ep->gsi_chan_hdl, 0, &code);
 		if (res == GSI_STATUS_SUCCESS) {
-			IPA_MHI_DBG("flow ctrl sussess gsi ch %d code %d\n",
+			IPA_MHI_DBG("flow ctrl sussess gsi ch %lu code %d\n",
 					ep->gsi_chan_hdl, code);
 		} else {
-			IPA_MHI_DBG("failed to flow ctrll gsi ch %d code %d\n",
+			IPA_MHI_DBG("failed to flow ctrll gsi ch %lu code %d\n",
 					ep->gsi_chan_hdl, code);
 		}
 	}
