@@ -1,4 +1,4 @@
-/* Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -14,17 +14,15 @@
 
 #include <linux/ipc_logging.h>
 #include <linux/msm-bus.h>
+#include <linux/clk.h>
 #include <linux/mailbox_client.h>
 #include <linux/mailbox/qmp.h>
 #include <linux/mailbox_controller.h>
-
 #include <linux/inetdevice.h>
 #include <linux/inet.h>
-
 #include <net/addrconf.h>
 #include <net/ipv6.h>
 #include <net/inet_common.h>
-
 #include <linux/uaccess.h>
 
 extern void *ipc_stmmac_log_ctxt;
@@ -237,6 +235,21 @@ do {\
 #define VOTE_IDX_10MBPS 1
 #define VOTE_IDX_100MBPS 2
 #define VOTE_IDX_1000MBPS 3
+
+/* Clock rates */
+#define RGMII_1000_NOM_CLK_FREQ			(250 * 1000 * 1000UL)
+
+#define RGMII_ID_MODE_100_LOW_SVS_CLK_FREQ	 (50 * 1000 * 1000UL)
+#define RGMII_NON_ID_MODE_100_LOW_SVS_CLK_FREQ   (25 * 1000 * 1000UL)
+
+#define RGMII_ID_MODE_10_LOW_SVS_CLK_FREQ	  (5 * 1000 * 1000UL)
+#define RGMII_NON_ID_MODE_10_LOW_SVS_CLK_FREQ	 (2.5 * 1000 * 1000UL)
+
+#define RMII_100_LOW_SVS_CLK_FREQ  (50 * 1000 * 1000UL)
+#define RMII_10_LOW_SVS_CLK_FREQ  (50 * 1000 * 1000UL)
+
+#define MII_100_LOW_SVS_CLK_FREQ  (25 * 1000 * 1000UL)
+#define MII_10_LOW_SVS_CLK_FREQ  (2.5 * 1000 * 1000UL)
 
 //Mac config
 #define MAC_CONFIGURATION 0x0

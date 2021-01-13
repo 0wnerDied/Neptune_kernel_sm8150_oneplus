@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2018-19, Linaro Limited
-// Copyright (c) 2020, The Linux Foundation. All rights reserved.
+// Copyright (c) 2020-21, The Linux Foundation. All rights reserved.
 
 #include <linux/module.h>
 #include <linux/of.h>
@@ -32,6 +32,8 @@
 #include "dwmac-qcom-ethqos.h"
 #include "stmmac_ptp.h"
 #include "dwmac-qcom-ipa-offload.h"
+
+static struct msm_bus_scale_pdata *emac_bus_scale_vec;
 
 #define PHY_LOOPBACK_1000 0x4140
 #define PHY_LOOPBACK_100 0x6100
@@ -88,6 +90,32 @@ static struct ip_params pparams;
 
 static DECLARE_WAIT_QUEUE_HEAD(mac_rec_wq);
 static bool mac_rec_wq_flag;
+
+static int qcom_ethqos_get_bus_config(struct platform_device *pdev)
+{
+	int o, i;
+
+	emac_bus_scale_vec = msm_bus_cl_get_pdata(pdev);
+	if (!emac_bus_scale_vec) {
+		ETHQOSERR("unable to get bus scaling vector\n");
+		return -EPERM;
+	}
+
+	ETHQOSDBG("bus name: %s\n", emac_bus_scale_vec->name);
+	ETHQOSDBG("num of paths: %d\n", emac_bus_scale_vec->usecase->num_paths);
+	ETHQOSDBG("num of use cases: %d\n", emac_bus_scale_vec->num_usecases);
+
+	for (o = 0; o < emac_bus_scale_vec->num_usecases; o++) {
+		ETHQOSDBG("use case[%d] parameters:\n", o);
+		for (i = 0; i < emac_bus_scale_vec->usecase->num_paths; i++)
+			ETHQOSDBG("src_prt:%d dst_prt:%d ab:%llu ib:%llu\n",
+				  emac_bus_scale_vec->usecase[o].vectors[i].src,
+				  emac_bus_scale_vec->usecase[o].vectors[i].dst,
+				  emac_bus_scale_vec->usecase[o].vectors[i].ab,
+				  emac_bus_scale_vec->usecase[o].vectors[i].ib);
+	}
+	return 0;
+}
 
 static void qcom_ethqos_read_iomacro_por_values(struct qcom_ethqos *ethqos)
 {
@@ -521,11 +549,6 @@ static void rgmii_dump(struct qcom_ethqos *ethqos)
 	dev_dbg(&ethqos->pdev->dev, "EMAC_SYSTEM_LOW_POWER_DEBUG: %x\n",
 		rgmii_readl(ethqos, EMAC_SYSTEM_LOW_POWER_DEBUG));
 }
-
-/* Clock rates */
-#define RGMII_1000_NOM_CLK_FREQ			(250 * 1000 * 1000UL)
-#define RGMII_ID_MODE_100_LOW_SVS_CLK_FREQ	 (50 * 1000 * 1000UL)
-#define RGMII_ID_MODE_10_LOW_SVS_CLK_FREQ	  (5 * 1000 * 1000UL)
 
 static void
 ethqos_update_rgmii_clk_and_bus_cfg(struct qcom_ethqos *ethqos,
@@ -3517,6 +3540,18 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		 */
 		ethqos->early_eth_enabled = 1;
 		ETHQOSINFO("Early ethernet is enabled\n");
+	}
+
+	qcom_ethqos_get_bus_config(pdev);
+
+	if (emac_bus_scale_vec)
+		ethqos->bus_scale_vec = emac_bus_scale_vec;
+
+	ethqos->bus_hdl = msm_bus_scale_register_client(ethqos->bus_scale_vec);
+
+	if (!ethqos->bus_hdl) {
+		ETHQOSERR("unable to register for bus\n");
+		msm_bus_cl_clear_pdata(emac_bus_scale_vec);
 	}
 
 	ethqos->speed = SPEED_10;
