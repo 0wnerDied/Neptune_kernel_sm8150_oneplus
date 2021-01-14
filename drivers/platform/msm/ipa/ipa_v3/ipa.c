@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -7523,6 +7523,7 @@ static int ipa3_pre_init(const struct ipa3_plat_drv_res *resource_p,
 	/* put ecm default as vlan mode */
 	if (ipa3_ctx->ipa_config_is_auto)
 		ipa3_ctx->vlan_mode_iface[IPA_VLAN_IF_ECM] = true;
+	ipa3_ctx->is_modem_up = false;
 
 	return 0;
 
