@@ -90,12 +90,23 @@ static int dwmac4_wrback_get_rx_status_err(void *data,
 	if (likely((rdes3 & RDES3_CONTEXT_DESCRIPTOR)))
 		return (discard_frame | ctxt_desc);
 
-	/* Verify rx error by looking at the last segment. */
-	if (likely(!(rdes3 & RDES3_LAST_DESCRIPTOR)))
-		return discard_frame;
+	/* Verify rx error by looking at the last segment.
+	 * Status are not set in other segments.
+	 */
+	if (likely(!(rdes3 & RDES3_LAST_DESCRIPTOR) &&
+		   (rdes3 & RDES3_FIRST_DESCRIPTOR)))
+		return rx_fs_only;
+
+	if (likely(!(rdes3 & RDES3_LAST_DESCRIPTOR) &&
+		   !(rdes3 & RDES3_FIRST_DESCRIPTOR)))
+		return rx_not_fsls;
+
+	if (likely((rdes3 & RDES3_LAST_DESCRIPTOR) &&
+		   !(rdes3 & RDES3_FIRST_DESCRIPTOR)))
+		ret = rx_ls_only;
 
 	if (unlikely(!(rdes3 & RDES3_PACKET_LEN_TYPE_MASK)))
-		ret = llc_snap;
+		ret |= llc_snap;
 
 	if (unlikely(rdes3 & RDES3_ERROR_SUMMARY)) {
 		if (unlikely(rdes3 & RDES3_GIANT_PACKET))
@@ -125,7 +136,7 @@ static int dwmac4_wrback_get_rx_status_err(void *data,
 			*status = DRIBBLE_ERR;
 		}
 
-		ret = discard_frame;
+		ret |= discard_frame;
 	}
 
 	message_type = (rdes1 & ERDES4_MSG_TYPE_MASK) >> 8;
@@ -171,11 +182,11 @@ static int dwmac4_wrback_get_rx_status_err(void *data,
 
 	if (unlikely(rdes2 & RDES2_SA_FILTER_FAIL)) {
 		x->sa_rx_filter_fail++;
-		ret = discard_frame;
+		ret |= discard_frame;
 	}
 	if (unlikely(rdes2 & RDES2_DA_FILTER_FAIL)) {
 		x->da_rx_filter_fail++;
-		ret = discard_frame;
+		ret |= discard_frame;
 	}
 
 	if (rdes2 & RDES2_L3_FILTER_MATCH)

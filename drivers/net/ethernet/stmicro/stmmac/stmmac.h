@@ -37,6 +37,9 @@
 #include <linux/if_ether.h>
 #include <linux/icmp.h>
 
+#define MIN_JUMBO_FRAME_SIZE	2048
+#define MAX_SUPPORTED_JUMBO_FRAME_SIZE	8188
+
 struct stmmac_resources {
 	void __iomem *addr;
 	const char *mac;
@@ -84,6 +87,12 @@ struct stmmac_rx_queue {
 	bool skip_sw;
 	bool en_fep;
 	bool dis_mod;
+	struct {
+		unsigned int state_saved;
+		unsigned int jumbo_error;
+		unsigned int jumbo_len;
+		struct sk_buff *jumbo_skb;
+	} jumbo_pkt_state;
 };
 
 struct stmmac_priv {
@@ -100,6 +109,7 @@ struct stmmac_priv {
 	bool tso;
 
 	unsigned int dma_buf_sz;
+	unsigned int jumbo_frame_sz;
 	unsigned int rx_copybreak;
 	u32 rx_riwt;
 	int hwts_rx_en;
