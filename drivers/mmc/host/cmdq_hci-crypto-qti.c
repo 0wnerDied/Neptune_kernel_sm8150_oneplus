@@ -217,6 +217,8 @@ int cmdq_host_init_crypto_qti_spec(struct cmdq_host *host,
 		CMDQ_CRYPTO_ALG_AES_XTS;
 	host->crypto_cap_array[CRYPTO_ICE_INDEX].key_size =
 		CMDQ_CRYPTO_KEY_SIZE_256;
+	host->crypto_cap_array[CRYPTO_ICE_INDEX].sdus_mask =
+		CRYPTO_CDU_SIZE;
 
 	blk_mode_num = cmdq_blk_crypto_qti_mode_num_for_alg_dusize(
 			host->crypto_cap_array[CRYPTO_ICE_INDEX].algorithm_id,
