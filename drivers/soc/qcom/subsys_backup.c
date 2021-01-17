@@ -1116,7 +1116,7 @@ static void backup_notif_handler(struct qmi_handle *handle,
 	}
 
 	backup_dev->qmi.decoded_msg = devm_kzalloc(backup_dev->dev,
-					sizeof(*decoded_msg), GFP_KERNEL);
+			sizeof(struct qmi_backup_ind_type), GFP_KERNEL);
 	if (!backup_dev->qmi.decoded_msg) {
 		dev_err(backup_dev->dev, "%s: Failed to allocate memory\n",
 				__func__);
@@ -1124,7 +1124,7 @@ static void backup_notif_handler(struct qmi_handle *handle,
 	}
 
 	memcpy((void *)backup_dev->qmi.decoded_msg, decoded_msg,
-			sizeof(*decoded_msg));
+			sizeof(struct qmi_backup_ind_type));
 	queue_work(system_wq, &backup_dev->request_handler_work);
 }
 
@@ -1161,7 +1161,7 @@ static void restore_notif_handler(struct qmi_handle *handle,
 	}
 
 	backup_dev->qmi.decoded_msg = devm_kzalloc(backup_dev->dev,
-					sizeof(*decoded_msg), GFP_KERNEL);
+			sizeof(struct qmi_restore_ind_type), GFP_KERNEL);
 	if (!backup_dev->qmi.decoded_msg) {
 		dev_err(backup_dev->dev, "%s: Failed to allocate memory\n",
 				__func__);
@@ -1169,7 +1169,7 @@ static void restore_notif_handler(struct qmi_handle *handle,
 	}
 
 	memcpy((void *)backup_dev->qmi.decoded_msg, decoded_msg,
-		sizeof(*decoded_msg));
+		sizeof(struct qmi_restore_ind_type));
 	queue_work(system_wq, &backup_dev->request_handler_work);
 }
 
