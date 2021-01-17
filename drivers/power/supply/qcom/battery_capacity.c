@@ -5,7 +5,7 @@
 
 #include <linux/module.h>
 
-unsigned int remove_op_capacity;
+unsigned int remove_op_capacity = 0;
 
 MODULE_PARM_DESC(remove_op_capacity, "Remove battery capacity limit");
 module_param(remove_op_capacity, uint, 0444);
