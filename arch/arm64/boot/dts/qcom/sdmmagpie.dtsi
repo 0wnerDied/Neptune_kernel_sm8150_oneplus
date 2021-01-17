@@ -62,16 +62,19 @@
 			enable-method = "psci";
 			capacity-dmips-mhz = <1024>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
+			cache-size = <0x8000>;
 			next-level-cache = <&L2_0>;
 			qcom,lmh-dcvs = <&lmh_dcvs0>;
 			#cooling-cells = <2>;
 			L2_0: l2-cache {
 			      compatible = "arm,arch-cache";
+			      cache-size = <0x20000>;
 			      cache-level = <2>;
 			      next-level-cache = <&L3_0>;
 
 				L3_0: l3-cache {
 				      compatible = "arm,arch-cache";
+				      cache-size = <0x100000>;
 				      cache-level = <3>;
 				};
 			};
@@ -98,11 +101,13 @@
 			enable-method = "psci";
 			capacity-dmips-mhz = <1024>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
+			cache-size = <0x8000>;
 			next-level-cache = <&L2_100>;
 			qcom,lmh-dcvs = <&lmh_dcvs0>;
 			#cooling-cells = <2>;
 			L2_100: l2-cache {
 			      compatible = "arm,arch-cache";
+			      cache-size = <0x20000>;
 			      cache-level = <2>;
 			      next-level-cache = <&L3_0>;
 			};
@@ -130,11 +135,13 @@
 			enable-method = "psci";
 			capacity-dmips-mhz = <1024>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
+			cache-size = <0x8000>;
 			next-level-cache = <&L2_200>;
 			qcom,lmh-dcvs = <&lmh_dcvs0>;
 			#cooling-cells = <2>;
 			L2_200: l2-cache {
 			      compatible = "arm,arch-cache";
+			      cache-size = <0x20000>;
 			      cache-level = <2>;
 			      next-level-cache = <&L3_0>;
 			};
@@ -161,11 +168,13 @@
 			enable-method = "psci";
 			capacity-dmips-mhz = <1024>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
+			cache-size = <0x8000>;
 			next-level-cache = <&L2_300>;
 			qcom,lmh-dcvs = <&lmh_dcvs0>;
 			#cooling-cells = <2>;
 			L2_300: l2-cache {
 			      compatible = "arm,arch-cache";
+			      cache-size = <0x20000>;
 			      cache-level = <2>;
 			      next-level-cache = <&L3_0>;
 			};
@@ -192,11 +201,13 @@
 			enable-method = "psci";
 			capacity-dmips-mhz = <1024>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
+			cache-size = <0x8000>;
 			next-level-cache = <&L2_400>;
 			qcom,lmh-dcvs = <&lmh_dcvs0>;
 			#cooling-cells = <2>;
 			L2_400: l2-cache {
 			      compatible = "arm,arch-cache";
+			      cache-size = <0x20000>;
 			      cache-level = <2>;
 			      next-level-cache = <&L3_0>;
 			};
@@ -223,11 +234,13 @@
 			enable-method = "psci";
 			capacity-dmips-mhz = <1024>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
+			cache-size = <0x8000>;
 			next-level-cache = <&L2_500>;
 			qcom,lmh-dcvs = <&lmh_dcvs0>;
 			#cooling-cells = <2>;
 			L2_500: l2-cache {
 			      compatible = "arm,arch-cache";
+			      cache-size = <0x20000>;
 			      cache-level = <2>;
 			      next-level-cache = <&L3_0>;
 			};
@@ -254,11 +267,13 @@
 			enable-method = "psci";
 			capacity-dmips-mhz = <1740>;
 			sched-energy-costs = <&CPU_COST_1 &CLUSTER_COST_1>;
+			cache-size = <0x10000>;
 			next-level-cache = <&L2_600>;
 			qcom,lmh-dcvs = <&lmh_dcvs1>;
 			#cooling-cells = <2>;
 			L2_600: l2-cache {
 			      compatible = "arm,arch-cache";
+			      cache-size = <0x40000>;
 			      cache-level = <2>;
 			      next-level-cache = <&L3_0>;
 			      qcom,dump-size = <0x48000>;
@@ -294,11 +309,13 @@
 			enable-method = "psci";
 			capacity-dmips-mhz = <1740>;
 			sched-energy-costs = <&CPU_COST_1 &CLUSTER_COST_1>;
+			cache-size = <0x10000>;
 			next-level-cache = <&L2_700>;
 			qcom,lmh-dcvs = <&lmh_dcvs1>;
 			#cooling-cells = <2>;
 			L2_700: l2-cache {
 			      compatible = "arm,arch-cache";
+			      cache-size = <0x40000>;
 			      cache-level = <2>;
 			      next-level-cache = <&L3_0>;
 			      qcom,dump-size = <0x48000>;
