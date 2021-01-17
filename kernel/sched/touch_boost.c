@@ -251,7 +251,9 @@ static int __init touch_boost_init(void)
 		goto unregister_handler;
 	}
 
-	thread = kthread_run(touch_boost_thread, boost, "touch_boostd");
+	thread = kthread_run_perf_critical(cpu_perf_mask,
+							  touch_boost_thread,
+							  boost, "touch_boostd");
 	if (IS_ERR(thread)) {
 		ret = PTR_ERR(thread);
 		pr_err("Failed to start Touch boost thread, err: %d\n", ret);
