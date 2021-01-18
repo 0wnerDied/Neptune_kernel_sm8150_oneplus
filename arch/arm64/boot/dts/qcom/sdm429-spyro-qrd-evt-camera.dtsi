@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2020-2021 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -16,17 +16,17 @@
 
 &soc {
 	qcom,csid@1b30000 {
-		qcom,csi-vdd-voltage = <1200000>;
-		qcom,mipi-csi-vdd-supply = <&pm660_l2>;
+		qcom,csi-vdd-voltage = <800000>;
+		qcom,mipi-csi-vdd-supply = <&pm660_l6>;
 	};
 
 	qcom,csid@1b30400 {
-		qcom,csi-vdd-voltage = <1200000>;
-		qcom,mipi-csi-vdd-supply = <&pm660_l2>;
+		qcom,csi-vdd-voltage = <800000>;
+		qcom,mipi-csi-vdd-supply = <&pm660_l6>;
 	};
 	qcom,csid@1b30800 {
-		qcom,csi-vdd-voltage = <1200000>;
-		qcom,mipi-csi-vdd-supply = <&pm660_l2>;
+		qcom,csi-vdd-voltage = <800000>;
+		qcom,mipi-csi-vdd-supply = <&pm660_l6>;
 	};
 	qcom,csiphy@1b34000 {
 		compatible = "qcom,csiphy-v10.00", "qcom,csiphy";
@@ -76,7 +76,7 @@
 		qcom,cam-vreg-name = "cam_vana", "cam_vio",
 					"cam_vdig", "cam_vaf";
 		qcom,cam-vreg-min-voltage = <2800000 1800000 1050000 2850000>;
-		qcom,cam-vreg-max-voltage = <2800000 1800000 1200000 3200000>;
+		qcom,cam-vreg-max-voltage = <2800000 1800000 1050000 3200000>;
 		qcom,cam-vreg-op-mode = <80000 0 200000 100000>;
 		pinctrl-names = "cam_default", "cam_suspend";
 		pinctrl-0 = <&cam_sensor_mclk0_default
@@ -161,7 +161,7 @@
 		qcom,cam-vreg-name = "cam_vana", "cam_vio",
 				"cam_vdig", "cam_vaf";
 		qcom,cam-vreg-min-voltage = <2800000 1800000 1050000 2850000>;
-		qcom,cam-vreg-max-voltage = <2800000 1800000 1200000 3200000>;
+		qcom,cam-vreg-max-voltage = <2800000 1800000 1050000 3200000>;
 		qcom,cam-vreg-op-mode = <80000 0 200000 100000>;
 		pinctrl-names = "cam_default", "cam_suspend";
 		pinctrl-0 = <&cam_sensor_mclk0_default
