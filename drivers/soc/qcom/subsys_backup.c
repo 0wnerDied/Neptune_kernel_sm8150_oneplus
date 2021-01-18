@@ -1321,19 +1321,25 @@ static ssize_t backup_buffer_read(struct file *filp, char __user *buf,
 	struct subsys_backup *backup_dev = filp->private_data;
 	size_t ret;
 
-	if (backup_dev->state != BACKUP_END || !backup_dev->img_buf.vaddr ||
-		!backup_dev->img_buf.hyp_assigned_to_hlos) {
-		dev_err(backup_dev->dev, "%s: Invalid Operation\n", __func__);
+	if (backup_dev->state != BACKUP_END) {
+		dev_err(backup_dev->dev, "%s: Backup not complete: %d\n",
+				__func__);
+		return 0;
+	} else if (!backup_dev->img_buf.hyp_assigned_to_hlos) {
+		dev_err(backup_dev->dev, "%s: Not hyp_assigned to HLOS\n",
+				__func__);
 		return 0;
 	}
 
 	ret = simple_read_from_buffer(buf, size, offp,
 			backup_dev->img_buf.vaddr,
 			backup_dev->img_buf.used_size);
-	if (ret < 0)
+	if (ret < 0) {
 		dev_err(backup_dev->dev, "%s: Failed: %d\n", __func__, ret);
-	else if (ret < size)
+	} else if (ret < size) {
+		backup_dev->state = IDLE;
 		free_buffers(backup_dev);
+	}
 
 	return ret;
 }
