@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -33,7 +33,24 @@
 };
 
 &mdss_dsi {
-	vddio-supply = <&L11A>; /* 1.8v */
+	/delete-property/ vdda-supply;
+	/delete-property/ vddio-supply;
+	vdda-supply = <&L6A>; /* 0.8v */
+	vddio-supply = <&L13A>; /* 1.8v */
+
+	qcom,ctrl-supply-entries {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		qcom,ctrl-supply-entry@0 {
+			reg = <0>;
+			qcom,supply-name = "vdda";
+			qcom,supply-min-voltage = <800000>;
+			qcom,supply-max-voltage = <800000>;
+			qcom,supply-enable-load = <100000>;
+			qcom,supply-disable-load = <100>;
+			qcom,supply-post-on-sleep = <20>;
+		};
+	};
 };
 
 &mdss_dsi0 {
