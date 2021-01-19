@@ -768,7 +768,7 @@ static int subsys_qmi_send_request(struct subsys_backup *backup_dev,
 	}
 
 	ret = qmi_txn_wait(&txn, 5 * HZ);
-	if (ret < 0) {
+/*	if (ret < 0) {
 		dev_err(backup_dev->dev, "%s: Response wait failed: %d\n",
 				__func__, ret);
 		goto out;
@@ -780,7 +780,7 @@ static int subsys_qmi_send_request(struct subsys_backup *backup_dev,
 		ret = -resp->result;
 		goto out;
 	}
-
+*/
 	return 0;
 
 out:
