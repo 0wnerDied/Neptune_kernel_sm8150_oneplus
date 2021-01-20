@@ -13,6 +13,7 @@
  */
 
 #define pr_fmt(fmt)	"[drm:%s:%d] " fmt, __func__, __LINE__
+#include <uapi/linux/sched/types.h>
 #include "sde_encoder_phys.h"
 #include "sde_hw_interrupts.h"
 #include "sde_core_irq.h"
@@ -1328,6 +1329,7 @@ static void sde_encoder_phys_cmd_destroy(struct sde_encoder_phys *phys_enc)
 		SDE_ERROR("invalid encoder\n");
 		return;
 	}
+	kthread_stop(cmd_enc->ctl_thread);
 	kfree(cmd_enc);
 }
 
@@ -1471,6 +1473,15 @@ static int _sde_encoder_phys_cmd_wait_for_ctl_start(
 	return ret;
 }
 
+static void sde_encoder_phys_ctl_wait_work(struct kthread_work *work)
+{
+	struct sde_encoder_phys_cmd *cmd_enc = container_of(work,
+							    typeof(*cmd_enc),
+							    ctl_wait_work);
+
+	_sde_encoder_phys_cmd_wait_for_ctl_start(&cmd_enc->base);
+}
+
 static int sde_encoder_phys_cmd_wait_for_tx_complete(
 		struct sde_encoder_phys *phys_enc)
 {
@@ -1504,12 +1515,16 @@ static int sde_encoder_phys_cmd_wait_for_commit_done(
 	cmd_enc = to_sde_encoder_phys_cmd(phys_enc);
 
 	/* only required for master controller */
-	if (sde_encoder_phys_cmd_is_master(phys_enc))
-		rc = _sde_encoder_phys_cmd_wait_for_ctl_start(phys_enc);
-
-	if (!rc && sde_encoder_phys_cmd_is_master(phys_enc) &&
-			cmd_enc->autorefresh.cfg.enable)
-		rc = _sde_encoder_phys_cmd_wait_for_autorefresh_done(phys_enc);
+	if (sde_encoder_phys_cmd_is_master(phys_enc)) {
+		if (cmd_enc->autorefresh.cfg.enable) {
+			rc = _sde_encoder_phys_cmd_wait_for_ctl_start(phys_enc);
+			if (!rc)
+				rc = _sde_encoder_phys_cmd_wait_for_autorefresh_done(phys_enc);
+		} else {
+			kthread_queue_work(&cmd_enc->ctl_worker,
+					   &cmd_enc->ctl_wait_work);
+		}
+	}
 
 	/* required for both controllers */
 	if (!rc && cmd_enc->serialize_wait4pp)
@@ -1591,6 +1606,9 @@ static void sde_encoder_phys_cmd_prepare_commit(
 
 	if (!sde_encoder_phys_cmd_is_master(phys_enc))
 		return;
+
+	/* Wait for ctl_start interrupt for the previous commit if needed */
+	kthread_flush_work(&cmd_enc->ctl_wait_work);
 
 	SDE_EVT32(DRMID(phys_enc->parent), phys_enc->intf_idx - INTF_0,
 			cmd_enc->autorefresh.cfg.enable);
@@ -1696,6 +1714,9 @@ static void sde_encoder_phys_cmd_init_ops(struct sde_encoder_phys_ops *ops)
 struct sde_encoder_phys *sde_encoder_phys_cmd_init(
 		struct sde_enc_phys_init_params *p)
 {
+	static const struct sched_param ctl_worker_prio = {
+		.sched_priority = 16 /* Match other msm_drm kthread prios */
+	};
 	struct sde_encoder_phys *phys_enc = NULL;
 	struct sde_encoder_phys_cmd *cmd_enc = NULL;
 	struct sde_hw_mdp *hw_mdp;
@@ -1711,6 +1732,19 @@ struct sde_encoder_phys *sde_encoder_phys_cmd_init(
 		goto fail;
 	}
 	phys_enc = &cmd_enc->base;
+
+	kthread_init_work(&cmd_enc->ctl_wait_work,
+			  sde_encoder_phys_ctl_wait_work);
+	kthread_init_worker(&cmd_enc->ctl_worker);
+	cmd_enc->ctl_thread = kthread_run(kthread_worker_fn,
+					  &cmd_enc->ctl_worker, "ctl_worker");
+	if (IS_ERR(cmd_enc->ctl_thread)) {
+		ret = PTR_ERR(cmd_enc->ctl_thread);
+		SDE_ERROR("failed start ctl_worker thread\n");
+		goto fail_worker_init;
+	}
+	sched_setscheduler_nocheck(cmd_enc->ctl_thread, SCHED_FIFO,
+				   &ctl_worker_prio);
 
 	hw_mdp = sde_rm_get_mdp(&p->sde_kms->rm);
 	if (IS_ERR_OR_NULL(hw_mdp)) {
@@ -1804,6 +1838,8 @@ struct sde_encoder_phys *sde_encoder_phys_cmd_init(
 	return phys_enc;
 
 fail_mdp_init:
+	kthread_stop(cmd_enc->ctl_thread);
+fail_worker_init:
 	kfree(cmd_enc);
 fail:
 	return ERR_PTR(ret);
