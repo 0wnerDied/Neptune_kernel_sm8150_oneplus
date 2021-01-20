@@ -1736,7 +1736,8 @@ struct sde_encoder_phys *sde_encoder_phys_cmd_init(
 	kthread_init_work(&cmd_enc->ctl_wait_work,
 			  sde_encoder_phys_ctl_wait_work);
 	kthread_init_worker(&cmd_enc->ctl_worker);
-	cmd_enc->ctl_thread = kthread_run(kthread_worker_fn,
+	cmd_enc->ctl_thread =
+		kthread_run_perf_critical(cpu_prime_mask, kthread_worker_fn,
 					  &cmd_enc->ctl_worker, "ctl_worker");
 	if (IS_ERR(cmd_enc->ctl_thread)) {
 		ret = PTR_ERR(cmd_enc->ctl_thread);
