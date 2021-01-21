@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -544,6 +544,7 @@ static int bgcom_resume_l(void *handle)
 
 	do {
 		if (is_bg_resume(handle)) {
+			udelay(2000);
 			bg_spi->bg_state = BGCOM_STATE_ACTIVE;
 			break;
 		}
