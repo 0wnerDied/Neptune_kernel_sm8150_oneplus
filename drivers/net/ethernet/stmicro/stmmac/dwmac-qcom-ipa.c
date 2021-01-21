@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -577,6 +577,9 @@ static void ethqos_free_ipa_tx_queue_struct(struct qcom_ethqos *ethqos,
 	kfree(eth_ipa_ctx.tx_queue[type]->ipa_tx_buff_pool_va_addrs_base);
 	eth_ipa_ctx.tx_queue[type]->ipa_tx_buff_pool_va_addrs_base = NULL;
 
+	kfree(eth_ipa_ctx.tx_queue[type]->ipa_tx_phy_addr);
+	eth_ipa_ctx.tx_queue[type]->ipa_tx_phy_addr = NULL;
+
 	kfree(eth_ipa_ctx.tx_queue[type]->skb);
 	eth_ipa_ctx.tx_queue[type]->skb = NULL;
 }
@@ -710,8 +713,8 @@ err_out_rx_q_alloc_failed:
 static void ethqos_free_ipa_rx_queue_struct(struct qcom_ethqos *ethqos,
 					    enum ipa_queue_type type)
 {
-	kfree(eth_ipa_ctx.rx_queue[type]->skb);
-	eth_ipa_ctx.rx_queue[type]->skb = NULL;
+	kfree(eth_ipa_ctx.rx_queue[type]->skb_dma);
+	eth_ipa_ctx.rx_queue[type]->skb_dma = NULL;
 
 	kfree(eth_ipa_ctx.rx_queue[type]->rx_desc_dma_addrs);
 	eth_ipa_ctx.rx_queue[type]->rx_desc_dma_addrs = NULL;
@@ -721,6 +724,12 @@ static void ethqos_free_ipa_rx_queue_struct(struct qcom_ethqos *ethqos,
 
 	kfree(eth_ipa_ctx.rx_queue[type]->ipa_rx_buff_pool_va_addrs_base);
 	eth_ipa_ctx.rx_queue[type]->ipa_rx_buff_pool_va_addrs_base = NULL;
+
+	kfree(eth_ipa_ctx.rx_queue[type]->ipa_rx_buff_phy_addr);
+	eth_ipa_ctx.rx_queue[type]->ipa_rx_buff_phy_addr = NULL;
+
+	kfree(eth_ipa_ctx.rx_queue[type]->ipa_buff_va);
+	eth_ipa_ctx.rx_queue[type]->ipa_buff_va = NULL;
 
 	kfree(eth_ipa_ctx.rx_queue[type]->skb);
 	eth_ipa_ctx.rx_queue[type]->skb = NULL;
@@ -2375,8 +2384,15 @@ static int ethqos_ipa_offload_connect(
 	profile.max_supported_bw_mbps = ethqos->speed;
 	profile.client = eth_ipa_queue_type_to_rx_client(type);
 	profile.proto =  eth_ipa_queue_type_to_proto(type);
-	ret = ipa_set_perf_profile(&profile);
-	if (ret) {
+	if (profile.proto < IPA_UC_MAX_PROT_SIZE) {
+		ret = ipa_set_perf_profile(&profile);
+		if (ret) {
+			ETHQOSERR("%s: Err IPA_RM_RESOURCE_ETHERNET_PROD: %d\n",
+				  __func__, ret);
+			ret = -1;
+			goto mem_free;
+		}
+	} else {
 		ETHQOSERR("%s: Err set IPA_RM_RESOURCE_ETHERNET_PROD :%d\n",
 			  __func__, ret);
 		ret = -1;
@@ -2385,8 +2401,15 @@ static int ethqos_ipa_offload_connect(
 
 	profile.client = eth_ipa_queue_type_to_tx_client(type);
 	profile.proto =  eth_ipa_queue_type_to_proto(type);
-	ret = ipa_set_perf_profile(&profile);
-	if (ret) {
+	if (profile.proto < IPA_UC_MAX_PROT_SIZE) {
+		ret = ipa_set_perf_profile(&profile);
+		if (ret) {
+			ETHQOSERR("%s: Err IPA_RM_RESOURCE_ETHERNET_CONS: %d\n",
+				  __func__, ret);
+			ret = -1;
+			goto mem_free;
+		}
+	} else {
 		ETHQOSERR("%s: Err set IPA_RM_RESOURCE_ETHERNET_CONS :%d\n",
 			  __func__, ret);
 		ret = -1;

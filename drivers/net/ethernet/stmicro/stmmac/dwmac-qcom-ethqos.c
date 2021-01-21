@@ -1408,7 +1408,7 @@ static ssize_t phy_off_config(
 			priv->current_loopback = ENABLE_PHY_LOOPBACK;
 		}
 		/*Backup phy related data*/
-		if (priv->phydev->autoneg == AUTONEG_DISABLE) {
+		if (priv->phydev && priv->phydev->autoneg == AUTONEG_DISABLE) {
 			ethqos->backup_autoneg = priv->phydev->autoneg;
 			ethqos->backup_bmcr = ethqos_mdio_read(priv,
 							       plat->phy_addr,
@@ -1995,7 +1995,7 @@ static int stmmac_emb_smmu_cb_probe(struct platform_device *pdev)
 	int bypass = 1;
 	struct iommu_domain_geometry geometry = {0};
 
-	ETHQOSDBG("EMAC EMB SMMU CB probe: smmu pdev=%p\n", pdev);
+	ETHQOSDBG("EMAC EMB SMMU CB probe: smmu pdev=%px\n", pdev);
 
 	result = of_property_read_u32_array(dev->of_node, "qcom,iova-mapping",
 					    iova_ap_mapping, 2);
@@ -2550,6 +2550,7 @@ static ssize_t ethqos_write_dev_emac(struct file *file,
 		prefix = strnchr(in_buf, strlen(in_buf), '=');
 		if (prefix) {
 			memcpy(mac_str, (char *)prefix + 1, 30);
+			mac_str[sizeof(mac_str) - 1] = '\0';
 
 			if (!mac_pton(mac_str, config_dev_addr)) {
 				ETHQOSERR("Invalid mac addr in /dev/emac\n");
@@ -2775,24 +2776,29 @@ static int qcom_ethos_panic_notifier(struct notifier_block *this,
 				     unsigned long event, void *ptr)
 {
 	u32 size_iomacro_regs;
-	struct stmmac_priv *priv = qcom_ethqos_get_priv(pethqos);
+	struct stmmac_priv *priv = NULL;
 
 	if (pethqos) {
-		pr_info("qcom-ethqos: ethqos 0x%p\n", pethqos);
-		pr_info("qcom-ethqos: stmmac_priv 0x%p\n", priv);
+		priv = qcom_ethqos_get_priv(pethqos);
 
-		pethqos->iommu_domain = stmmac_emb_smmu_ctx.iommu_domain;
-		pr_info("qcom-ethqos: emac iommu domain 0x%p\n",
+		pr_info("qcom-ethqos: ethqos 0x%px\n", pethqos);
+
+		pr_info("qcom-ethqos: stmmac_priv 0x%px\n", priv);
+
+		pethqos->iommu_domain =
+			stmmac_emb_smmu_ctx.iommu_domain;
+
+		pr_info("qcom-ethqos: emac iommu domain 0x%px\n",
 			pethqos->iommu_domain);
 
-		pr_info("qcom-ethqos: emac register mem 0x%p\n",
+		pr_info("qcom-ethqos: emac register mem 0x%px\n",
 			pethqos->emac_reg_base_address);
 		if (pethqos->emac_reg_base_address)
 			memcpy_fromio(pethqos->emac_reg_base_address,
 				      pethqos->ioaddr,
 				      pethqos->emac_mem_size);
 
-		pr_info("qcom-ethqos: rgmii register mem 0x%p\n",
+		pr_info("qcom-ethqos: rgmii register mem 0x%px\n",
 			pethqos->rgmii_reg_base_address);
 		size_iomacro_regs =
 		qcom_ethqos_rgmii_io_macro_num_of_regs(pethqos->emac_ver) * 4;
@@ -2915,8 +2921,8 @@ static int qcom_ethqos_qti_alert(struct notifier_block *nb,
 		pethqos->action = SSR_SIG_DOWN;
 		break;
 	default:
-		ETHQOSERR("Invalid action passed: %s, %d\n", __func__,
-			  pethqos->action);
+		ETHQOSERR("Invalid action passed: %s, %d\n", __func__, action);
+		return NOTIFY_DONE;
 	}
 
 	/*Avoids adding duplicate events to the work queue.*/
