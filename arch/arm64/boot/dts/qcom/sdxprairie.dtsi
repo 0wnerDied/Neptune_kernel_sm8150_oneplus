@@ -101,6 +101,12 @@
 			label = "mpss_debug_mem";
 		};
 
+		guard_mem: guard_region@8eeff000 {
+			no-map;
+			reg = <0x8eeff000 0x1000>;
+			label = "guard_mem";
+		};
+
 		qseecom_mem: qseecom_region@0 {
 			compatible = "shared-dma-pool";
 			reusable;
