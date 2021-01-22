@@ -103,6 +103,9 @@ static int cmdq_crypto_qti_keyslot_program(struct keyslot_manager *ksm,
 	int err = 0;
 	u8 data_unit_mask;
 	int crypto_alg_id;
+	struct sdhci_host *sdhci = mmc_priv(host->mmc);
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
+	struct sdhci_msm_host *msm_host = pltfm_host->priv;
 
 	crypto_alg_id = cmdq_crypto_cap_find(host, key->crypto_mode,
 					       key->data_unit_size);
@@ -120,12 +123,28 @@ static int cmdq_crypto_qti_keyslot_program(struct keyslot_manager *ksm,
 		return -EINVAL;
 	}
 
+	if (!IS_ERR(msm_host->pclk) && !IS_ERR(msm_host->ice_clk)) {
+		err = clk_prepare_enable(msm_host->pclk);
+		if (err)
+			return err;
+		err = clk_prepare_enable(msm_host->ice_clk);
+		if (err)
+			return err;
+	} else {
+		pr_err("%s: Invalid clock value", __func__);
+		return -EINVAL;
+	}
+
 	mmc_host_clk_hold(host->mmc);
 
 	err = crypto_qti_keyslot_program(host->crypto_vops->priv, key,
 					 slot, data_unit_mask, crypto_alg_id);
 	if (err)
 		pr_err("%s: failed with error %d\n", __func__, err);
+
+
+	clk_disable_unprepare(msm_host->pclk);
+	clk_disable_unprepare(msm_host->ice_clk);
 
 	mmc_host_clk_release(host->mmc);
 
@@ -139,20 +158,36 @@ static int cmdq_crypto_qti_keyslot_evict(struct keyslot_manager *ksm,
 	int err = 0;
 	int val = 0;
 	struct cmdq_host *host = keyslot_manager_private(ksm);
+	struct sdhci_host *sdhci = mmc_priv(host->mmc);
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
+	struct sdhci_msm_host *msm_host = pltfm_host->priv;
 
 	if (!cmdq_is_crypto_enabled(host) ||
 	    !cmdq_keyslot_valid(host, slot)) {
 		return -EINVAL;
 	}
 
+	if (!IS_ERR(msm_host->pclk) && !IS_ERR(msm_host->ice_clk)) {
+		err = clk_prepare_enable(msm_host->pclk);
+		if (err)
+			return err;
+		err = clk_prepare_enable(msm_host->ice_clk);
+		if (err)
+			return err;
+	} else {
+		pr_err("%s: Invalid clock value", __func__);
+		return -EINVAL;
+	}
+
 	mmc_host_clk_hold(host->mmc);
 
 	err = crypto_qti_keyslot_evict(host->crypto_vops->priv, slot);
-	if (err) {
+	if (err)
 		pr_err("%s: failed with error %d\n", __func__, err);
-		mmc_host_clk_release(host->mmc);
-		return err;
-	}
+
+	clk_disable_unprepare(msm_host->pclk);
+	clk_disable_unprepare(msm_host->ice_clk);
+
 	mmc_host_clk_release(host->mmc);
 
 	val = atomic_read(&keycache) & ~(1 << slot);
