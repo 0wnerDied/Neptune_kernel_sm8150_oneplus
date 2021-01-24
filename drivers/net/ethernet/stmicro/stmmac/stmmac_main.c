@@ -2175,10 +2175,10 @@ static void stmmac_dma_interrupt(struct stmmac_priv *priv)
 {
 	u32 tx_channel_count = priv->plat->tx_queues_to_use;
 	int status;
-	u32 chan;
+	int chan;
 	struct stmmac_rx_queue *rx_q;
 
-	for (chan = 0; chan < tx_channel_count; chan++) {
+	for (chan = tx_channel_count - 1; chan >= 0; chan--) {
 		rx_q = &priv->rx_queue[chan];
 
 		status = priv->hw->dma->dma_interrupt(priv->ioaddr,
