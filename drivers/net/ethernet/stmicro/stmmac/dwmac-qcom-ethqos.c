@@ -37,9 +37,6 @@
 #define PHY_LOOPBACK_100 0x6100
 #define PHY_LOOPBACK_10 0x4100
 
-#define SSR_SIG_DOWN 0x1
-#define SSR_SIG_UP   0x2
-
 static void __iomem *tlmm_central_base_addr;
 static void ethqos_rgmii_io_macro_loopback(struct qcom_ethqos *ethqos,
 					   int mode);
@@ -3351,58 +3348,26 @@ static void read_mac_addr_from_fuse_reg(struct device_node *np)
 	}
 }
 
-static void qcom_ethqos_handle_ssr(struct stmmac_priv *priv, int speed,
-				   struct plat_stmmacenet_data *plat,
-				   int evt_status, int status)
-{
-	struct platform_device *pd = NULL;
-	struct net_device *ndev = NULL;
-
-	pd = pethqos->pdev;
-	if (!pd) {
-		ETHQOSERR("Unable to alert QTI of SSR status: %s\n", __func__);
-		return;
-	}
-
-	ndev = platform_get_drvdata(pd);
-	if (!ndev) {
-		ETHQOSERR("Unable to alert QTI of SSR status: %s\n", __func__);
-		return;
-	}
-
-	if (plat->mac2mac_en) {
-		stmmac_mac2mac_adjust_link(speed, priv);
-		priv->plat->mac2mac_link = status;
-	}
-	if (priv->hw_offload_enabled)
-		ethqos_ipa_offload_event_handler(NULL, evt_status);
-	else
-		phy_mac_interrupt(ndev->phydev, status);
-}
-
 static void qcom_ethqos_handle_ssr_workqueue(struct work_struct *work)
 {
 	struct stmmac_priv *priv = NULL;
-	struct plat_stmmacenet_data *plat = NULL;
 
 	priv = qcom_ethqos_get_priv(pethqos);
-	plat = priv->plat;
 
 	ETHQOSDBG("%s is executing action: %d\n", __func__, pethqos->action);
 
-	if (pethqos->action & SSR_SIG_DOWN)
-		qcom_ethqos_handle_ssr(priv, SPEED_10, plat,
-				       SSR_EVENT_DOWN, LINK_DOWN);
-	else if (pethqos->action & SSR_SIG_UP)
-		qcom_ethqos_handle_ssr(priv, plat->mac2mac_rgmii_speed, plat,
-				       SSR_EVENT_UP, LINK_UP);
+	if (priv->hw_offload_enabled) {
+		if (pethqos->action == EVENT_REMOTE_STATUS_DOWN)
+			ethqos_ipa_offload_event_handler(NULL, EV_IPA_SSR_DOWN);
+		else if (pethqos->action == EVENT_REMOTE_STATUS_UP)
+			ethqos_ipa_offload_event_handler(NULL, EV_IPA_SSR_UP);
+	}
 }
 
 static int qcom_ethqos_qti_alert(struct notifier_block *nb,
 				 unsigned long action, void *dev)
 {
 	struct stmmac_priv *priv = NULL;
-	struct plat_stmmacenet_data *plat = NULL;
 
 	priv = qcom_ethqos_get_priv(pethqos);
 	if (!priv) {
@@ -3410,37 +3375,22 @@ static int qcom_ethqos_qti_alert(struct notifier_block *nb,
 		return NOTIFY_DONE;
 	}
 
-	plat = priv->plat;
-	if (!plat) {
-		ETHQOSERR("Unable to alert QTI of SSR status: %s\n", __func__);
-		return NOTIFY_DONE;
-	}
-
 	switch (action) {
 	case EVENT_REMOTE_STATUS_UP:
 		ETHQOSDBG("Link up\n");
-		pethqos->action = SSR_SIG_UP;
+		pethqos->action = EVENT_REMOTE_STATUS_UP;
 		break;
 	case EVENT_REMOTE_STATUS_DOWN:
 		ETHQOSDBG("Link down\n");
-		pethqos->action = SSR_SIG_DOWN;
+		pethqos->action = EVENT_REMOTE_STATUS_DOWN;
 		break;
 	default:
 		ETHQOSERR("Invalid action passed: %s, %d\n", __func__, action);
 		return NOTIFY_DONE;
 	}
 
-	/*Avoids adding duplicate events to the work queue.*/
-	if (!plat->mac2mac_en || plat->mac2mac_link == -1) {
-		INIT_WORK(&pethqos->eth_ssr, qcom_ethqos_handle_ssr_workqueue);
-		queue_work(system_wq, &pethqos->eth_ssr);
-	} else if ((plat->mac2mac_link == LINK_UP &&
-		    pethqos->action == SSR_SIG_DOWN) ||
-		    (plat->mac2mac_link == LINK_DOWN &&
-		    pethqos->action == SSR_SIG_UP)) {
-		INIT_WORK(&pethqos->eth_ssr, qcom_ethqos_handle_ssr_workqueue);
-		queue_work(system_wq, &pethqos->eth_ssr);
-	}
+	INIT_WORK(&pethqos->eth_ssr, qcom_ethqos_handle_ssr_workqueue);
+	queue_work(system_wq, &pethqos->eth_ssr);
 	return NOTIFY_DONE;
 }
 
@@ -3449,7 +3399,6 @@ static void qcom_ethqos_register_listener(void)
 	int ret;
 
 	ETHQOSDBG("Registering sb notification listener: %s\n", __func__);
-
 	pethqos->qti_nb.notifier_call = qcom_ethqos_qti_alert;
 	ret = sb_register_evt_listener(&pethqos->qti_nb);
 	if (ret)

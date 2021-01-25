@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -29,9 +29,6 @@
 
 extern void *ipc_stmmac_log_ctxt;
 extern void *ipc_stmmac_log_ctxt_low;
-
-#define SSR_EVENT_UP 20
-#define SSR_EVENT_DOWN 21
 
 #define QCOM_ETH_QOS_MAC_ADDR_LEN 6
 #define QCOM_ETH_QOS_MAC_ADDR_STR_LEN 18
