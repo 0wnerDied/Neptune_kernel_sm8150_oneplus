@@ -6,6 +6,9 @@
 #include <linux/export.h>
 #include "vlan.h"
 
+#define CREATE_TRACE_POINTS
+#include <trace/events/vlan.h>
+
 bool vlan_do_receive(struct sk_buff **skbp)
 {
 	struct sk_buff *skb = *skbp;
@@ -29,6 +32,8 @@ bool vlan_do_receive(struct sk_buff **skbp)
 	}
 
 	skb->dev = vlan_dev;
+
+	trace_vlan_receive_skb(skb);
 	if (unlikely(skb->pkt_type == PACKET_OTHERHOST)) {
 		/* Our lower layer thinks this is not local, let's make sure.
 		 * This allows the VLAN to have a different MAC than the
