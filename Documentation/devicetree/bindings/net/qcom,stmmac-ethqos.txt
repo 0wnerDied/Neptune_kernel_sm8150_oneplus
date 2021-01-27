@@ -129,6 +129,11 @@ Optional properties:
                     This setting does not apply if rx-dll-bypass is enabled
 	- clear-cdr-ext-en: boolean value to clear CDR_EXT_EN for 1000M
 	- sdcc-usr-ctl: 32 bit register value. Provide to apply a specific value
+- mac-efuse-addr: Defines efuse addresses containing MAC address.
+                  Values should be aligned on 4 byte boundaries and
+                  two consecutive addresses must be at a minimum 8 bytes
+                  distance for ex; if 1st address is 0x000A04B0 then next
+                  address will be 0x000A04B0 + 8 i.e. 0x000A04B8
 
 Examples:
 
