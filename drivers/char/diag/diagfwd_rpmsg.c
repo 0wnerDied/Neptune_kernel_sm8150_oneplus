@@ -64,7 +64,7 @@ struct diag_rpmsg_info rpmsg_data[NUM_PERIPHERALS] = {
 		.peripheral = PERIPHERAL_LPASS,
 		.type = TYPE_DATA,
 		.edge = "lpass",
-		.name = "DIAG_DATA",
+		.name = "DIAG",
 		.buf1 = NULL,
 		.buf2 = NULL,
 		.hdl = NULL
@@ -130,7 +130,7 @@ struct diag_rpmsg_info rpmsg_cntl[NUM_PERIPHERALS] = {
 		.peripheral = PERIPHERAL_LPASS,
 		.type = TYPE_CNTL,
 		.edge = "lpass",
-		.name = "DIAG_CTRL",
+		.name = "DIAG_CNTL",
 		.buf1 = NULL,
 		.buf2 = NULL,
 		.hdl = NULL
@@ -766,10 +766,18 @@ void rpmsg_mark_buffers_free(uint8_t peripheral, uint8_t type, int buf_num)
 {
 	struct diag_rpmsg_info *rpmsg_info;
 
-	if ((peripheral != PERIPHERAL_WDSP) &&
-		(peripheral != PERIPHERAL_WCNSS) &&
-			(peripheral != PERIPHERAL_MODEM))
+	switch (peripheral) {
+	case PERIPHERAL_WDSP:
+		break;
+	case PERIPHERAL_WCNSS:
+		break;
+	case PERIPHERAL_MODEM:
+		break;
+	case PERIPHERAL_LPASS:
+		break;
+	default:
 		return;
+	}
 
 	rpmsg_info =  get_info_ptr(type, peripheral);
 	if (!rpmsg_info)
@@ -875,10 +883,19 @@ int diag_rpmsg_init(void)
 	struct diag_rpmsg_info *rpmsg_info = NULL;
 
 	for (peripheral = 0; peripheral < NUM_PERIPHERALS; peripheral++) {
-		if ((peripheral != PERIPHERAL_WDSP) &&
-			(peripheral != PERIPHERAL_WCNSS) &&
-				(peripheral != PERIPHERAL_MODEM))
+		switch (peripheral) {
+		case PERIPHERAL_WDSP:
+			break;
+		case PERIPHERAL_WCNSS:
+			break;
+		case PERIPHERAL_MODEM:
+			break;
+		case PERIPHERAL_LPASS:
+			break;
+		default:
 			continue;
+		}
+
 		rpmsg_info = &rpmsg_cntl[peripheral];
 		__diag_rpmsg_init(rpmsg_info);
 		diagfwd_cntl_register(TRANSPORT_RPMSG, rpmsg_info->peripheral,
@@ -933,10 +950,19 @@ void diag_rpmsg_early_exit(void)
 	int peripheral = 0;
 
 	for (peripheral = 0; peripheral < NUM_PERIPHERALS; peripheral++) {
-		if ((peripheral != PERIPHERAL_WDSP) &&
-			(peripheral != PERIPHERAL_WCNSS) &&
-				(peripheral != PERIPHERAL_MODEM))
+		switch (peripheral) {
+		case PERIPHERAL_WDSP:
+			break;
+		case PERIPHERAL_WCNSS:
+			break;
+		case PERIPHERAL_MODEM:
+			break;
+		case PERIPHERAL_LPASS:
+			break;
+		default:
 			continue;
+		}
+
 		mutex_lock(&driver->rpmsginfo_mutex[peripheral]);
 		__diag_rpmsg_exit(&rpmsg_cntl[peripheral]);
 		mutex_unlock(&driver->rpmsginfo_mutex[peripheral]);
@@ -994,6 +1020,13 @@ static struct diag_rpmsg_info *diag_get_rpmsg_ptr(char *name, int pid)
 			return &rpmsg_dci[PERIPHERAL_MODEM];
 		else
 			return NULL;
+	} else if (pid == PERIPHERAL_LPASS) {
+		if (!strcmp(name, "DIAG"))
+			return &rpmsg_data[PERIPHERAL_LPASS];
+		else if (!strcmp(name, "DIAG_CNTL"))
+			return &rpmsg_cntl[PERIPHERAL_LPASS];
+		else
+			return NULL;
 	}
 	return NULL;
 }
@@ -1012,6 +1045,8 @@ static int diag_rpmsg_probe(struct rpmsg_device *rpdev)
 		peripheral = PERIPHERAL_WCNSS;
 	else if (!strcmp(rpdev->dev.parent->of_node->name, "modem"))
 		peripheral = PERIPHERAL_MODEM;
+	else if (!strcmp(rpdev->dev.parent->of_node->name, "adsp"))
+		peripheral = PERIPHERAL_LPASS;
 
 	rpmsg_info = diag_get_rpmsg_ptr(rpdev->id.name, peripheral);
 	if (rpmsg_info) {
@@ -1040,6 +1075,8 @@ static void diag_rpmsg_remove(struct rpmsg_device *rpdev)
 		peripheral = PERIPHERAL_WCNSS;
 	else if (!strcmp(rpdev->dev.parent->of_node->name, "modem"))
 		peripheral = PERIPHERAL_MODEM;
+	else if (!strcmp(rpdev->dev.parent->of_node->name, "adsp"))
+		peripheral = PERIPHERAL_LPASS;
 
 	rpmsg_info = diag_get_rpmsg_ptr(rpdev->id.name, peripheral);
 	if (rpmsg_info) {
