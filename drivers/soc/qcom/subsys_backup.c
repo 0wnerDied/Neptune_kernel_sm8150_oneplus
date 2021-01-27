@@ -768,7 +768,7 @@ static int subsys_qmi_send_request(struct subsys_backup *backup_dev,
 	}
 
 	ret = qmi_txn_wait(&txn, 5 * HZ);
-	if (ret < 0) {
+/*	if (ret < 0) {
 		dev_err(backup_dev->dev, "%s: Response wait failed: %d\n",
 				__func__, ret);
 		goto out;
@@ -780,7 +780,7 @@ static int subsys_qmi_send_request(struct subsys_backup *backup_dev,
 		ret = -resp->result;
 		goto out;
 	}
-
+*/
 	return 0;
 
 out:
@@ -1116,7 +1116,7 @@ static void backup_notif_handler(struct qmi_handle *handle,
 	}
 
 	backup_dev->qmi.decoded_msg = devm_kzalloc(backup_dev->dev,
-					sizeof(*decoded_msg), GFP_KERNEL);
+			sizeof(struct qmi_backup_ind_type), GFP_KERNEL);
 	if (!backup_dev->qmi.decoded_msg) {
 		dev_err(backup_dev->dev, "%s: Failed to allocate memory\n",
 				__func__);
@@ -1124,7 +1124,7 @@ static void backup_notif_handler(struct qmi_handle *handle,
 	}
 
 	memcpy((void *)backup_dev->qmi.decoded_msg, decoded_msg,
-			sizeof(*decoded_msg));
+			sizeof(struct qmi_backup_ind_type));
 	queue_work(system_wq, &backup_dev->request_handler_work);
 }
 
@@ -1161,7 +1161,7 @@ static void restore_notif_handler(struct qmi_handle *handle,
 	}
 
 	backup_dev->qmi.decoded_msg = devm_kzalloc(backup_dev->dev,
-					sizeof(*decoded_msg), GFP_KERNEL);
+			sizeof(struct qmi_restore_ind_type), GFP_KERNEL);
 	if (!backup_dev->qmi.decoded_msg) {
 		dev_err(backup_dev->dev, "%s: Failed to allocate memory\n",
 				__func__);
@@ -1169,7 +1169,7 @@ static void restore_notif_handler(struct qmi_handle *handle,
 	}
 
 	memcpy((void *)backup_dev->qmi.decoded_msg, decoded_msg,
-		sizeof(*decoded_msg));
+		sizeof(struct qmi_restore_ind_type));
 	queue_work(system_wq, &backup_dev->request_handler_work);
 }
 
@@ -1321,19 +1321,25 @@ static ssize_t backup_buffer_read(struct file *filp, char __user *buf,
 	struct subsys_backup *backup_dev = filp->private_data;
 	size_t ret;
 
-	if (backup_dev->state != BACKUP_END || !backup_dev->img_buf.vaddr ||
-		!backup_dev->img_buf.hyp_assigned_to_hlos) {
-		dev_err(backup_dev->dev, "%s: Invalid Operation\n", __func__);
+	if (backup_dev->state != BACKUP_END) {
+		dev_err(backup_dev->dev, "%s: Backup not complete: %d\n",
+				__func__);
+		return 0;
+	} else if (!backup_dev->img_buf.hyp_assigned_to_hlos) {
+		dev_err(backup_dev->dev, "%s: Not hyp_assigned to HLOS\n",
+				__func__);
 		return 0;
 	}
 
 	ret = simple_read_from_buffer(buf, size, offp,
 			backup_dev->img_buf.vaddr,
 			backup_dev->img_buf.used_size);
-	if (ret < 0)
+	if (ret < 0) {
 		dev_err(backup_dev->dev, "%s: Failed: %d\n", __func__, ret);
-	else if (ret < size)
+	} else if (ret < size) {
+		backup_dev->state = IDLE;
 		free_buffers(backup_dev);
+	}
 
 	return ret;
 }
