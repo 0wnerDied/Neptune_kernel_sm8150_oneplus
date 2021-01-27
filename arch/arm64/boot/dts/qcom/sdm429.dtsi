@@ -1086,6 +1086,13 @@
 			qcom,apr_tal_rpmsg {
 				qcom,smd-channels = "apr_audio_svc";
 			};
+
+			qcom,diag {
+				qcom,smd-channels = "DIAG";
+			};
+			qcom,diag_cntl {
+				qcom,smd-channels = "DIAG_CNTL";
+			};
 		};
 
 		rpm {
