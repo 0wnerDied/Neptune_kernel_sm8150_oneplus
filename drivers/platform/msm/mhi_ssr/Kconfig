@@ -1,0 +1,9 @@
+menu "MHI_SSR"
+
+config QTI_MHI_SSR
+       tristate "MHI SSR"
+       depends on MHI_QCOM
+       help
+	If you say yes to this option, MHI SSR support via sysfs for Qualcomm Technologies, Inc chipsets will be enabled,
+	in case esoc support is not present.
+endmenu
