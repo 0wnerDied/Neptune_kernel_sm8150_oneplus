@@ -904,6 +904,8 @@ static int qti_can_send_release_can_buffer_cmd(struct net_device *netdev)
 	*mode = priv_data->driver_mode;
 
 	ret = qti_can_do_spi_transaction(priv_data);
+	dev_info(&priv_data->spidev->dev,
+		 "Release can buffer cmd sent\n");
 	mutex_unlock(&priv_data->spi_lock);
 	return ret;
 }
