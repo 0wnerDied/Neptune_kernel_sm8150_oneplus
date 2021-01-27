@@ -3318,32 +3318,43 @@ static struct notifier_block qcom_ethqos_panic_blk = {
 
 static void read_mac_addr_from_fuse_reg(struct device_node *np)
 {
-	int ret, i;
+	int ret, i, count, x;
 	u32 mac_efuse_prop, efuse_size = 8;
-	void __iomem *mac_efuse_addr;
 	unsigned long mac_addr;
 
-	ret = of_property_read_u32(np, "mac-efuse-addr", &mac_efuse_prop);
-	if (!ret) {
-		mac_efuse_addr = ioremap(mac_efuse_prop, efuse_size);
-		if (!mac_efuse_addr) {
-			ETHQOSERR("unable to do ioremap\n");
-			return;
-		}
-		mac_addr = readq(mac_efuse_addr);
-		ETHQOSINFO("Mac address read: %llx\n", mac_addr);
+	/* If the property doesn't exist or empty return */
+	count = of_property_count_u32_elems(np, "mac-efuse-addr");
+	if (!count || count < 0)
+		return;
 
-		/* create byte array out of value read from efuse */
-		for (i = 0; i < ETH_ALEN ; i++) {
-			pparams.mac_addr[ETH_ALEN - 1 - i] = mac_addr & 0xff;
-			mac_addr = mac_addr >> 8;
-		}
+	/* Loop over all addresses given until we get valid address */
+	for (x = 0; x < count; x++) {
+		void __iomem *mac_efuse_addr;
 
-		pparams.is_valid_mac_addr =
-			is_valid_ether_addr(pparams.mac_addr);
-		if (!pparams.is_valid_mac_addr) {
-			ETHQOSERR("Invalid Mac address set: %llx\n", mac_addr);
-			return;
+		ret = of_property_read_u32_index(np, "mac-efuse-addr",
+						 x, &mac_efuse_prop);
+		if (!ret) {
+			mac_efuse_addr = ioremap(mac_efuse_prop, efuse_size);
+			if (!mac_efuse_addr)
+				continue;
+
+			mac_addr = readq(mac_efuse_addr);
+			ETHQOSINFO("Mac address read: %llx\n", mac_addr);
+
+			/* create byte array out of value read from efuse */
+			for (i = 0; i < ETH_ALEN ; i++) {
+				pparams.mac_addr[ETH_ALEN - 1 - i] =
+					mac_addr & 0xff;
+				mac_addr = mac_addr >> 8;
+			}
+
+			iounmap(mac_efuse_addr);
+
+			/* if valid address is found set cookie & return */
+			pparams.is_valid_mac_addr =
+				is_valid_ether_addr(pparams.mac_addr);
+			if (pparams.is_valid_mac_addr)
+				return;
 		}
 	}
 }
