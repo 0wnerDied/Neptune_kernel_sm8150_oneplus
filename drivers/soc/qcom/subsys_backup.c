@@ -795,7 +795,7 @@ static int subsys_qmi_send_request(struct subsys_backup *backup_dev,
 {
 	int ret;
 	struct qmi_txn txn;
-	struct qmi_response_type_v01 *resp;
+//	struct qmi_response_type_v01 *resp;
 
 	ret = qmi_txn_init(&backup_dev->qmi.qmi_svc_handle, &txn, resp_ei,
 				resp_data);
