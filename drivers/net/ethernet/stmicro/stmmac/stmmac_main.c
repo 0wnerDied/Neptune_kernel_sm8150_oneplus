@@ -3656,7 +3656,7 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
 		priv->hw->desc->display_ring(rx_head, DMA_RX_SIZE, true);
 	}
 	while (count < limit) {
-		int entry, status, err_status;
+		int entry, status, err_status = -1;
 		struct dma_desc *p;
 		struct dma_desc *np;
 
@@ -3708,9 +3708,13 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
 						 priv->dma_buf_sz,
 						 DMA_FROM_DEVICE);
 			}
-			if (priv->plat->handle_mac_err)
-				priv->plat->handle_mac_err
-				(priv, err_status, queue);
+
+			if (err_status >= 0 && err_status <= MAC_ERR_CNT) {
+				if (priv->plat->handle_mac_err)
+					priv->plat->handle_mac_err
+					(priv, err_status, queue);
+			}
+
 		} else {
 			struct sk_buff *skb;
 			int frame_len;
