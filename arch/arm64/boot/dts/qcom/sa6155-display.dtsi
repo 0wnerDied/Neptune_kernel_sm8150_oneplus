@@ -41,6 +41,10 @@
 	};
 };
 
+&qcom_msmhdcp {
+	cell-index = <0>;
+};
+
 &sde_dp {
 	qcom,ext-disp = <&ext_disp>;
 	qcom,dp-hpd-gpio = <&ioexp 8 0>;
@@ -54,6 +58,7 @@
 	qcom,dp-aux-bridge-sim = <&sde_dp_mst_sim>;
 	qcom,widebus-enable;
 
+	qcom,msm-hdcp = <&qcom_msmhdcp>;
 	qcom,core-supply-entries {
 		#address-cells = <1>;
 		#size-cells = <0>;

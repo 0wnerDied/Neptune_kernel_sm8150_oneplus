@@ -60,6 +60,10 @@
 	/delete-node/ rpmh-regulator-ldof6;
 };
 
+&qcom_msmhdcp {
+	cell-index = <0>;
+};
+
 /* Add regulator nodes specific to SA8155 */
 #include "sa8155-regulator.dtsi"
 
@@ -150,6 +154,7 @@
 &sde_dp {
 	vdda-1p2-supply = <&pm8150_2_l8>;
 	vdda-0p9-supply = <&pm8150_2_l18>;
+	qcom,msm-hdcp = <&qcom_msmhdcp>;
 };
 
 &lmh_dcvs1 {
