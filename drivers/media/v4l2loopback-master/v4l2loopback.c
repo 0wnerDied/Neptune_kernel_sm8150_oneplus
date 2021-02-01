@@ -65,6 +65,12 @@ MODULE_LICENSE("GPL v2");
  * compatibility hacks
  */
 
+struct ais_util_buffer {
+	size_t size;
+	void __user *data;
+	__u32 flags;
+};
+
 #ifndef HAVE__V4L2_CTRLS
 struct v4l2_ctrl_handler {
 	int error;
@@ -2201,6 +2207,7 @@ static ssize_t v4l2_loopback_write(struct file *file,
 	struct v4l2_loopback_device *dev;
 	int write_index;
 	struct v4l2_buffer *b;
+	struct ais_util_buffer ais_buf;
 	int ret;
 
 	MARK();
@@ -2218,29 +2225,36 @@ static ssize_t v4l2_loopback_write(struct file *file,
 		dev->ready_for_capture = 1;
 	}
 
-	if (count > dev->buffer_size) {
-		pr_err("%s: Size is not equals to buf size\n", __func__);
-		count = dev->buffer_size;
+	if (copy_from_user((void *)&ais_buf, (void __user *)buf, count)) {
+		pr_err("v4l2-loopback: failed copy_from_user() in write buf, could not write %zu\n",
+			count);
+		return -EFAULT;
+	}
+
+	pr_debug("%s: trying to write %zu bytes\n", __func__, ais_buf.size);
+	if (ais_buf.size > dev->buffer_size) {
+		pr_err("v4l2-loopback_write(): Size is not equal to buf size\n");
+		ais_buf.size = dev->buffer_size;
 	}
 
 	write_index = dev->write_position % dev->used_buffers;
 	b = &dev->buffers[write_index].buffer;
 
 	if (copy_from_user((void *)(dev->image + b->m.offset),
-				(void __user *)buf, count)) {
-		pr_err("%s:failed to copy from user could not write %zu\n",
-							__func__, count);
-
+				ais_buf.data, ais_buf.size)) {
+		pr_err("failed copy_from_user() in write buf, could not write %zu\n",
+			ais_buf.size);
 		return -EFAULT;
 	}
 	do_gettimeofday(&b->timestamp);
-	b->bytesused = count;
+	b->flags = ais_buf.flags;
+	b->bytesused = ais_buf.size;
 	b->sequence = dev->write_position;
 	buffer_written(dev, &dev->buffers[write_index]);
 	wake_up_all(&dev->read_event);
 	pr_info("leave %s(index: %d), used_buffers:%d\n", __func__,
 					write_index, dev->used_buffers);
-	return count;
+	return ais_buf.size;
 }
 #endif
 
@@ -2250,6 +2264,7 @@ static ssize_t v4l2_loopback_write2(struct file *file,
 	struct v4l2_loopback_device *dev;
 	struct v4l2l_buffer *b;
 	struct buffer_item *bh;
+	struct ais_util_buffer ais_buf;
 	int ret;
 
 	MARK();
@@ -2269,10 +2284,17 @@ static ssize_t v4l2_loopback_write2(struct file *file,
 		dev->ready_for_capture = 1;
 	}
 
-	if (count > dev->buffer_size) {
+	if (copy_from_user((void *)&ais_buf, (void __user *)buf, count)) {
+		DBGI(dev,
+			"failed copy_from_user() in write buf, could not write %zu\n",
+			count);
+		return -EFAULT;
+	}
+
+	if (ais_buf.size > dev->buffer_size) {
 		DBGI(dev, "Size:%zu is not equals to buf size:%ld\n",
-						count, dev->buffer_size);
-		count = dev->buffer_size;
+						ais_buf.size, dev->buffer_size);
+		ais_buf.size = dev->buffer_size;
 	}
 
 	spin_lock(&dev->fill_lock);
@@ -2282,7 +2304,7 @@ static ssize_t v4l2_loopback_write2(struct file *file,
 		DBGI(dev,
 		"Warning: status:%d, empty buffer size:%d, skip write data\n",
 		dev->current_status, list_empty(&dev->emptybufs_list));
-		return count;
+		return ais_buf.size;
 	}
 
 	bh = list_entry(dev->emptybufs_list.next,
@@ -2293,15 +2315,16 @@ static ssize_t v4l2_loopback_write2(struct file *file,
 	spin_unlock(&dev->fill_lock);
 
 	if (copy_from_user((void *)(dev->image + b->buffer.m.offset),
-				(void __user *)buf, count)) {
+				ais_buf.data, ais_buf.size)) {
 		DBGI(dev,
 		"failed copy from user in write buf, could not write %zu\n",
-		count);
+		ais_buf.size);
 		return -EFAULT;
 	}
 
 	do_gettimeofday(&b->buffer.timestamp);
-	b->buffer.bytesused = count;
+	b->buffer.flags = ais_buf.flags;
+	b->buffer.bytesused = ais_buf.size;
 	b->buffer.sequence = dev->write_position++;
 	if (dev->current_status == STREAM_ON) {
 		spin_lock(&dev->fill_lock);
@@ -2312,7 +2335,7 @@ static ssize_t v4l2_loopback_write2(struct file *file,
 		spin_unlock(&dev->fill_lock);
 		wake_up_all(&dev->fill_event);
 	}
-	return count;
+	return ais_buf.size;
 }
 
 /* init functions */
