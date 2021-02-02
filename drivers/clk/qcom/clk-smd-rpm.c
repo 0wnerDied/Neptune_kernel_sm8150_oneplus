@@ -608,9 +608,7 @@ DEFINE_CLK_SMD_RPM(qcs405, ce1_clk, ce1_a_clk, QCOM_SMD_RPM_CE_CLK, 0);
 DEFINE_CLK_SMD_RPM(qcs405, bimc_gpu_clk, bimc_gpu_a_clk,
 						QCOM_SMD_RPM_MEM_CLK, 2);
 /* SMD_XO_BUFFER */
-DEFINE_CLK_SMD_RPM_XO_BUFFER(qcs405, ln_bb_clk, ln_bb_clk_a, 8);
 DEFINE_CLK_SMD_RPM_XO_BUFFER(qcs405, rf_clk1, rf_clk1_a, 4);
-DEFINE_CLK_SMD_RPM_XO_BUFFER_PINCTRL(qcs405, ln_bb_clk_pin, ln_bb_clk_a_pin, 8);
 DEFINE_CLK_SMD_RPM_XO_BUFFER_PINCTRL(qcs405, rf_clk1_pin, rf_clk1_a_pin, 4);
 
 /* Voter clocks */
@@ -648,6 +646,8 @@ static DEFINE_CLK_BRANCH_VOTER(cxo_pil_mss_clk, cxo);
 static DEFINE_CLK_BRANCH_VOTER(cxo_wlan_clk, cxo);
 static DEFINE_CLK_BRANCH_VOTER(cxo_pil_lpass_clk, cxo);
 static DEFINE_CLK_BRANCH_VOTER(cxo_pil_cdsp_clk, cxo);
+static DEFINE_CLK_BRANCH_VOTER(cxo_pcie_clk, cxo);
+static DEFINE_CLK_BRANCH_VOTER(cxo_usb_clk, cxo);
 
 static struct clk_hw *qcs405_clks[] = {
 	[RPM_SMD_XO_CLK_SRC]		= &qcs405_cxo.hw,
@@ -662,10 +662,6 @@ static struct clk_hw *qcs405_clks[] = {
 	[RPM_SMD_RF_CLK1_A]		= &qcs405_rf_clk1_a.hw,
 	[RPM_SMD_RF_CLK1_PIN]		= &qcs405_rf_clk1_pin.hw,
 	[RPM_SMD_RF_CLK1_A_PIN]		= &qcs405_rf_clk1_a_pin.hw,
-	[RPM_SMD_LN_BB_CLK]		= &qcs405_ln_bb_clk.hw,
-	[RPM_SMD_LN_BB_CLK_A]		= &qcs405_ln_bb_clk_a.hw,
-	[RPM_SMD_LN_BB_CLK_PIN]		= &qcs405_ln_bb_clk_pin.hw,
-	[RPM_SMD_LN_BB_CLK_A_PIN]	= &qcs405_ln_bb_clk_a_pin.hw,
 	[RPM_SMD_PNOC_CLK]		= &qcs405_pnoc_clk.hw,
 	[RPM_SMD_PNOC_A_CLK]		= &qcs405_pnoc_a_clk.hw,
 	[RPM_SMD_CE1_CLK]		= &qcs405_ce1_clk.hw,
@@ -701,6 +697,8 @@ static struct clk_hw *qcs405_clks[] = {
 	[CXO_SMD_WLAN_CLK]		= &cxo_wlan_clk.hw,
 	[CXO_SMD_PIL_LPASS_CLK]		= &cxo_pil_lpass_clk.hw,
 	[CXO_SMD_PIL_CDSP_CLK]		= &cxo_pil_cdsp_clk.hw,
+	[CXO_SMD_PCIE_CLK]		= &cxo_pcie_clk.hw,
+	[CXO_SMD_USB_CLK]		= &cxo_usb_clk.hw,
 };
 
 static const struct rpm_smd_clk_desc rpm_clk_qcs405 = {
