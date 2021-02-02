@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -190,10 +190,17 @@ struct virt_munmap_msg {
 	u64 size;			/* mmap length */
 } __packed;
 
+
+struct virt_fastrpc_vq {
+	/* protects vq */
+	spinlock_t vq_lock;
+	struct virtqueue *vq;
+};
+
 struct fastrpc_apps {
 	struct virtio_device *vdev;
-	struct virtqueue *rvq;
-	struct virtqueue *svq;
+	struct virt_fastrpc_vq rvq;
+	struct virt_fastrpc_vq svq;
 	void *rbufs;
 	void *sbufs;
 	unsigned int order;
@@ -201,7 +208,6 @@ struct fastrpc_apps {
 	unsigned int buf_size;
 	int last_sbuf;
 
-	struct mutex lock;
 	bool has_invoke_attr;
 	bool has_invoke_crc;
 	bool has_mmap;
@@ -365,14 +371,22 @@ bail:
 	return val;
 }
 
+static void virt_init_vq(struct virt_fastrpc_vq *fastrpc_vq,
+				struct virtqueue *vq)
+{
+	spin_lock_init(&fastrpc_vq->vq_lock);
+	fastrpc_vq->vq = vq;
+}
+
 static void *get_a_tx_buf(void)
 {
 	struct fastrpc_apps *me = &gfa;
 	unsigned int len;
 	void *ret;
+	unsigned long flags;
 
 	/* support multiple concurrent senders */
-	mutex_lock(&me->lock);
+	spin_lock_irqsave(&me->svq.vq_lock, flags);
 	/*
 	 * either pick the next unused tx buffer
 	 * (half of our buffers are used for sending messages)
@@ -381,8 +395,8 @@ static void *get_a_tx_buf(void)
 		ret = me->sbufs + me->buf_size * me->last_sbuf++;
 	/* or recycle a used one */
 	else
-		ret = virtqueue_get_buf(me->svq, &len);
-	mutex_unlock(&me->lock);
+		ret = virtqueue_get_buf(me->svq.vq, &len);
+	spin_unlock_irqrestore(&me->svq.vq_lock, flags);
 	return ret;
 }
 
@@ -640,6 +654,7 @@ static int virt_fastrpc_invoke(struct fastrpc_file *fl, uint32_t kernel,
 	struct fastrpc_buf_desc *desc = NULL;
 	struct timespec invoket = {0};
 	int64_t *perf_counter = getperfcounter(fl, PERF_COUNT);
+	unsigned long flags;
 
 	if (fl->profile)
 		getnstimeofday(&invoket);
@@ -875,15 +890,16 @@ static int virt_fastrpc_invoke(struct fastrpc_file *fl, uint32_t kernel,
 	PERF(fl->profile, GET_COUNTER(perf_counter, PERF_LINK),
 	sg_init_one(sg, vmsg, size);
 
-	mutex_lock(&me->lock);
-	err = virtqueue_add_outbuf(me->svq, sg, 1, vmsg, GFP_KERNEL);
+	spin_lock_irqsave(&me->svq.vq_lock, flags);
+	err = virtqueue_add_outbuf(me->svq.vq, sg, 1, vmsg, GFP_KERNEL);
 	if (err) {
 		dev_err(me->dev, "%s: fail to add output buffer\n", __func__);
+		spin_unlock_irqrestore(&me->svq.vq_lock, flags);
 		goto bail;
 	}
 
-	virtqueue_kick(me->svq);
-	mutex_unlock(&me->lock);
+	virtqueue_kick(me->svq.vq);
+	spin_unlock_irqrestore(&me->svq.vq_lock, flags);
 	PERF_END);
 
 	wait_for_completion(&msg->work);
@@ -923,12 +939,14 @@ bail:
 	if (rsp) {
 		sg_init_one(sg, rsp, me->buf_size);
 
+		spin_lock_irqsave(&me->rvq.vq_lock, flags);
 		/* add the buffer back to the remote processor's virtqueue */
-		if (virtqueue_add_inbuf(me->rvq, sg, 1, rsp, GFP_KERNEL))
+		if (virtqueue_add_inbuf(me->rvq.vq, sg, 1, rsp, GFP_KERNEL))
 			dev_err(me->dev,
 				"%s: fail to add input buffer\n", __func__);
 		else
-			virtqueue_kick(me->rvq);
+			virtqueue_kick(me->rvq.vq);
+		spin_unlock_irqrestore(&me->rvq.vq_lock, flags);
 	}
 
 	mutex_lock(&fl->map_mutex);
@@ -1457,6 +1475,7 @@ static int virt_fastrpc_munmap(struct fastrpc_file *fl, uintptr_t raddr,
 	struct virt_fastrpc_msg *msg;
 	struct scatterlist sg[1];
 	int err;
+	unsigned long flags;
 
 	msg = virt_alloc_msg(sizeof(*vmsg));
 	if (!msg)
@@ -1474,15 +1493,16 @@ static int virt_fastrpc_munmap(struct fastrpc_file *fl, uintptr_t raddr,
 	vmsg->size = size;
 	sg_init_one(sg, vmsg, sizeof(*vmsg));
 
-	mutex_lock(&me->lock);
-	err = virtqueue_add_outbuf(me->svq, sg, 1, vmsg, GFP_KERNEL);
+	spin_lock_irqsave(&me->svq.vq_lock, flags);
+	err = virtqueue_add_outbuf(me->svq.vq, sg, 1, vmsg, GFP_KERNEL);
 	if (err) {
 		dev_err(me->dev, "%s: fail to add output buffer\n", __func__);
+		spin_unlock_irqrestore(&me->svq.vq_lock, flags);
 		goto bail;
 	}
 
-	virtqueue_kick(me->svq);
-	mutex_unlock(&me->lock);
+	virtqueue_kick(me->svq.vq);
+	spin_unlock_irqrestore(&me->svq.vq_lock, flags);
 
 	wait_for_completion(&msg->work);
 
@@ -1492,12 +1512,14 @@ bail:
 	if (rsp) {
 		sg_init_one(sg, rsp, me->buf_size);
 
+		spin_lock_irqsave(&me->rvq.vq_lock, flags);
 		/* add the buffer back to the remote processor's virtqueue */
-		if (virtqueue_add_inbuf(me->rvq, sg, 1, rsp, GFP_KERNEL))
+		if (virtqueue_add_inbuf(me->rvq.vq, sg, 1, rsp, GFP_KERNEL))
 			dev_err(me->dev,
 				"%s: fail to add input buffer\n", __func__);
 		else
-			virtqueue_kick(me->rvq);
+			virtqueue_kick(me->rvq.vq);
+		spin_unlock_irqrestore(&me->rvq.vq_lock, flags);
 	}
 	virt_free_msg(msg);
 
@@ -1608,6 +1630,7 @@ static int virt_fastrpc_mmap(struct fastrpc_file *fl, uint32_t flags,
 	int err, sgbuf_size, total_size;
 	struct scatterlist *sgl = NULL;
 	int sgl_index = 0;
+	unsigned long int_flags;
 
 	sgbuf_size = nents * sizeof(*sgbuf);
 	total_size = sizeof(*vmsg) + sgbuf_size;
@@ -1643,15 +1666,16 @@ static int virt_fastrpc_mmap(struct fastrpc_file *fl, uint32_t flags,
 
 	sg_init_one(sg, vmsg, total_size);
 
-	mutex_lock(&me->lock);
-	err = virtqueue_add_outbuf(me->svq, sg, 1, vmsg, GFP_KERNEL);
+	spin_lock_irqsave(&me->svq.vq_lock, int_flags);
+	err = virtqueue_add_outbuf(me->svq.vq, sg, 1, vmsg, GFP_KERNEL);
 	if (err) {
 		dev_err(me->dev, "%s: fail to add output buffer\n", __func__);
+		spin_unlock_irqrestore(&me->svq.vq_lock, int_flags);
 		goto bail;
 	}
 
-	virtqueue_kick(me->svq);
-	mutex_unlock(&me->lock);
+	virtqueue_kick(me->svq.vq);
+	spin_unlock_irqrestore(&me->svq.vq_lock, int_flags);
 
 	wait_for_completion(&msg->work);
 
@@ -1664,12 +1688,14 @@ bail:
 	if (rsp) {
 		sg_init_one(sg, rsp, me->buf_size);
 
+		spin_lock_irqsave(&me->rvq.vq_lock, int_flags);
 		/* add the buffer back to the remote processor's virtqueue */
-		if (virtqueue_add_inbuf(me->rvq, sg, 1, rsp, GFP_KERNEL))
+		if (virtqueue_add_inbuf(me->rvq.vq, sg, 1, rsp, GFP_KERNEL))
 			dev_err(me->dev,
 				"%s: fail to add input buffer\n", __func__);
 		else
-			virtqueue_kick(me->rvq);
+			virtqueue_kick(me->rvq.vq);
+		spin_unlock_irqrestore(&me->rvq.vq_lock, int_flags);
 	}
 	virt_free_msg(msg);
 
@@ -1752,6 +1778,7 @@ static int virt_fastrpc_control(struct fastrpc_file *fl,
 	struct virt_fastrpc_msg *msg;
 	struct scatterlist sg[1];
 	int err;
+	unsigned long flags;
 
 	msg = virt_alloc_msg(sizeof(*vmsg));
 	if (!msg)
@@ -1769,15 +1796,16 @@ static int virt_fastrpc_control(struct fastrpc_file *fl,
 	vmsg->latency = lp->level;
 	sg_init_one(sg, vmsg, sizeof(*vmsg));
 
-	mutex_lock(&me->lock);
-	err = virtqueue_add_outbuf(me->svq, sg, 1, vmsg, GFP_KERNEL);
+	spin_lock_irqsave(&me->svq.vq_lock, flags);
+	err = virtqueue_add_outbuf(me->svq.vq, sg, 1, vmsg, GFP_KERNEL);
 	if (err) {
 		dev_err(me->dev, "%s: fail to add output buffer\n", __func__);
+		spin_unlock_irqrestore(&me->svq.vq_lock, flags);
 		goto bail;
 	}
 
-	virtqueue_kick(me->svq);
-	mutex_unlock(&me->lock);
+	virtqueue_kick(me->svq.vq);
+	spin_unlock_irqrestore(&me->svq.vq_lock, flags);
 
 	wait_for_completion(&msg->work);
 
@@ -1787,12 +1815,14 @@ bail:
 	if (rsp) {
 		sg_init_one(sg, rsp, me->buf_size);
 
+		spin_lock_irqsave(&me->rvq.vq_lock, flags);
 		/* add the buffer back to the remote processor's virtqueue */
-		if (virtqueue_add_inbuf(me->rvq, sg, 1, rsp, GFP_KERNEL))
+		if (virtqueue_add_inbuf(me->rvq.vq, sg, 1, rsp, GFP_KERNEL))
 			dev_err(me->dev,
 				"%s: fail to add input buffer\n", __func__);
 		else
-			virtqueue_kick(me->rvq);
+			virtqueue_kick(me->rvq.vq);
+		spin_unlock_irqrestore(&me->rvq.vq_lock, flags);
 	}
 	virt_free_msg(msg);
 
@@ -1860,6 +1890,7 @@ static int virt_fastrpc_open(struct fastrpc_file *fl)
 	struct virt_fastrpc_msg *msg;
 	struct scatterlist sg[1];
 	int err;
+	unsigned long flags;
 
 	msg = virt_alloc_msg(sizeof(*vmsg));
 	if (!msg) {
@@ -1879,15 +1910,16 @@ static int virt_fastrpc_open(struct fastrpc_file *fl)
 	vmsg->pd = fl->pd;
 	sg_init_one(sg, vmsg, sizeof(*vmsg));
 
-	mutex_lock(&me->lock);
-	err = virtqueue_add_outbuf(me->svq, sg, 1, vmsg, GFP_KERNEL);
+	spin_lock_irqsave(&me->svq.vq_lock, flags);
+	err = virtqueue_add_outbuf(me->svq.vq, sg, 1, vmsg, GFP_KERNEL);
 	if (err) {
 		dev_err(me->dev, "%s: fail to add output buffer\n", __func__);
+		spin_unlock_irqrestore(&me->svq.vq_lock, flags);
 		goto bail;
 	}
 
-	virtqueue_kick(me->svq);
-	mutex_unlock(&me->lock);
+	virtqueue_kick(me->svq.vq);
+	spin_unlock_irqrestore(&me->svq.vq_lock, flags);
 
 	wait_for_completion(&msg->work);
 
@@ -1905,12 +1937,14 @@ bail:
 	if (rsp) {
 		sg_init_one(sg, rsp, me->buf_size);
 
+		spin_lock_irqsave(&me->rvq.vq_lock, flags);
 		/* add the buffer back to the remote processor's virtqueue */
-		if (virtqueue_add_inbuf(me->rvq, sg, 1, rsp, GFP_KERNEL))
+		if (virtqueue_add_inbuf(me->rvq.vq, sg, 1, rsp, GFP_KERNEL))
 			dev_err(me->dev,
 				"%s: fail to add input buffer\n", __func__);
 		else
-			virtqueue_kick(me->rvq);
+			virtqueue_kick(me->rvq.vq);
+		spin_unlock_irqrestore(&me->rvq.vq_lock, flags);
 	}
 	virt_free_msg(msg);
 
@@ -1924,6 +1958,7 @@ static int virt_fastrpc_close(struct fastrpc_file *fl)
 	struct virt_fastrpc_msg *msg;
 	struct scatterlist sg[1];
 	int err;
+	unsigned long flags;
 
 	if (fl->cid < 0) {
 		dev_err(me->dev, "channel id %d is invalid\n", fl->cid);
@@ -1946,15 +1981,16 @@ static int virt_fastrpc_close(struct fastrpc_file *fl)
 	vmsg->result = 0xffffffff;
 	sg_init_one(sg, vmsg, sizeof(*vmsg));
 
-	mutex_lock(&me->lock);
-	err = virtqueue_add_outbuf(me->svq, sg, 1, vmsg, GFP_KERNEL);
+	spin_lock_irqsave(&me->svq.vq_lock, flags);
+	err = virtqueue_add_outbuf(me->svq.vq, sg, 1, vmsg, GFP_KERNEL);
 	if (err) {
 		dev_err(me->dev, "%s: fail to add output buffer\n", __func__);
+		spin_unlock_irqrestore(&me->svq.vq_lock, flags);
 		goto bail;
 	}
 
-	virtqueue_kick(me->svq);
-	mutex_unlock(&me->lock);
+	virtqueue_kick(me->svq.vq);
+	spin_unlock_irqrestore(&me->svq.vq_lock, flags);
 
 	wait_for_completion(&msg->work);
 
@@ -1964,12 +2000,14 @@ bail:
 	if (rsp) {
 		sg_init_one(sg, rsp, me->buf_size);
 
+		spin_lock_irqsave(&me->rvq.vq_lock, flags);
 		/* add the buffer back to the remote processor's virtqueue */
-		if (virtqueue_add_inbuf(me->rvq, sg, 1, rsp, GFP_KERNEL))
+		if (virtqueue_add_inbuf(me->rvq.vq, sg, 1, rsp, GFP_KERNEL))
 			dev_err(me->dev,
 				"%s: fail to add input buffer\n", __func__);
 		else
-			virtqueue_kick(me->rvq);
+			virtqueue_kick(me->rvq.vq);
+		spin_unlock_irqrestore(&me->rvq.vq_lock, flags);
 	}
 	virt_free_msg(msg);
 
@@ -2285,7 +2323,6 @@ static const struct file_operations fops = {
 
 static void fastrpc_init(struct fastrpc_apps *me)
 {
-	mutex_init(&me->lock);
 	spin_lock_init(&me->msglock);
 }
 
@@ -2321,12 +2358,16 @@ static void recv_done(struct virtqueue *rvq)
 	struct virt_msg_hdr *rsp;
 	unsigned int len, msgs_received = 0;
 	int err;
+	unsigned long flags;
 
+	spin_lock_irqsave(&me->rvq.vq_lock, flags);
 	rsp = virtqueue_get_buf(rvq, &len);
 	if (!rsp) {
+		spin_unlock_irqrestore(&me->rvq.vq_lock, flags);
 		dev_err(me->dev, "incoming signal, but no used buffer\n");
 		return;
 	}
+	spin_unlock_irqrestore(&me->rvq.vq_lock, flags);
 
 	while (rsp) {
 		err = recv_single(rsp, len);
@@ -2335,7 +2376,9 @@ static void recv_done(struct virtqueue *rvq)
 
 		msgs_received++;
 
+		spin_lock_irqsave(&me->rvq.vq_lock, flags);
 		rsp = virtqueue_get_buf(rvq, &len);
+		spin_unlock_irqrestore(&me->rvq.vq_lock, flags);
 	}
 }
 
@@ -2352,13 +2395,13 @@ static int init_vqs(struct fastrpc_apps *me)
 	if (err)
 		return err;
 
-	me->svq = vqs[0];
-	me->rvq = vqs[1];
+	virt_init_vq(&me->svq, vqs[0]);
+	virt_init_vq(&me->rvq, vqs[1]);
 
 	/* we expect symmetric tx/rx vrings */
-	WARN_ON(virtqueue_get_vring_size(me->rvq) !=
-			virtqueue_get_vring_size(me->svq));
-	me->num_bufs = virtqueue_get_vring_size(me->rvq) * 2;
+	WARN_ON(virtqueue_get_vring_size(me->rvq.vq) !=
+			virtqueue_get_vring_size(me->svq.vq));
+	me->num_bufs = virtqueue_get_vring_size(me->rvq.vq) * 2;
 
 	me->buf_size = MAX_FASTRPC_BUF_SIZE;
 	total_buf_space = me->num_bufs * me->buf_size;
@@ -2457,16 +2500,16 @@ static int virt_fastrpc_probe(struct virtio_device *vdev)
 		void *cpu_addr = me->rbufs + i * me->buf_size;
 
 		sg_init_one(&sg, cpu_addr, me->buf_size);
-		err = virtqueue_add_inbuf(me->rvq, &sg, 1, cpu_addr,
+		err = virtqueue_add_inbuf(me->rvq.vq, &sg, 1, cpu_addr,
 				GFP_KERNEL);
 		WARN_ON(err); /* sanity check; this can't really happen */
 	}
 
 	/* suppress "tx-complete" interrupts */
-	virtqueue_disable_cb(me->svq);
+	virtqueue_disable_cb(me->svq.vq);
 
-	virtqueue_enable_cb(me->rvq);
-	virtqueue_kick(me->rvq);
+	virtqueue_enable_cb(me->rvq.vq);
+	virtqueue_kick(me->rvq.vq);
 
 	dev_info(&vdev->dev, "Registered virtio fastrpc device\n");
 
