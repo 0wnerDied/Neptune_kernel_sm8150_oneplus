@@ -463,3 +463,90 @@ int cmdq_crypto_qti_resume(struct cmdq_host *host)
 {
 	return crypto_qti_resume(host->crypto_vops->priv);
 }
+
+#if IS_ENABLED(CONFIG_MMC_QTI_NONCMDQ_ICE)
+void crypto_qti_enable_noncmdq(struct sdhci_host *host)
+{
+	if (host->cq_host && cmdq_host_is_crypto_supported(host->cq_host))
+		cmdq_crypto_qti_enable(host->cq_host);
+}
+
+void sdhci_msm_ice_update_cfg(struct sdhci_host *host, u64 lba, u32 slot,
+			      unsigned int bypass, short key_index, u32 cdu_sz)
+{
+	unsigned int ctrl_info_val = 0;
+
+	/* Configure ICE index */
+	ctrl_info_val =
+		(key_index &
+		 MASK_SDHCI_MSM_ICE_CTRL_INFO_KEY_INDEX)
+		<< OFFSET_SDHCI_MSM_ICE_CTRL_INFO_KEY_INDEX;
+
+	/* Configure data unit size of transfer request */
+	ctrl_info_val |=
+		(cdu_sz &
+		 MASK_SDHCI_MSM_ICE_CTRL_INFO_CDU)
+		<< OFFSET_SDHCI_MSM_ICE_CTRL_INFO_CDU;
+
+	/* Configure ICE bypass mode */
+	ctrl_info_val |=
+		(bypass & MASK_SDHCI_MSM_ICE_CTRL_INFO_BYPASS)
+		<< OFFSET_SDHCI_MSM_ICE_CTRL_INFO_BYPASS;
+	writel_relaxed((lba & 0xFFFFFFFF),
+		host->ioaddr + CORE_VENDOR_SPEC_ICE_CTRL_INFO_1_n + 16 * slot);
+	writel_relaxed(((lba >> 32) & 0xFFFFFFFF),
+		host->ioaddr + CORE_VENDOR_SPEC_ICE_CTRL_INFO_2_n + 16 * slot);
+	writel_relaxed(ctrl_info_val,
+		host->ioaddr + CORE_VENDOR_SPEC_ICE_CTRL_INFO_3_n + 16 * slot);
+}
+
+int sdhci_crypto_cfg(struct sdhci_host *host, struct mmc_request *mrq,
+			    u32 slot)
+{
+	short key_index = 0;
+	u64 dun = 0;
+	unsigned int bypass = true;
+	u32 cdu_sz = ICE_CRYPTO_DATA_UNIT_512B;
+	struct request *req = NULL;
+	struct bio_crypt_ctx *bc = NULL;
+#if IS_ENABLED(CONFIG_CRYPTO_DEV_QCOM_ICE)
+	struct ice_data_setting setting;
+#endif
+
+	if (!mrq)
+		return -EINVAL;
+
+	req = mrq->req;
+
+	if (req && req->bio) {
+		if (bio_crypt_should_process(req)) {
+			bc = req->bio->bi_crypt_context;
+			if (bc) {
+				dun = bc->bc_dun[0];
+				key_index = bc->bc_keyslot;
+				bypass = false;
+				cdu_sz = ICE_CRYPTO_DATA_UNIT_4K;
+			}
+		} else {
+#if IS_ENABLED(CONFIG_CRYPTO_DEV_QCOM_ICE)
+			if (!qcom_ice_config_start(req, &setting)) {
+				key_index = setting.crypto_data.key_index;
+				bypass = (rq_data_dir(req) == WRITE) ?
+					setting.encr_bypass :
+					setting.decr_bypass;
+			} else {
+				pr_err("%s crypto config failed err = %d\n",
+						__func__);
+				return -EIO;
+			}
+#endif
+			dun = req->__sector;
+		}
+	}
+
+	sdhci_msm_ice_update_cfg(host, dun, slot, bypass, key_index,
+				 cdu_sz);
+
+	return 0;
+}
+#endif
