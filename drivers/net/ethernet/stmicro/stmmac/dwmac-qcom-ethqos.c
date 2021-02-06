@@ -3719,9 +3719,13 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		ethqos_set_early_eth_param(priv, ethqos);
 	}
 
-	if (ethqos->cv2x_mode)
-		for (i = 0; i < plat_dat->rx_queues_to_use; i++)
+	if (ethqos->cv2x_mode) {
+		for (i = 0; i < plat_dat->rx_queues_to_use; i++) {
 			priv->rx_queue[i].en_fep = true;
+			if (i == ethqos->cv2x_vlan.rx_queue)
+				priv->rx_queue[i].dis_mod = true;
+		}
+	}
 
 	if (ethqos->qoe_mode || ethqos->cv2x_mode) {
 		ethqos_create_emac_device_node(&ethqos->emac_dev_t,

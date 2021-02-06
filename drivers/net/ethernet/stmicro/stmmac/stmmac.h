@@ -83,6 +83,7 @@ struct stmmac_rx_queue {
 	struct napi_struct napi ____cacheline_aligned_in_smp;
 	bool skip_sw;
 	bool en_fep;
+	bool dis_mod;
 };
 
 struct stmmac_priv {
