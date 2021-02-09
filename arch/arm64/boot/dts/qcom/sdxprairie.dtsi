@@ -35,7 +35,7 @@
 		sdhc1 = &sdhc_1; /* SDC1 eMMC/SD/SDIO slot */
 	};
 
-	reserved-memory {
+	reserved_mem: reserved-memory {
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges;
