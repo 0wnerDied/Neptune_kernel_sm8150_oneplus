@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1615,7 +1615,6 @@
 		compatible = "qcom,stmmac-ethqos";
 		reg = <0x07A80000 0x10000>,
 			  <0x7A96000 0x100>;
-		qcom,arm-smmu;
 		reg-names = "stmmaceth", "rgmii";
 		dma-bit-mask = <32>;
 		emac-core-version = <0x20030000>;
@@ -1691,13 +1690,6 @@
 			io-interface = "rgmii";
 		};
 
-		ethqos_emb_smmu: ethqos_emb_smmu {
-			compatible = "qcom,emac-smmu-embedded";
-			iommus = <&apps_smmu 0x1400 0x0>;
-			qcom,iova-mapping = <0x80000000 0x40000000>;
-			qcom,smmu-fastmap;
-			qcom,smmu-geometry;
-		};
 	};
 
 	emac_hw: qcom,emac@07A80000 {
