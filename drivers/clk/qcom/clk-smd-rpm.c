@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016, Linaro Limited
- * Copyright (c) 2014, 2016-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014, 2016-2021, The Linux Foundation. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -1010,7 +1010,7 @@ DEFINE_CLK_SMD_RPM_QDSS(sdm429w, qdss_clk, qdss_a_clk, QCOM_SMD_RPM_MISC_CLK,
 
 DEFINE_CLK_SMD_RPM_XO_BUFFER(sdm429w, bb_clk1, bb_clk1_a, 1);
 DEFINE_CLK_SMD_RPM_XO_BUFFER(sdm429w, bb_clk2, bb_clk2_a, 2);
-DEFINE_CLK_SMD_RPM_XO_BUFFER(sdm429w, rf_clk2, rf_clk2_a, 5);
+DEFINE_CLK_SMD_RPM_XO_BUFFER(sdm429w, rf_clk1, rf_clk1_a, 4);
 DEFINE_CLK_SMD_RPM_XO_BUFFER(sdm429w, div_clk2, div_clk2_a, 0xc);
 
 DEFINE_CLK_SMD_RPM_XO_BUFFER_PINCTRL(sdm429w, bb_clk1_pin, bb_clk1_a_pin, 1);
@@ -1042,8 +1042,8 @@ static struct clk_hw *sdm429w_clks[] = {
 	[RPM_SMD_BB_CLK1_A_PIN]	= &sdm429w_bb_clk1_a_pin.hw,
 	[RPM_SMD_BB_CLK2_PIN] = &sdm429w_bb_clk2_pin.hw,
 	[RPM_SMD_BB_CLK2_A_PIN]	= &sdm429w_bb_clk2_a_pin.hw,
-	[RPM_SMD_RF_CLK2] = &sdm429w_rf_clk2.hw,
-	[RPM_SMD_RF_CLK2_A] = &sdm429w_rf_clk2_a.hw,
+	[RPM_SMD_RF_CLK1] = &sdm429w_rf_clk1.hw,
+	[RPM_SMD_RF_CLK1_A] = &sdm429w_rf_clk1_a.hw,
 	[RPM_SMD_DIV_CLK2] = &sdm429w_div_clk2.hw,
 	[RPM_SMD_DIV_A_CLK2] = &sdm429w_div_clk2_a.hw,
 	[PNOC_MSMBUS_CLK] = &pnoc_msmbus_clk.hw,
