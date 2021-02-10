@@ -1649,6 +1649,25 @@
 		qcom,buf-size = <0x600000>;
 		memory-region = <&subsys_backup_region>;
 	};
+
+	qfprom: qfprom@780000 {
+		compatible = "qcom,qfprom";
+		reg = <0x00780000 0x300>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		read-only;
+		ranges;
+
+		thermal_revision: thermal-revision@198 {
+			reg = <0x198 0x1>;
+			bits = <4 2>;
+		};
+
+		thermal_cpe: thermal-cpe@20b {
+			reg = <0x20b 0x1>;
+			bits = <4 1>;
+		};
+	};
 };
 
 #include "sdxprairie-pm.dtsi"
