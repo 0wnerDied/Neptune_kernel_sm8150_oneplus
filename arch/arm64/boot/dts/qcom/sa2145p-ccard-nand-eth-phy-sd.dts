@@ -26,6 +26,7 @@
 &mtl_rx_setup {
 	queue2 {
 		snps,dcb-algorithm;
+		/delete-property/ snps,route-avcp;
 	};
 
 	queue3 {
