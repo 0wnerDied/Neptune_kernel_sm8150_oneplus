@@ -3489,15 +3489,6 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		return PTR_ERR(plat_dat);
 	}
 
-	if (ethqos->cv2x_mode == CV2X_MODE_MDM ||
-	    ethqos->cv2x_mode == CV2X_MODE_AP) {
-		for (i = 0; i < plat_dat->rx_queues_to_use; i++) {
-			if (plat_dat->rx_queues_cfg[i].pkt_route ==
-			    PACKET_AVCPQ)
-				plat_dat->rx_queues_cfg[i].pkt_route = 0;
-		}
-	}
-
 	if (plat_dat->tx_sched_algorithm == MTL_TX_ALGORITHM_WFQ ||
 	    plat_dat->tx_sched_algorithm == MTL_TX_ALGORITHM_DWRR) {
 		ETHQOSERR("WFO and DWRR TX Algorithm is not supported\n");
