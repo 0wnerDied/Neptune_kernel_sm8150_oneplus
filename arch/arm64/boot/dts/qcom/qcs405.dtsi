@@ -1615,6 +1615,7 @@
 		compatible = "qcom,stmmac-ethqos";
 		reg = <0x07A80000 0x10000>,
 			  <0x7A96000 0x100>;
+		qcom,arm-smmu;
 		reg-names = "stmmaceth", "rgmii";
 		dma-bit-mask = <32>;
 		emac-core-version = <0x20030000>;
@@ -1688,6 +1689,14 @@
 		io-macro-info {
 			io-macro-bypass-mode = <0>;
 			io-interface = "rgmii";
+		};
+
+		ethqos_emb_smmu: ethqos_emb_smmu {
+			compatible = "qcom,emac-smmu-embedded";
+			iommus = <&apps_smmu 0x1400 0x0>;
+			qcom,iova-mapping = <0x80000000 0x40000000>;
+			qcom,smmu-fastmap;
+			qcom,smmu-geometry;
 		};
 
 	};
