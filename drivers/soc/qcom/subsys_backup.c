@@ -1150,6 +1150,7 @@ static void backup_notif_handler(struct qmi_handle *handle,
 		backup_dev->state = BACKUP_START;
 	} else if (ind->backup_state == END) {
 		backup_dev->state = BACKUP_END;
+		backup_dev->remote_status = ind->backup_status;
 	} else {
 		dev_err(backup_dev->dev, "%s: Invalid request\n", __func__);
 		return;
