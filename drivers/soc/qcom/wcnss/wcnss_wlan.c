@@ -2544,18 +2544,19 @@ static void wcnss_process_smd_msg(void *buf, int len)
 static void wcnssctrl_rx_handler(struct work_struct *work)
 {
 	struct rpmsg_event *event;
+	unsigned long flags;
 
-	spin_lock(&penv->event_lock);
+	spin_lock_irqsave(&penv->event_lock, flags);
 	while (!list_empty(&penv->event_list)) {
 		event = list_first_entry(&penv->event_list,
 					 struct rpmsg_event, list);
 		list_del(&event->list);
-		spin_unlock(&penv->event_lock);
+		spin_unlock_irqrestore(&penv->event_lock, flags);
 		wcnss_process_smd_msg(event->data, event->len);
 		kfree(event);
-		spin_lock(&penv->event_lock);
+		spin_lock_irqsave(&penv->event_lock, flags);
 	}
-	spin_unlock(&penv->event_lock);
+	spin_unlock_irqrestore(&penv->event_lock, flags);
 }
 
 static void wcnss_send_version_req(struct work_struct *worker)

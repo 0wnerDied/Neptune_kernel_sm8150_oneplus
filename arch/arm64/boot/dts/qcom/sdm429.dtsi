@@ -1485,7 +1485,7 @@
 			<&tlmm 79 0>, <&tlmm 80 0>;
 
 		clocks = <&rpmcc CXO_SMD_WLAN_CLK>,
-			 <&rpmcc RPM_SMD_RF_CLK2>,
+			 <&rpmcc RPM_SMD_RF_CLK1>,
 			 <&rpmcc SNOC_WCNSS_A_CLK>;
 
 		clock-names = "xo", "rf_clk", "snoc_wcnss";
