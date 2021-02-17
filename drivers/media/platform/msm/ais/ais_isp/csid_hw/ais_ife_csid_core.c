@@ -1,4 +1,4 @@
-/* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -895,6 +895,9 @@ static int ais_ife_csid_disable_rdi_path(
 	val |= stop_cmd;
 	cam_io_w_mb(val, soc_info->reg_map[0].mem_base +
 		csid_reg->rdi_reg[id]->csid_rdi_ctrl_addr);
+
+	cam_io_w_mb(0xFF, soc_info->reg_map[0].mem_base +
+		csid_reg->rdi_reg[id]->csid_rdi_rst_strobes_addr);
 
 	path_data->state = AIS_ISP_RESOURCE_STATE_INIT_HW;
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -653,13 +653,19 @@ int ais_vfe_stop(void *hw_priv, void *stop_args, uint32_t arg_size)
 	cam_io_w_mb((1 << stop_cmd->path), core_info->mem_base +
 			bus_hw_info->common_reg.sw_reset);
 
-	/* Wait for completion or timeout of 50ms */
+	/* Wait for completion or timeout of 100ms */
 	rc = wait_for_completion_timeout(&vfe_hw->hw_complete,
-					msecs_to_jiffies(50));
-	if (rc)
+					msecs_to_jiffies(100));
+	if (rc) {
+		if (rc < 50)
+			CAM_WARN(CAM_ISP,
+				"System getting overload. Bus WR reset left time %d ms",
+				rc);
+
 		rc = 0;
-	else
+	} else {
 		CAM_WARN(CAM_ISP, "Reset Bus WR timeout");
+	}
 
 	ais_clear_rdi_path(rdi_path);
 
