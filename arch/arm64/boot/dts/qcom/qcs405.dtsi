@@ -1976,3 +1976,12 @@
 		};
 	};
 };
+
+&soc {
+	qcom,rgptp {
+		compatible = "qcom,rgptp";
+		qcom,toggle-gpio = <&tlmm 46 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&rgptp_gpio_default>;
+	};
+};
