@@ -11,6 +11,7 @@
  */
 
 #include "sdxprairie-mtp.dtsi"
+#include "sa515m.dtsi"
 
 &soc {
 	/delete-node/ qcom,battery-data;
