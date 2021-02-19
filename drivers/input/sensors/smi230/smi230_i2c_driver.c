@@ -43,132 +43,140 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  **/
- 
+
 #include <linux/types.h>
-#include <linux/spi/spi.h>
+#include <linux/i2c.h>
 #include <linux/module.h>
+#include <linux/delay.h>
 
 #include "smi230_driver.h"
+
 #define MODULE_TAG MODULE_NAME
 #include "smi230_log.h"
 #include "smi230.h"
 
-/* #define SMI230_DEBUG 1 */
-#define SMI230_MAX_BUFFER_SIZE      32
+#define SMI230_MAX_RETRY_I2C_XFER 10
+#define SMI230_I2C_WRITE_DELAY_TIME 10
 
-static struct spi_device *smi230_acc_device;
-static struct spi_device *smi230_gyro_device;
+struct i2c_adapter *smi230_i2c_adapter;
 
-static struct smi230_dev smi230_spi_dev;
+static struct smi230_dev smi230_i2c_dev;
 
-static int8_t smi230_spi_write(uint8_t dev_addr,
+static int8_t smi230_i2c_read(uint8_t dev_addr,
 	uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
-	struct spi_message msg;
-	uint8_t buffer[SMI230_MAX_BUFFER_SIZE + 1];
-	struct spi_transfer xfer = {
-		.tx_buf = buffer,
-		.len = len + 1,
+	int32_t retry;
+
+	struct i2c_msg msg[] = {
+		{
+		.addr = dev_addr,
+		.flags = 0,
+		.len = 1,
+		.buf = &reg_addr,
+		},
+
+		{
+		.addr = dev_addr,
+		.flags = I2C_M_RD,
+		.len = len,
+		.buf = data,
+		},
 	};
+	for (retry = 0; retry < SMI230_MAX_RETRY_I2C_XFER; retry++) {
+		if (i2c_transfer(smi230_i2c_adapter, msg, ARRAY_SIZE(msg)) > 0)
+			break;
+		else
+			usleep_range(SMI230_I2C_WRITE_DELAY_TIME * 1000,
+				SMI230_I2C_WRITE_DELAY_TIME * 1000);
+	}
 
-	if (len > SMI230_MAX_BUFFER_SIZE)
-		return -EINVAL;
+	if (SMI230_MAX_RETRY_I2C_XFER <= retry) {
+		PERR("I2C xfer error");
+		return -EIO;
+	}
 
-	buffer[0] = reg_addr;
-	memcpy(&buffer[1], data, len);
-	spi_message_init(&msg);
-	spi_message_add_tail(&xfer, &msg);
-
-	if (dev_addr == SMI230_ACCEL_CHIP_ID)
-		return spi_sync(smi230_acc_device, &msg);
-	else
-		return spi_sync(smi230_gyro_device, &msg);
+	return 0;
 }
 
-static int8_t smi230_spi_read(uint8_t dev_addr,
+static int8_t smi230_i2c_write(uint8_t dev_addr,
 	uint8_t reg_addr, uint8_t *data, uint16_t len)
 {
-#ifdef SMI230_DEBUG
-	int ret, index;
-#endif
-	struct spi_message msg;
-	struct spi_transfer xfer[2] = {
-		[0] = {
-			.tx_buf = &reg_addr,
-			.len = 1,
-		},
-		[1] = {
-			.rx_buf = data,
-			.len = len,
-		}
+	int32_t retry;
+	struct i2c_msg msg = {
+		.addr = dev_addr,
+		.flags = 0,
+		.len = len + 1,
+		.buf = NULL,
 	};
 
-	spi_message_init(&msg);
-	spi_message_add_tail(&xfer[0], &msg);
-	spi_message_add_tail(&xfer[1], &msg);
-#ifdef SMI230_DEBUG
-        for (index = 0; index < len; index++)
-		PINFO("before spi_sync :%x\n", data[index]);
-	if (dev_addr == SMI230_ACCEL_CHIP_ID)
-		return spi_sync(smi230_acc_device, &msg);
-	else
-		return spi_sync(smi230_gyro_device, &msg);
-        for (index = 0; index < len; index++)
-		PINFO("spi_sync :%x\n", data[index]);
-	return ret;
-#else
-	if (dev_addr == SMI230_ACCEL_CHIP_ID)
-		return spi_sync(smi230_acc_device, &msg);
-	else
-		return spi_sync(smi230_gyro_device, &msg);
-#endif
+	msg.buf = kmalloc(len + 1, GFP_KERNEL);
+	if (!msg.buf) {
+		PERR("Allocate mem failed\n");
+		return -ENOMEM;
+	}
+	msg.buf[0] = reg_addr;
+	memcpy(&msg.buf[1], data, len);
+	for (retry = 0; retry < SMI230_MAX_RETRY_I2C_XFER; retry++) {
+		if (i2c_transfer(smi230_i2c_adapter, &msg, 1) > 0)
+			break;
+		else
+			usleep_range(SMI230_I2C_WRITE_DELAY_TIME * 1000,
+				SMI230_I2C_WRITE_DELAY_TIME * 1000);
+	}
+	kfree(msg.buf);
+	if (SMI230_MAX_RETRY_I2C_XFER <= retry) {
+		PERR("I2C xfer error");
+		return -EIO;
+	}
+
+	return 0;
 }
 
 /* ACC driver */
-static int smi230_acc_probe(struct spi_device *device)
+static int smi230_acc_probe(struct i2c_client *client,
+	const struct i2c_device_id *id)
 {
-	int err;
+	int err = 0;
 
-	device->bits_per_word = 8;
-	err = spi_setup(device);
-	if (err < 0) {
-		PERR("spi_setup err!\n");
+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+		PERR("i2c_check_functionality error!");
+		err = -EIO;
 		return err;
 	}
 
+	if ((smi230_i2c_adapter != NULL) &&
+			(smi230_i2c_adapter == client->adapter)) {
+		PINFO("%s i2c adapter is at %x", SENSOR_ACC_NAME, (unsigned int)client->adapter);
+	}
+	else {
+		PERR("%s i2c driver is not initialized yet before ACC driver!", SENSOR_GYRO_NAME);
+		err = -EIO;
+		return err;
+	}
 
-	/* chip_id is used to differentiate acc/gyro on spi read/write */
-	smi230_spi_dev.accel_id = SMI230_ACCEL_CHIP_ID;
+	smi230_i2c_dev.accel_id = client->addr;
 
-	smi230_acc_device = device;
-
-	err = smi230_acc_init(&smi230_spi_dev);
+	err = smi230_acc_init(&smi230_i2c_dev);
         if (err == SMI230_OK)
 		PINFO("Bosch Sensor Device %s initialized", SENSOR_ACC_NAME);
 	else {
-		smi230_acc_device = NULL;
 		PERR("Bosch Sensor Device %s initialization failed, error %d",
 				SENSOR_ACC_NAME, err);
 	}
 
-	if (smi230_gyro_device == NULL) {
-		PERR("%s spi_device is supposed to be initialized", SENSOR_GYRO_NAME);
-		return 0;
-	}
-	else
-		return smi230_probe(&device->dev, &smi230_spi_dev);
+	return smi230_probe(&client->dev, &smi230_i2c_dev);
 }
 
-static int smi230_acc_remove(struct spi_device *device)
+static int smi230_acc_remove(struct i2c_client *client)
 {
-	return smi230_remove(&device->dev);
+	return smi230_remove(&client->dev);
 }
 
-static const struct spi_device_id smi230_acc_id[] = {
+static const struct i2c_device_id smi230_acc_id[] = {
 	{ SENSOR_ACC_NAME, 0 },
 	{ }
 };
-MODULE_DEVICE_TABLE(spi, smi230_acc_id);
+MODULE_DEVICE_TABLE(i2c, smi230_acc_id);
 
 static const struct of_device_id smi230_acc_of_match[] = {
 	{ .compatible = SENSOR_ACC_NAME, },
@@ -176,50 +184,59 @@ static const struct of_device_id smi230_acc_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, smi230_acc_of_match);
 
-static struct spi_driver smi230_acc_driver = {
+struct i2c_driver smi230_acc_driver = {
 	.driver = {
 		.owner = THIS_MODULE,
-		.name  = SENSOR_ACC_NAME,
+		.name = SENSOR_ACC_NAME,
 		.of_match_table = smi230_acc_of_match,
 	},
+	.class = I2C_CLASS_HWMON,
 	.id_table = smi230_acc_id,
-	.probe    = smi230_acc_probe,
-	.remove	= smi230_acc_remove,
+	.probe = smi230_acc_probe,
+	.remove = smi230_acc_remove,
 };
 
-/* GYRO driver */
-static int smi230_gyro_probe(struct spi_device *device)
-{
-	int err;
 
-	device->bits_per_word = 8;
-	err = spi_setup(device);
-	if (err < 0) {
-		PERR("spi_setup err!\n");
+/* GYRO driver */
+static int smi230_gyro_probe(struct i2c_client *client,
+	const struct i2c_device_id *id)
+{
+	int err = 0;
+
+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+		PERR("i2c_check_functionality error!");
+		err = -EIO;
 		return err;
 	}
 
-	/* chip_id is used to differentiate acc/gyro on spi read/write */
-	smi230_spi_dev.gyro_id = SMI230_GYRO_CHIP_ID;
+	if (smi230_i2c_adapter == NULL) {
+		smi230_i2c_adapter = client->adapter;
+		PINFO("%s i2c adapter is at %x", SENSOR_GYRO_NAME, (unsigned int)client->adapter);
+	}
+	else {
+		PERR("%s i2c driver should be initialized first!", SENSOR_GYRO_NAME);
+		err = -EIO;
+		return err;
+	}
 
-	smi230_gyro_device = device;
+	smi230_i2c_dev.gyro_id = client->addr;
 
-	err = smi230_gyro_init(&smi230_spi_dev);
+	err = smi230_gyro_init(&smi230_i2c_dev);
         if (err == SMI230_OK)
 		PINFO("Bosch Sensor Device %s initialized", SENSOR_GYRO_NAME);
 	else {
-		smi230_gyro_device = NULL;
 		PERR("Bosch Sensor Device %s initialization failed, error %d",
-			       SENSOR_GYRO_NAME, err);
+				SENSOR_GYRO_NAME, err);
 	}
+
 	return err;
 }
 
-static const struct spi_device_id smi230_gyro_id[] = {
+static const struct i2c_device_id smi230_gyro_id[] = {
 	{ SENSOR_GYRO_NAME, 0 },
 	{ }
 };
-MODULE_DEVICE_TABLE(spi, smi230_gyro_id);
+MODULE_DEVICE_TABLE(i2c, smi230_gyro_id);
 
 static const struct of_device_id smi230_gyro_of_match[] = {
 	{ .compatible = SENSOR_GYRO_NAME, },
@@ -227,7 +244,7 @@ static const struct of_device_id smi230_gyro_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, smi230_gyro_of_match);
 
-static struct spi_driver smi230_gyro_driver = {
+static struct i2c_driver smi230_gyro_driver = {
 	.driver = {
 		.owner = THIS_MODULE,
 		.name  = SENSOR_GYRO_NAME,
@@ -241,25 +258,25 @@ static int __init smi230_module_init(void)
 {
 	int err;
 
-	smi230_spi_dev.delay_ms = smi230_delay;
-	smi230_spi_dev.read_write_len = 32;
-	smi230_spi_dev.intf = SMI230_SPI_INTF;
-	smi230_spi_dev.read = smi230_spi_read;
-	smi230_spi_dev.write = smi230_spi_write;
+	smi230_i2c_dev.delay_ms = smi230_delay;
+	smi230_i2c_dev.read_write_len = 32;
+	smi230_i2c_dev.intf = SMI230_I2C_INTF;
+	smi230_i2c_dev.read = smi230_i2c_read;
+	smi230_i2c_dev.write = smi230_i2c_write;
 
 	/* make sure gyro driver registered first,
 	 * while acc driver uses gyro driver */
-	err = spi_register_driver(&smi230_gyro_driver);
+	err = i2c_add_driver(&smi230_gyro_driver);
 	if (err != 0)
 		return err;
 
-	return spi_register_driver(&smi230_acc_driver);
+	return i2c_add_driver(&smi230_acc_driver);
 }
 
 static void __exit smi230_module_exit(void)
 {
-	spi_unregister_driver(&smi230_acc_driver);
-	spi_unregister_driver(&smi230_gyro_driver);
+	i2c_del_driver(&smi230_acc_driver);
+	i2c_del_driver(&smi230_gyro_driver);
 }
 
 module_init(smi230_module_init);

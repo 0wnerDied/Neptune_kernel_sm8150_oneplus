@@ -47,9 +47,10 @@
 #ifndef _SMI230_DRIVER_H
 #define _SMI230_DRIVER_H
 
+#include <linux/device.h>
 #include "smi230_defs.h"
 
-#define DRIVER_VERSION "0.2.0"
+#define DRIVER_VERSION "0.3.0"
 #define MODULE_NAME "SMI230"
 #define SENSOR_ACC_NAME "SMI230ACC"
 #define SENSOR_GYRO_NAME "SMI230GYRO"

@@ -413,6 +413,8 @@ static int8_t set_fifo_full_int(const struct smi230_accel_int_channel_cfg *int_c
 
 /**\name        Globals
  ****************************************************************************/
+/*add 1 more byte to host dummy byte*/
+static uint8_t temp_buff[CONFIG_SMI230_MAX_BUFFER_LEN + 1];
 
 /****************************************************************************/
 
@@ -578,7 +580,6 @@ int8_t smi230_acc_write_feature_config(uint8_t reg_addr, const uint16_t *reg_dat
     int8_t rslt;
     uint16_t read_length = (reg_addr * 2) + (len * 2);
     int i;
-    uint8_t feature_data[CONFIG_SMI230_MAX_BUFFER_LEN];
 
     if (WARN(read_length > CONFIG_SMI230_MAX_BUFFER_LEN, "SMI230 buffer overflow\n")) {
         return SMI230_E_COM_FAIL;
@@ -589,7 +590,7 @@ int8_t smi230_acc_write_feature_config(uint8_t reg_addr, const uint16_t *reg_dat
     if (rslt == SMI230_OK)
     {
         /* Read feature space up to the given feature position */
-        rslt = smi230_acc_get_regs(SMI230_ACCEL_FEATURE_CFG_REG, &feature_data[0], read_length, dev);
+        rslt = smi230_acc_get_regs(SMI230_ACCEL_FEATURE_CFG_REG, &temp_buff[0], read_length, dev);
 
         if (rslt == SMI230_OK)
         {
@@ -597,12 +598,12 @@ int8_t smi230_acc_write_feature_config(uint8_t reg_addr, const uint16_t *reg_dat
             for (i = 0; i < len; ++i)
             {
                 /* Be careful: the feature config space is 16bit aligned! */
-                feature_data[(reg_addr * 2) + (i * 2)] = reg_data[i] & 0xFF;
-                feature_data[(reg_addr * 2) + (i * 2) + 1] = reg_data[i] >> 8;
+                temp_buff[(reg_addr * 2) + (i * 2)] = reg_data[i] & 0xFF;
+                temp_buff[(reg_addr * 2) + (i * 2) + 1] = reg_data[i] >> 8;
             }
 
             /* Write back updated feature space */
-            rslt = smi230_acc_set_regs(SMI230_ACCEL_FEATURE_CFG_REG, &feature_data[0], read_length, dev);
+            rslt = smi230_acc_set_regs(SMI230_ACCEL_FEATURE_CFG_REG, &temp_buff[0], read_length, dev);
         }
     }
 
@@ -1556,7 +1557,6 @@ static int8_t get_regs(uint8_t reg_addr, uint8_t *reg_data, uint16_t len, const 
     int8_t rslt;
     uint16_t index;
     uint16_t temp_len = len + dev->dummy_byte;
-    uint8_t temp_buff[CONFIG_SMI230_MAX_BUFFER_LEN];
 
     if (WARN(temp_len > CONFIG_SMI230_MAX_BUFFER_LEN, "SMI230 buffer overflow\n")) {
         return SMI230_E_COM_FAIL;

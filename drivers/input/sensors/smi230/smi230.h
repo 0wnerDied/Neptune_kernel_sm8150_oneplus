@@ -598,6 +598,92 @@ int8_t smi230_acc_get_fifo_down_sample(uint8_t *fifo_downs, const struct smi230_
  */
 int8_t smi230_acc_set_fifo_down_sample(uint8_t fifo_downs, const struct smi230_dev *dev);
 
+/* gyro FIFO APIs */
+/*!
+ * @brief This API gets the length of the data in FIFO buffer.
+ *
+ * @param[out] fifo_length : Variable to store the length.
+ * @param[in] dev : Structure instance of smi230_dev.
+ *
+ * @return Result of API execution status
+ *
+ * @retval SMI230_OK - Success.
+ * @retval SMI230_E_NULL_PTR - Error: Null pointer error
+ */
+int8_t smi230_gyro_get_fifo_length(uint8_t *fifo_length, const struct smi230_dev *dev);
+
+/*!
+ * @brief This API reads FIFO data.
+ *
+ * @param[in] fifo : Variable pointing to fifo frame structure .
+ * @param[in] dev : Structure instance of smi230_dev.
+ *
+ * @return Result of API execution status
+ *
+ * @retval SMI230_OK - Success.
+ * @retval SMI230_E_NULL_PTR - Error: Null pointer error
+ */
+int8_t smi230_gyro_read_fifo_data(struct smi230_fifo_frame *fifo, const struct smi230_dev *dev);
+
+/*!
+ * @brief his API parses and extracts the gyroscope frames from FIFO data
+ * read by the "smi230_read_fifo_data" API and stores it in the "gyro_data"
+ * structure instance.
+ *
+ * @param[in] gyro_data: Variable to set the down sampling rate.
+ * @param[out] fifo_length : return the length of data extract.
+ * @param[in] fifo : fifo frame to be extract.
+ * @param[in] dev  : Structure instance of smi230_dev.
+ *
+ * @return Result of API execution status
+ *
+ * @retval SMI230_OK - Success.
+ * @retval SMI230_E_NULL_PTR - Error: Null pointer error
+ */
+int8_t smi230_gyro_extract_fifo(struct smi230_sensor_data *gyro_data,
+                            uint8_t *fifo_length,
+                            struct smi230_fifo_frame *fifo,
+                            const struct smi230_dev *dev);
+
+/*!
+ * @brief This API sets the FIFO water-mark level in the sensor.
+ *
+ * @param[out] wm : return the wm value.
+ * @param[in] dev : Structure instance of smi230_dev.
+ *
+ * @return Result of API execution status
+ *
+ * @retval SMI230_OK - Success.
+ * @retval SMI230_E_NULL_PTR - Error: Null pointer error
+ */
+int8_t smi230_gyro_get_fifo_wm(uint8_t *wm, const struct smi230_dev *dev);
+
+/*!
+ * @brief This API sets the FIFO water-mark level in the sensor.
+ *
+ * @param[in] wm : the value to set to water mark register.
+ * @param[in] dev : Structure instance of smi230_dev.
+ *
+ * @return Result of API execution status
+ *
+ * @retval SMI230_OK - Success.
+ * @retval SMI230_E_NULL_PTR - Error: Null pointer error
+ */
+int8_t smi230_gyro_set_fifo_wm(uint8_t wm, const struct smi230_dev *dev);
+
+/*!
+ * @brief This API sets the FIFO configuration in the sensor.
+ *
+ * @param[in] config : containts configuration to be set.
+ * @param[in] dev : Structure instance of smi230_dev.
+ *
+ * @return Result of API execution status
+ *
+ * @retval SMI230_OK - Success.
+ * @retval SMI230_E_NULL_PTR - Error: Null pointer error
+ */
+int8_t smi230_gyro_set_fifo_config(struct gyro_fifo_config *config, const struct smi230_dev *dev);
+
 #ifdef __cplusplus
 }
 #endif

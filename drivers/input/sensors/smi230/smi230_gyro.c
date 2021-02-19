@@ -54,6 +54,9 @@
 /**\name        Header files
  ****************************************************************************/
 #include "smi230.h"
+#include "smi230_driver.h"
+#define MODULE_TAG MODULE_NAME
+#include "smi230_log.h"
 
 /****************************************************************************/
 
@@ -116,6 +119,8 @@ static int8_t set_regs(uint8_t reg_addr, uint8_t *reg_data, uint16_t len, const 
 static int8_t set_gyro_data_ready_int(const struct smi230_gyro_int_channel_cfg *int_config,
                                       const struct smi230_dev *dev);
 
+static int8_t set_gyro_fifo_int(const struct smi230_gyro_int_channel_cfg *int_config,
+                                      const struct smi230_dev *dev);
 /*!
  * @brief This API configures the pins which fire the
  * interrupt signal when any interrupt occurs.
@@ -552,6 +557,12 @@ int8_t smi230_gyro_set_int_config(const struct smi230_gyro_int_channel_cfg *int_
                 rslt = set_gyro_data_ready_int(int_config, dev);
             }
             break;
+            case SMI230_GYRO_FIFO_INT:
+            {
+                /* Data ready interrupt */
+                rslt = set_gyro_fifo_int(int_config, dev);
+            }
+            break;
 
             default:
                 rslt = SMI230_E_INVALID_CONFIG;
@@ -721,6 +732,9 @@ static int8_t set_gyro_data_ready_int(const struct smi230_gyro_int_channel_cfg *
     /* read interrupt map register */
     rslt = get_regs(SMI230_GYRO_INT3_INT4_IO_MAP_REG, &data[0], 1, dev);
 
+    PINFO("get regs %hx = %hx", SMI230_GYRO_INT3_INT4_IO_MAP_REG, data[0]);
+
+
     if (rslt == SMI230_OK)
     {
         conf = int_config->int_pin_cfg.enable_int_pin;
@@ -731,12 +745,14 @@ static int8_t set_gyro_data_ready_int(const struct smi230_gyro_int_channel_cfg *
 
                 /* Data to enable new data ready interrupt */
                 data[0] = SMI230_SET_BITS_POS_0(data[0], SMI230_GYRO_INT3_MAP, conf);
+	    PINFO("ch3 data 0 = %hx", data[0]);
                 break;
 
             case SMI230_INT_CHANNEL_4:
 
                 /* Data to enable new data ready interrupt */
                 data[0] = SMI230_SET_BITS(data[0], SMI230_GYRO_INT4_MAP, conf);
+	    PINFO("ch4 data 0 = %hx", data[0]);
                 break;
 
             default:
@@ -753,6 +769,77 @@ static int8_t set_gyro_data_ready_int(const struct smi230_gyro_int_channel_cfg *
                 /* Updating the data */
                 /* Data to enable new data ready interrupt */
                 data[1] = SMI230_GYRO_DRDY_INT_ENABLE_VAL;
+            }
+            else
+            {
+                data[1] = SMI230_GYRO_DRDY_INT_DISABLE_VAL;
+            }
+
+            /* write data to interrupt map register */
+            rslt = set_regs(SMI230_GYRO_INT3_INT4_IO_MAP_REG, &data[0], 1, dev);
+
+            if (rslt == SMI230_OK)
+            {
+                /* Configure interrupt pin */
+                rslt = set_int_pin_config(int_config, dev);
+
+                if (rslt == SMI230_OK)
+                {
+                    /* write data to interrupt control register */
+                    rslt = set_regs(SMI230_GYRO_INT_CTRL_REG, &data[1], 1, dev);
+                }
+
+            }
+        }
+
+    }
+
+    return rslt;
+}
+
+/*!
+ * @brief This API sets the fifo interrupt for gyro sensor.
+ */
+static int8_t set_gyro_fifo_int(const struct smi230_gyro_int_channel_cfg *int_config,
+                                      const struct smi230_dev *dev)
+{
+    int8_t rslt;
+    uint8_t conf, data[2] = { 0 };
+
+    /* read interrupt map register */
+    rslt = get_regs(SMI230_GYRO_INT3_INT4_IO_MAP_REG, &data[0], 1, dev);
+
+    if (rslt == SMI230_OK)
+    {
+        conf = int_config->int_pin_cfg.enable_int_pin;
+
+        switch (int_config->int_channel)
+        {
+            case SMI230_INT_CHANNEL_3:
+                /* Data to enable new data ready interrupt */
+                data[0] = SMI230_SET_BITS(data[0], SMI230_GYRO_FIFO_INT3_MAP, conf);
+                break;
+
+            case SMI230_INT_CHANNEL_4:
+
+                /* Data to enable new data ready interrupt */
+                data[0] = SMI230_SET_BITS(data[0], SMI230_GYRO_FIFO_INT4_MAP, conf);
+                break;
+
+            default:
+                rslt = SMI230_E_INVALID_INPUT;
+                break;
+        }
+
+        if (rslt == SMI230_OK)
+        {
+            /*condition to check disabling the interrupt in single channel when both
+             * interrupts channels are enabled*/
+            if (data[0] & SMI230_GYRO_MAP_FIFO_TO_BOTH_INT3_INT4)
+            {
+                /* Updating the data */
+                /* Data to enable new data ready interrupt */
+                data[1] = SMI230_GYRO_FIFO_INT_ENABLE_VAL;
             }
             else
             {
@@ -851,6 +938,245 @@ static int8_t set_gyro_selftest(uint8_t selftest, const struct smi230_dev *dev)
     else
     {
         rslt = SMI230_E_INVALID_INPUT;
+    }
+
+    return rslt;
+}
+
+/*!
+ * @brief This API sets the FIFO configuration in the sensor.
+ * mode: SMI230_GYRO_FIFO_MODE or SMI230_GYRO_STREAM_MODE
+ */
+int8_t smi230_gyro_set_fifo_config(struct gyro_fifo_config *config, const struct smi230_dev *dev)
+{
+    /* Variable to define error */
+    int8_t rslt;
+    uint8_t data = 0;
+
+    /* Check for null pointer in the device structure */
+    rslt = null_ptr_check(dev);
+
+    if (rslt == SMI230_OK)
+    {
+        rslt = smi230_gyro_set_regs(SMI230_GYRO_FIFO_CONFIG_1_ADDR, &config->mode, 1, dev);
+	rslt |= smi230_gyro_set_regs(SMI230_GYRO_WM_INT_REG, &config->wm_en, 1, dev);
+
+	if (config->int3_en ^ config->int4_en) {
+		if (config->int3_en)
+			data = 0x10;
+		else
+			data = 0x18;
+		rslt |= smi230_gyro_set_regs(SMI230_GYRO_FIFO_EXT_INT_S_REG, &data, 1, dev);
+	}
+	else
+		rslt |= smi230_gyro_set_regs(SMI230_GYRO_FIFO_EXT_INT_S_REG, &data, 1, dev);
+    }
+    else
+    {
+        rslt = SMI230_E_NULL_PTR;
+    }
+
+    return rslt;
+}
+
+/*!
+ * @brief This API reads the FIFO data.
+ */
+int8_t smi230_gyro_read_fifo_data(struct smi230_fifo_frame *fifo, const struct smi230_dev *dev)
+{
+    /* Variable to define error */
+    int8_t rslt;
+    /* Variable to define FIFO address */
+    uint8_t addr = SMI230_GYRO_FIFO_DATA_ADDR;
+
+    /* Check for null pointer in the device structure */
+    rslt = null_ptr_check(dev);
+    if ((rslt == SMI230_OK) && (fifo != NULL))
+    {
+        /* Read FIFO data */
+        rslt = smi230_gyro_get_regs(addr, fifo->data, fifo->length, dev);
+    }
+    else
+    {
+        rslt = SMI230_E_NULL_PTR;
+    }
+
+    return rslt;
+}
+
+/*!
+ * @brief This API gets the length of FIFO data available in the sensor in
+ * bytes.
+ */
+int8_t smi230_gyro_get_fifo_length(uint8_t *fifo_length, const struct smi230_dev *dev)
+{
+    /* Variable to define error */
+    int8_t rslt;
+
+    /* Array to store FIFO data length */
+    uint8_t data;
+
+    /* Check for null pointer in the device structure */
+    rslt = null_ptr_check(dev);
+    if ((rslt == SMI230_OK) && (fifo_length != NULL))
+    {
+        /* read fifo length */
+        rslt = smi230_gyro_get_regs(SMI230_GYRO_FIFO_STATUS_ADDR, &data, 1, dev);
+        if (rslt == SMI230_OK)
+        {
+            /* Get total FIFO length */
+            (*fifo_length) = data & 0x7F;
+        }
+        else
+        {
+            rslt = SMI230_E_NULL_PTR;
+        }
+    }
+
+    return rslt;
+}
+
+/*!
+ * @brief This API sets the FIFO water-mark level in the sensor.
+ */
+int8_t smi230_gyro_get_fifo_wm(uint8_t *wm, const struct smi230_dev *dev)
+{
+    int8_t rslt;
+
+    uint8_t data;
+
+    /* Check for null pointer in the device structure */
+    rslt = null_ptr_check(dev);
+    if (rslt == SMI230_OK)
+    {
+        rslt = smi230_gyro_get_regs(SMI230_GYRO_FIFO_CONFIG_0_ADDR, &data, 1, dev);
+        if ((rslt == SMI230_OK) && (wm != NULL))
+        {
+            *wm = data & 0x7F;
+        }
+        else
+        {
+            rslt = SMI230_E_NULL_PTR;
+        }
+    }
+
+    return rslt;
+}
+
+/*!
+ * @brief This API sets the FIFO water-mark level in the sensor.
+ */
+int8_t smi230_gyro_set_fifo_wm(uint8_t wm, const struct smi230_dev *dev)
+{
+    /* Variable to define error */
+    int8_t rslt;
+
+    /* Check for null pointer in the device structure */
+    rslt = null_ptr_check(dev);
+    if (rslt == SMI230_OK)
+    {
+        /* Set the FIFO water-mark level */
+        rslt = smi230_gyro_set_regs(SMI230_GYRO_FIFO_CONFIG_0_ADDR, &wm, 1, dev);
+    }
+
+    return rslt;
+}
+
+/*!
+ * @brief This internal API is used to parse gyroerometer data from the
+ * FIFO data.
+ */
+static void unpack_gyro_data(struct smi230_sensor_data *gyro,
+                              uint16_t data_start_index,
+                              const struct smi230_fifo_frame *fifo)
+{
+    /* Variables to store LSB value */
+    uint16_t data_lsb;
+
+    /* Variables to store MSB value */
+    uint16_t data_msb;
+
+    /* Accelerometer raw x data */
+    data_lsb = fifo->data[data_start_index++];
+    data_msb = fifo->data[data_start_index++];
+    gyro->x = (int16_t)((data_msb << 8) | data_lsb);
+
+    /* Accelerometer raw y data */
+    data_lsb = fifo->data[data_start_index++];
+    data_msb = fifo->data[data_start_index++];
+    gyro->y = (int16_t)((data_msb << 8) | data_lsb);
+
+    /* Accelerometer raw z data */
+    data_lsb = fifo->data[data_start_index++];
+    data_msb = fifo->data[data_start_index++];
+    gyro->z = (int16_t)((data_msb << 8) | data_lsb);
+
+}
+
+/*!
+ * @brief This internal API is used to parse the gyro data from the
+ * FIFO in headerless mode.
+ */
+static int8_t extract_gyro_headerless_mode(struct smi230_sensor_data *gyro,
+                                      uint8_t *fifo_length,
+                                      struct smi230_fifo_frame *fifo)
+{
+    /* Variable to define error */
+    int8_t rslt = SMI230_OK;
+
+    /* Variable to index the data bytes */
+    uint16_t data_index;
+
+    /* Variable to index gyroerometer frames */
+    uint16_t gyro_index = 0;
+
+    /* Variable to indicate gyroerometer frames read */
+    uint8_t frame_to_read = *fifo_length;
+
+    for (data_index = 0; data_index < fifo->length;)
+    {
+	unpack_gyro_data(&gyro[gyro_index], data_index, fifo);
+
+
+        data_index += SMI230_FIFO_GYRO_FRAME_LENGTH;
+	gyro_index++;
+
+        /* Break if Number of frames to be read is complete or FIFO is mpty */
+        if ((frame_to_read == gyro_index) || (rslt == SMI230_W_FIFO_EMPTY))
+        {
+            break;
+        }
+    }
+
+    /* Update the gyroerometer frame index */
+    (*fifo_length) = gyro_index;
+
+    return rslt;
+}
+
+/*!
+ * @brief This API parses and extracts the gyroscope frames from FIFO data
+ * read by the "smi230_read_fifo_data" API and stores it in the "gyro_data"
+ * structure instance.
+ */
+int8_t smi230_gyro_extract_fifo(struct smi230_sensor_data *gyro_data,
+                            uint8_t *fifo_length,
+                            struct smi230_fifo_frame *fifo,
+                            const struct smi230_dev *dev)
+{
+    /* Variable to define error */
+    int8_t rslt;
+
+    /* Check for null pointer in the device structure */
+    rslt = null_ptr_check(dev);
+    if ((rslt == SMI230_OK) && (gyro_data != NULL) && (fifo_length != NULL) && (fifo != NULL))
+    {
+        /* Parsing the FIFO data in header mode */
+        rslt = extract_gyro_headerless_mode(gyro_data, fifo_length, fifo);
+    }
+    else
+    {
+        rslt = SMI230_E_NULL_PTR;
     }
 
     return rslt;

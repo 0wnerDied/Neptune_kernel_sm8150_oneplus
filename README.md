@@ -14,13 +14,14 @@ Due to system-in-package approach of SMI230 (two sensors in single package), the
 However, synchronization between accelerometer and gyroscope can be achieved:
 The software modules in this repository are provided as reference for SMI230 users and shall demonstrate exemplarily the usage of the following features
 - data synchronization.
+- data collection from FIFO.
 
 _Note: The sensor driver utilizes sensor api, which is following BMI08x sensor api available on [github](https://github.com/BoschSensortec/BMI08x-Sensor-API/releases/tag/bmi08x_v1.4.4)._
 
 _Note: The data synchronization feature utilizes sensor configuration, which is following BMI08x sensor configuration available on [github](https://github.com/BoschSensortec/BMI08x-Sensor-API/releases/tag/bmi08x_v1.2.0)._
 
 ## License <a name=License></a>
-See [LICENSE](LICENSE.md) file
+See [LICENSE](drivers/input/sensors/smi230/LICENSE.md) file
 
 ## Sensor interfaces <a name=interfaces></a>
 * I2C
@@ -52,8 +53,24 @@ The data will be displayed on the console with timestamp.
 
 2. Sysfs
 The driver also exposes a set of sysfs nodes under /sys/devices/virtual/input/input*, where users can get information about the sensor and also control the sensor. Eg.:
-
 ```
+# read the acc power config
+cat /sys/devices/virtual/input/input0/acc_pw_cfg
+
+# set the acc power config active, this command is needed if acc needs to be fully fuctional.
+echo 0 > /sys/devices/virtual/input/input0/acc_pw_cfg
+
+# set the acc power config suspend
+echo 3 > /sys/devices/virtual/input/input0/acc_pw_cfg
+
+# read the gyro power config
+cat /sys/devices/virtual/input/input0/gyro_pw_cfg
+
+# set the gyro power config active, this command is needed if gyro needs to be fully fuctional.
+echo 0 > /sys/devices/virtual/input/input0/gyro_pw_cfg
+
+# set the gyro power config suspend
+echo 3 > /sys/devices/virtual/input/input0/gyro_pw_cfg
 
 # read the chip id
 cat /sys/devices/virtual/input/input0/chip_id
@@ -67,12 +84,4 @@ cat /sys/devices/virtual/input/input0/acc_value
 # read the gyro data 
 cat /sys/devices/virtual/input/input0/gyro_value
 
-# read the acc power config 
-cat /sys/devices/virtual/input/input0/acc_pw_cfg
-
-# set the acc power config active 
-echo 0 > /sys/devices/virtual/input/input0/acc_pw_cfg
-
-# set the acc power config suspend 
-echo 3 > /sys/devices/virtual/input/input0/acc_pw_cfg
 ```

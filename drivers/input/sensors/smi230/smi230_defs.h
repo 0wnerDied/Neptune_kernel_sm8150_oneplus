@@ -368,6 +368,12 @@
 /**\name    Gyro Interrupt Map register */
 #define SMI230_GYRO_INT3_INT4_IO_MAP_REG       UINT8_C(0x18)
 
+/**\name    Gyro warter mark interrupt register */
+#define SMI230_GYRO_WM_INT_REG                 UINT8_C(0x1E)
+
+/**\name    Gyro FIFO interrupt register */
+#define SMI230_GYRO_FIFO_EXT_INT_S_REG		UINT8_C(0x34)
+
 /**\name    Gyro Self test register */
 #define SMI230_GYRO_SELF_TEST_REG              UINT8_C(0x3C)
 
@@ -405,10 +411,13 @@
 #define SMI230_GYRO_DRDY_INT_DISABLE_VAL       UINT8_C(0x00)
 #define SMI230_GYRO_DRDY_INT_ENABLE_VAL        UINT8_C(0x80)
 
+#define SMI230_GYRO_FIFO_INT_DISABLE_VAL       UINT8_C(0x00)
+#define SMI230_GYRO_FIFO_INT_ENABLE_VAL        UINT8_C(0x40)
 /**\name    Gyro data ready map values */
 #define SMI230_GYRO_MAP_DRDY_TO_INT3           UINT8_C(0x01)
 #define SMI230_GYRO_MAP_DRDY_TO_INT4           UINT8_C(0x80)
 #define SMI230_GYRO_MAP_DRDY_TO_BOTH_INT3_INT4 UINT8_C(0x81)
+#define SMI230_GYRO_MAP_FIFO_TO_BOTH_INT3_INT4 UINT8_C(0x24)
 
 /**\name    Gyro Soft reset delay */
 #define SMI230_GYRO_SOFTRESET_DELAY            UINT8_C(30)
@@ -429,6 +438,9 @@
 
 /**\name    Position definitions for SMI230_GYRO_INT_CTRL_REG register */
 #define SMI230_GYRO_DATA_EN_POS                UINT8_C(7)
+
+#define SMI230_GYRO_FIFO_EN_MASK               UINT8_C(0x40)
+#define SMI230_GYRO_FIFO_EN_POS                UINT8_C(6)
 
 /**\name    Mask definitions for SMI230_GYRO_INT3_INT4_IO_CONF_REG register */
 #define SMI230_GYRO_INT3_LVL_MASK              UINT8_C(0x01)
@@ -451,9 +463,14 @@
 #define SMI230_GYRO_INT3_MAP_MASK              UINT8_C(0x01)
 #define SMI230_GYRO_INT4_MAP_MASK              UINT8_C(0x80)
 
+#define SMI230_GYRO_FIFO_INT3_MAP_MASK              UINT8_C(0x04)
+#define SMI230_GYRO_FIFO_INT4_MAP_MASK              UINT8_C(0x20)
+
 /**\name    Position definitions for SMI230_GYRO_INT_MAP_REG register */
 #define SMI230_GYRO_INT3_MAP_POS               UINT8_C(0)
 #define SMI230_GYRO_INT4_MAP_POS               UINT8_C(7)
+#define SMI230_GYRO_FIFO_INT3_MAP_POS               UINT8_C(2)
+#define SMI230_GYRO_FIFO_INT4_MAP_POS               UINT8_C(5)
 
 /**\name    Mask definitions for GYRO_SELF_TEST register */
 #define SMI230_GYRO_SELF_TEST_EN_MASK          UINT8_C(0x01)
@@ -547,6 +564,10 @@
 #define SMI230_FIFO_CONFIG_0_ADDR              UINT8_C(0x48)
 #define SMI230_FIFO_CONFIG_1_ADDR              UINT8_C(0x49)
 
+#define SMI230_GYRO_FIFO_STATUS_ADDR              UINT8_C(0x0E)
+#define SMI230_GYRO_FIFO_CONFIG_0_ADDR              UINT8_C(0x3D)
+#define SMI230_GYRO_FIFO_CONFIG_1_ADDR              UINT8_C(0x3E)
+#define SMI230_GYRO_FIFO_DATA_ADDR                  UINT8_C(0x3F)
 /*! @name FIFO sensor data lengths */
 #define SMI230_FIFO_ACCEL_LENGTH               UINT8_C(6)
 #define SMI230_FIFO_WTM_LENGTH                 UINT8_C(2)
@@ -569,6 +590,9 @@
 #define SMI230_ACC_STREAM_MODE                 UINT8_C(0x00)
 #define SMI230_ACC_FIFO_MODE                   UINT8_C(0x01)
 
+#define SMI230_FIFO_GYRO_FRAME_LENGTH          UINT8_C(6)
+#define SMI230_GYRO_STREAM_MODE                UINT8_C(0x80)
+#define SMI230_GYRO_FIFO_MODE                  UINT8_C(0x40)
 /*name Mask definitions for FIFO configuration modes */
 #define SMI230_ACC_FIFO_MODE_CONFIG_MASK       UINT8_C(0x01)
 
@@ -842,7 +866,8 @@ enum smi230_accel_int_types {
  */
 enum smi230_gyro_int_types {
     /* Gyro data ready interrupt */
-    SMI230_GYRO_DATA_RDY_INT
+    SMI230_GYRO_DATA_RDY_INT,
+    SMI230_GYRO_FIFO_INT
 };
 
 /*!
@@ -937,6 +962,24 @@ struct accel_fifo_config
 
     /*! To enable the interrupt_2 */
     uint8_t int2_en;
+};
+
+/*!
+ *  @brief gyro fifo configurations
+ */
+struct gyro_fifo_config
+{
+    /*! Configure the fifo mode (0 = Stream mode, 1 = FIFO mode) */
+    uint8_t mode;
+
+    /*! To enable the gyro wm interupt */
+    uint8_t wm_en;
+
+    /*! To enable the interrupt_3 sync */
+    uint8_t int3_en;
+
+    /*! To enable the interrupt_4 sync */
+    uint8_t int4_en;
 };
 
 /*! @name Structure to define FIFO frame configuration */

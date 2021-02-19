@@ -26,7 +26,30 @@ config SMI230_DRIVER
 	tristate "SMI230 all in one driver"
 	depends on (I2C || SPI_MASTER) && SYSFS
 	help
-	 This driver combines acc and gyro together, i2c supported only
+	 This driver combines acc and gyro together
+
+choice
+	prompt "Select features"
+	depends on SMI230_DRIVER
+	help
+	  Note: these are exclusive features which cannot be enabled at the same time.
+
+    config SMI230_DATA_SYNC
+	bool "SMI230 Data sync"
+	help
+	 SMI230 data sync between accel and gyroscope, this feature can only be exclusively enabled in one compile, while it needs its dedicated config file loaded and interupt pins specially configured
+
+    config SMI230_ACC_FIFO
+	bool "SMI230 ACC FIFO enable"
+	help
+	 enable ACC FIFO feature.
+
+    config SMI230_GYRO_FIFO
+	bool "SMI230 gyroscope FIFO enable"
+	help
+	 enable GYRO FIFO feature.
+endchoice
+
 
 config BOSCH_DRIVER_LOG_FUNC
 	tristate "Smart log function support"
@@ -36,8 +59,8 @@ config BOSCH_DRIVER_LOG_FUNC
 
 config SMI230_MAX_BUFFER_LEN
 	int "configue read buffer size"
-	default "16"
+	default "1024"
 	help
-	  Unless using FIFO, 16 is big enough for normal cases. Do not change this value if not sure.
+	  Considering using FIFO, 1024 bytes are big enough for most cases. Do not change this value if not sure.
 
 endif
