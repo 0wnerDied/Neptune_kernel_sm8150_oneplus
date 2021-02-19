@@ -134,7 +134,7 @@
 		};
 	};
 
-	aliases {
+	aliases: aliases {
 		sdhc1 = &sdhc_1; /* SDC1 eMMC slot */
 		sdhc2 = &sdhc_2; /* SDC2 SD Card slot */
 		qpic_nand1 = &qnand_1;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -9,6 +9,17 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
+&aliases {
+	mhi0 = &mhi_0;
+	mhi1 = &mhi_1;
+	mhi_netdev0 = &mhi_netdev_0;
+	mhi_netdev1 = &mhi_netdev_1;
+	mhi_netdev2 = &mhi_netdev_2;
+	mhi_netdev3 = &mhi_netdev_3;
+	mhi_netdev4 = &mhi_netdev_4;
+	mhi_netdev5 = &mhi_netdev_5;
+};
 
 &tlmm {
 	pinctrl-0 = <&status_gpio>;
@@ -373,3 +384,5 @@
 			qcom,pre-scaling = <1 1>;
 	};
 };
+
+#include "sa2150p-ccard-mhi.dtsi"
