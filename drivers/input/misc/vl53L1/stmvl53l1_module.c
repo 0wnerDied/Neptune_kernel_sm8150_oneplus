@@ -124,7 +124,7 @@
  * @note uses @a vl53l1_dbgmsg for output so make sure to enable debug
  * to get roi dump
  */
-#define STMVL53L1_CFG_ROI_DEBUG	1       //songyt 0 to 1
+#define STMVL53L1_CFG_ROI_DEBUG	0       //songyt 0 to 1
 
 /** @} */ /* ingroup vl53l1_mod_dbg*/
 
@@ -136,7 +136,7 @@ struct timeval start_tv, stop_tv;
 #endif
 
 /* Set default value to 1 to allow to see module insertion debug messages */
-int stmvl53l1_enable_debug = 1;
+int stmvl53l1_enable_debug = 0;
 
 #define VL53L1_INPUT_DEVICE_NAME	"STM VL53L1 proximity sensor"
 
