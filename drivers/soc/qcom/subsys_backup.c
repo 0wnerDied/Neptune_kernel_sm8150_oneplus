@@ -1079,7 +1079,12 @@ static void request_handler_worker(struct work_struct *work)
 				__func__, ret);
 		else
 			free_buffers(backup_dev);
-		backup_dev->state = IDLE;
+		/*
+		 * Allow userspace to read the uevent variables before
+		 * resetting it
+		 */
+		usleep_range(100000, 1000000);
+		subsys_backup_set_idle_state(backup_dev);
 		break;
 
 	default:
@@ -1378,7 +1383,7 @@ static ssize_t backup_buffer_read(struct file *filp, char __user *buf,
 	if (ret < 0) {
 		dev_err(backup_dev->dev, "%s: Failed: %d\n", __func__, ret);
 	} else if (ret < size) {
-		backup_dev->state = IDLE;
+		subsys_backup_set_idle_state(backup_dev);
 		free_buffers(backup_dev);
 	}
 
