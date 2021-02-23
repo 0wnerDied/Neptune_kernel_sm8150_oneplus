@@ -39,6 +39,9 @@ static struct msm_bus_scale_pdata *emac_bus_scale_vec;
 #define PHY_LOOPBACK_100 0x6100
 #define PHY_LOOPBACK_10 0x4100
 
+#define DMA_TX_SIZE_CV2X 128
+#define DMA_RX_SIZE_CV2X 128
+
 static void __iomem *tlmm_central_base_addr;
 static void ethqos_rgmii_io_macro_loopback(struct qcom_ethqos *ethqos,
 					   int mode);
@@ -3743,12 +3746,34 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		ethqos_set_early_eth_param(priv, ethqos);
 	}
 
-	if (ethqos->cv2x_mode) {
-		for (i = 0; i < plat_dat->rx_queues_to_use; i++) {
+	for (i = 0; i < plat_dat->tx_queues_to_use; i++) {
+		if (of_property_read_u32(np, "dma-tx-desc-cnt",
+					 &priv->tx_queue[i].dma_tx_desc_sz))
+			priv->tx_queue[i].dma_tx_desc_sz = DMA_TX_SIZE;
+
+		if (ethqos->cv2x_mode && i == ethqos->cv2x_vlan.rx_queue)
+			priv->tx_queue[i].dma_tx_desc_sz = DMA_TX_SIZE_CV2X;
+
+		ETHQOSDBG("TX queue[%u] desc cnt = %u\n",
+			  i, priv->tx_queue[i].dma_tx_desc_sz);
+	}
+
+	for (i = 0; i < plat_dat->rx_queues_to_use; i++) {
+		if (of_property_read_u32(np, "dma-rx-desc-cnt",
+					 &priv->rx_queue[i].dma_rx_desc_sz))
+			priv->rx_queue[i].dma_rx_desc_sz = DMA_RX_SIZE;
+
+		if (ethqos->cv2x_mode) {
 			priv->rx_queue[i].en_fep = true;
-			if (i == ethqos->cv2x_vlan.rx_queue)
+			if (i == ethqos->cv2x_vlan.rx_queue) {
 				priv->rx_queue[i].dis_mod = true;
+				priv->rx_queue[i].dma_rx_desc_sz =
+					DMA_RX_SIZE_CV2X;
+			}
 		}
+
+		ETHQOSDBG("RX queue[%u] desc cnt = %u\n",
+			  i, priv->rx_queue[i].dma_rx_desc_sz);
 	}
 
 	if (ethqos->qoe_mode || ethqos->cv2x_mode) {
