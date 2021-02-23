@@ -22,7 +22,7 @@
 	subsys_backup_region: subsys_backup_region {
 		compatible = "shared-dma-pool";
 		reusable;
-		size = <0xC00000>;
+		size = <0x600000>;
 	};
 };
 
