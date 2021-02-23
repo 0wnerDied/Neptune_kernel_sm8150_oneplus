@@ -191,6 +191,20 @@
 				#cooling-cells = <2>;
 			};
 		};
+
+		cdsp {
+			qcom,instance-id = <0x43>;
+
+			cdsp_sw: cdsp {
+				qcom,qmi-dev-name = "cdsp_sw";
+				#cooling-cells = <2>;
+			};
+
+			cdsp_hw: hvx {
+				qcom,qmi-dev-name = "cdsp_hw";
+				#cooling-cells = <2>;
+			};
+		};
 	};
 
 	sdx_ext_ipc: qcom,sdx_ext_ipc {
@@ -211,6 +225,31 @@
 			adsp_vdd_cdev {
 				trip = <&aoss_lowf>;
 				cooling-device = <&adsp_vdd 0 0>;
+			};
+		};
+	};
+
+	q6-hvx-step {
+		polling-delay-passive = <50>;
+		polling-delay = <0>;
+		thermal-governor = "step_wise";
+		thermal-sensors = <&tsens0 1>;
+		wake-capable-sensor;
+
+		trips {
+			hvx_trip: hvx-trip {
+				temperature = <105000>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+		};
+
+		cooling-maps {
+			cdsp_cdev0 {
+				trip = <&hvx_trip>;
+				cooling-device =
+					<&cdsp_sw THERMAL_NO_LIMIT
+						THERMAL_NO_LIMIT>;
 			};
 		};
 	};
