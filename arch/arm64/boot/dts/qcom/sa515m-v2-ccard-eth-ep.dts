@@ -85,4 +85,5 @@
 	qcom,cv2x_mode = <1>;
 	qcom,cv2x-queue = <3>;
 	qcom,cv2x-vlan-offset = <1>;
+	jumbo-mtu = <8188>;
 };
