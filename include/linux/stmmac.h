@@ -131,6 +131,7 @@ struct stmmac_rxq_cfg {
 	u8 pkt_route;
 	bool use_prio;
 	u32 prio;
+	bool use_rtc;
 };
 
 struct stmmac_txq_cfg {
@@ -205,5 +206,6 @@ struct plat_stmmacenet_data {
 	int mac2mac_rgmii_speed;
 	int mac2mac_link;
 	bool mac2mac_en;
+	unsigned int jumbo_mtu;
 };
 #endif

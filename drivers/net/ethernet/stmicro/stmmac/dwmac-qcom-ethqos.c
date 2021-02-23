@@ -3496,6 +3496,38 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		plat_dat->tx_sched_algorithm = MTL_TX_ALGORITHM_WRR;
 	}
 
+	if (ethqos->cv2x_mode) {
+		if (ethqos->cv2x_vlan.rx_queue >= plat_dat->rx_queues_to_use)
+			ethqos->cv2x_vlan.rx_queue = CV2X_TAG_TX_CHANNEL;
+
+		ret = of_property_read_u32(np, "jumbo-mtu",
+					   &plat_dat->jumbo_mtu);
+		if (!ret) {
+			if (plat_dat->jumbo_mtu >
+			    MAX_SUPPORTED_JUMBO_FRAME_SIZE) {
+				ETHQOSDBG("jumbo mtu %u biger than max val\n",
+					  plat_dat->jumbo_mtu);
+				ETHQOSDBG("Set it to max supported value %u\n",
+					  MAX_SUPPORTED_JUMBO_FRAME_SIZE);
+				plat_dat->jumbo_mtu =
+					MAX_SUPPORTED_JUMBO_FRAME_SIZE;
+			}
+
+			if (plat_dat->jumbo_mtu < MIN_JUMBO_FRAME_SIZE) {
+				plat_dat->jumbo_mtu = 0;
+			} else {
+				/* Store and Forward mode will limit the max
+				 * buffer size per rx fifo buffer size
+				 * configuration. Use Receive Queue Threshold
+				 * Control mode (rtc) for cv2x rx queue to
+				 * support the jumbo frame up to 8K.
+				 */
+				i = ethqos->cv2x_vlan.rx_queue;
+				plat_dat->rx_queues_cfg[i].use_rtc = true;
+			}
+		}
+	}
+
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "rgmii");
 	ethqos->rgmii_base = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(ethqos->rgmii_base)) {
