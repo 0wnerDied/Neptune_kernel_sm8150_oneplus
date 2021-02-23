@@ -55,7 +55,8 @@ Subsystem properties:
 			"modem_v2x" -> modem CV2X mitigation device,
 			"cpr_cold" -> for cpr restriction,
 			"cdsp_sw" -> for CDSP DCVS mitigation device,
-			"cdsp_hw" -> for CDSP hardware mitigation device.
+			"cdsp_hw" -> for CDSP hardware mitigation device,
+			"adsp_sw" -> for ADSP DCVS mitigation device.
 
 	-#cooling-cells:
 		Usage: required
@@ -108,6 +109,11 @@ Example:
 
 			adsp_vdd: adsp_vdd {
 				qcom,qmi-dev-name = "cpuv_restriction_cold";
+				#cooling-cells = <2>;
+			};
+
+			adsp_sw: adsp {
+				qcom,qmi-dev-name = "adsp_sw";
 				#cooling-cells = <2>;
 			};
 		};
