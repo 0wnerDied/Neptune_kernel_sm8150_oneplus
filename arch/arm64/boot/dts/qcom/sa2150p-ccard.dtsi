@@ -182,6 +182,11 @@
 				qcom,qmi-dev-name = "cpuv_restriction_cold";
 				#cooling-cells = <2>;
 			};
+
+			adsp_sw: adsp {
+				qcom,qmi-dev-name = "adsp_sw";
+				#cooling-cells = <2>;
+			};
 		};
 
 		cdsp {
@@ -300,6 +305,30 @@
 				cooling-device =
 					<&cdsp_sw THERMAL_NO_LIMIT
 						THERMAL_NO_LIMIT>;
+			};
+		};
+	};
+
+	lpass-step {
+		polling-delay-passive = <50>;
+		polling-delay = <0>;
+		thermal-governor = "step_wise";
+		thermal-sensors = <&tsens0 2>;
+		wake-capable-sensor;
+
+		trips {
+			lpass_trip: lpass-trip {
+				temperature = <105000>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+		};
+
+		cooling-maps {
+			adsp_cdev {
+				trip = <&lpass_trip>;
+				cooling-device =
+					<&adsp_sw THERMAL_NO_LIMIT 2>;
 			};
 		};
 	};
