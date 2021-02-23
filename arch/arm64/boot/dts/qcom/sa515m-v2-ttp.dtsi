@@ -12,6 +12,7 @@
 
 #include "sdxprairie-v2.dtsi"
 #include "sdxprairie-mtp.dtsi"
+#include "sa515m.dtsi"
 
 &mpss_adsp_mem {
 	reg = <0x90800000 0xf800000>;
@@ -25,20 +26,6 @@
 				#cooling-cells = <2>;
 			};
 		};
-	};
-
-	subsys_backup: qcom,subsys-backup {
-		compatible = "qcom,subsys-backup";
-		qcom,buf-size = <0x600000>;
-		memory-region = <&subsys_backup_region>;
-	};
-};
-
-&reserved_mem {
-	subsys_backup_region: subsys_backup_region {
-		compatible = "shared-dma-pool";
-		reusable;
-		size = <0xC00000>;
 	};
 };
 
