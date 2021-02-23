@@ -795,7 +795,6 @@ static int subsys_qmi_send_request(struct subsys_backup *backup_dev,
 {
 	int ret;
 	struct qmi_txn txn;
-//	struct qmi_response_type_v01 *resp;
 
 	ret = qmi_txn_init(&backup_dev->qmi.qmi_svc_handle, &txn, resp_ei,
 				resp_data);
@@ -813,20 +812,7 @@ static int subsys_qmi_send_request(struct subsys_backup *backup_dev,
 		goto out;
 	}
 
-	ret = qmi_txn_wait(&txn, 5 * HZ);
-/*	if (ret < 0) {
-		dev_err(backup_dev->dev, "%s: Response wait failed: %d\n",
-				__func__, ret);
-		goto out;
-	}
-
-	resp = (struct qmi_response_type_v01 *)resp_data;
-
-	if (resp->result != QMI_RESULT_SUCCESS_V01) {
-		ret = -resp->result;
-		goto out;
-	}
-*/
+	qmi_txn_wait(&txn, 5 * HZ);
 	return 0;
 
 out:
