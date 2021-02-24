@@ -3696,7 +3696,7 @@ static int stmmac_rx_jumbo(struct stmmac_priv *priv, u32 queue,
 	}
 
 jumbo_read_again:
-	if (next_entry > entry) {
+	if (next_entry != entry) {
 		entry = next_entry;
 
 		if (priv->extend_desc)
@@ -3804,7 +3804,7 @@ jumbo_read_again:
 			if (unlikely(!skb)) {
 				if (net_ratelimit())
 					dev_warn(priv->device,
-						 "packet dropped\n");
+						 "jumbo packet dropped\n");
 				priv->dev->stats.rx_dropped++;
 				rx_q->jumbo_pkt_state.jumbo_error = 1;
 				goto jumbo_read_again;
@@ -3925,7 +3925,7 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
 	struct stmmac_rx_queue *rx_q = &priv->rx_queue[queue];
 	int coe = priv->hw->rx_csum;
 	unsigned int next_entry = rx_q->cur_rx;
-	unsigned int count = 0;
+	unsigned int count = 0, desc_count = 0;
 	unsigned int eth_type;
 
 	trace_stmmac_rx_entry(queue);
@@ -3940,7 +3940,7 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
 
 		priv->hw->desc->display_ring(rx_head, DMA_RX_SIZE, true);
 	}
-	while (count < limit) {
+	while (desc_count < limit) {
 		int entry, status, err_status = -1;
 		struct dma_desc *p;
 		struct dma_desc *np;
@@ -3966,10 +3966,12 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
 						     p, &status);
 			if (unlikely(status & dma_own))
 				break;
+			desc_count += next_entry - entry;
 			count++;
 			continue;
 		}
 
+		desc_count++;
 		count++;
 
 		rx_q->cur_rx = STMMAC_GET_ENTRY(rx_q->cur_rx, DMA_RX_SIZE);
@@ -4152,7 +4154,7 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
 	priv->xstats.q_rx_pkt_n[queue] += count;
 
 	trace_stmmac_rx_exit(queue);
-	return count;
+	return desc_count;
 }
 
 /**
