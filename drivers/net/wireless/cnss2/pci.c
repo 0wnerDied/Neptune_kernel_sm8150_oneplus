@@ -777,13 +777,39 @@ static void cnss_pci_collect_dump(struct cnss_pci_data *pci_priv)
 #endif
 
 /**
+ * cnss_pci_dump_qcn7605_sram_mem - Dump WLAN FW bootloader debug log
+ * @pci_priv: PCI device private data structure of cnss platform driver
+ *
+ * Dump Primary bootloader debug log data.
+ *
+ * Return: None
+ */
+static void cnss_pci_dump_qcn7605_sram_mem(struct cnss_pci_data *pci_priv)
+{
+	int i;
+	u32 mem_addr, val, pbl_stage, err_code;
+
+	cnss_pci_reg_read(pci_priv, QCN7605_TCSR_PBL_LOGGING_REG, &pbl_stage);
+	cnss_pci_reg_read(pci_priv, QCN7605_PCIE_ERRCODE, &err_code);
+	cnss_pr_dbg("TCSR_PBL_LOGGING: 0x%08x, PCIE_ERR_CODE: 0x%08x\n",
+		    pbl_stage, err_code);
+
+	cnss_pr_dbg("Dumping PBL log data\n");
+	/* cnss_pci_reg_read provides 32bit register values */
+	for (i = 0; i < QCA6390_DEBUG_PBL_LOG_SRAM_MAX_SIZE; i += sizeof(val)) {
+		mem_addr = QCA6390_DEBUG_PBL_LOG_SRAM_START + i;
+		if (cnss_pci_reg_read(pci_priv, mem_addr, &val))
+			break;
+		cnss_pr_dbg("SRAM[0x%x] = 0x%x\n", mem_addr, val);
+	}
+}
+
+/**
  * cnss_pci_dump_qca6390_sram_mem - Dump WLAN FW bootloader debug log
  * @pci_priv: PCI device private data structure of cnss platform driver
  *
  * Dump Primary and secondary bootloader debug log data. For SBL check the
  * log struct address and size for validity.
- *
- * Supported only on QCA6390
  *
  * Return: None
  */
@@ -792,13 +818,6 @@ static void cnss_pci_dump_qca6390_sram_mem(struct cnss_pci_data *pci_priv)
 	int i;
 	u32 mem_addr, val, pbl_stage, sbl_log_start, sbl_log_size;
 	u32 pbl_wlan_boot_cfg, pbl_bootstrap_status;
-	struct cnss_plat_data *plat_priv = pci_priv->plat_priv;
-
-	if (plat_priv->device_id != QCA6390_DEVICE_ID)
-		return;
-
-	if (cnss_pci_check_link_status(pci_priv))
-		return;
 
 	cnss_pci_reg_read(pci_priv, QCA6390_TCSR_PBL_LOGGING_REG, &pbl_stage);
 	cnss_pci_reg_read(pci_priv, QCA6390_PCIE_BHI_ERRDBG2_REG,
@@ -844,32 +863,20 @@ out:
 }
 
 /**
- * cnss_pci_dump_bl_sram_mem - Dump WLAN FW bootloader debug log
+ * cnss_pci_dump_qca6490_sram_mem - Dump WLAN FW bootloader debug log
  * @pci_priv: PCI device private data structure of cnss platform driver
  *
  * Dump Primary and secondary bootloader debug log data. For SBL check the
  * log struct address and size for validity.
  *
- * Supported only on QCA6490
- *
  * Return: None
  */
-static void cnss_pci_dump_bl_sram_mem(struct cnss_pci_data *pci_priv)
+static void cnss_pci_dump_qca6490_sram_mem(struct cnss_pci_data *pci_priv)
 {
 	int i;
 	u32 mem_addr, val, pbl_stage, sbl_log_start, sbl_log_size;
 	u32 pbl_wlan_boot_cfg, pbl_bootstrap_status;
 	struct cnss_plat_data *plat_priv = pci_priv->plat_priv;
-
-	if (plat_priv->device_id == QCA6390_DEVICE_ID) {
-		cnss_pci_dump_qca6390_sram_mem(pci_priv);
-		return;
-	} else if (plat_priv->device_id != QCA6490_DEVICE_ID) {
-		return;
-	}
-
-	if (cnss_pci_check_link_status(pci_priv))
-		return;
 
 	cnss_pci_reg_read(pci_priv, QCA6490_TCSR_PBL_LOGGING_REG, &pbl_stage);
 	cnss_pci_reg_read(pci_priv, QCA6490_PCIE_BHI_ERRDBG2_REG,
@@ -918,6 +925,39 @@ static void cnss_pci_dump_bl_sram_mem(struct cnss_pci_data *pci_priv)
 	return;
 out:
 	cnss_pr_err("Invalid SBL log data");
+}
+
+/**
+ * cnss_pci_dump_bl_sram_mem - Dump WLAN FW bootloader debug log
+ * @pci_priv: PCI device private data structure of cnss platform driver
+ *
+ * Dump Primary and secondary bootloader debug log data. For SBL check the
+ * log struct address and size for validity.
+ *
+ * Supported on QCA6390, QCA6490, QCN7605
+ *
+ * Return: None
+ */
+static void cnss_pci_dump_bl_sram_mem(struct cnss_pci_data *pci_priv)
+{
+	if (cnss_pci_check_link_status(pci_priv))
+		return;
+
+	switch (pci_priv->device_id) {
+	case QCA6390_DEVICE_ID:
+		cnss_pci_dump_qca6390_sram_mem(pci_priv);
+		break;
+	case QCN7605_DEVICE_ID:
+		cnss_pci_dump_qcn7605_sram_mem(pci_priv);
+		break;
+	case QCA6490_DEVICE_ID:
+		cnss_pci_dump_qca6490_sram_mem(pci_priv);
+		break;
+	default:
+		cnss_pr_err("Unknown device id found: 0x%x\n",
+			    pci_priv->device_id);
+		break;
+	}
 }
 
 static int cnss_qca6174_powerup(struct cnss_pci_data *pci_priv)
