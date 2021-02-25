@@ -54,4 +54,6 @@
 	qcom,cv2x-vlan-offset = <1>;
 	mac2mac;
 	mac2mac-rgmii-speed = <1000>;
+	dma-rx-desc-cnt = <128>;
+	dma-tx-desc-cnt = <128>;
 };
