@@ -221,6 +221,64 @@
 	};
 };
 
+&blsp1_uart1_active {
+	mux {
+		pins = "gpio30", "gpio31";
+	};
+
+	config {
+		pins = "gpio30", "gpio31";
+		};
+};
+
+&blsp1_uart1_sleep {
+	mux {
+		pins = "gpio30", "gpio31";
+	};
+
+	config {
+		pins = "gpio30", "gpio31";
+	};
+};
+
+&blsp1_uart4 {
+	blsp1_uart4_active: blsp1_uart4_active {
+		mux {
+			pins = "gpio82", "gpio83";
+			function = "blsp_uart3";
+		};
+
+		config {
+			pins = "gpio82", "gpio83";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	blsp1_uart4_sleep: blsp1_uart4_sleep {
+		mux {
+			pins = "gpio82", "gpio83";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio82", "gpio83";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+};
+
+&blsp1_uart4_hs {
+	pinctrl-0 = <&blsp1_uart4_sleep>;
+	pinctrl-1 = <&blsp1_uart4_active>;
+	status = "okay";
+};
+
+&blsp1_uart1_hs {
+	status = "okay";
+};
+
 &thermal_zones {
 	aoss-lowf {
 		cooling-maps {
