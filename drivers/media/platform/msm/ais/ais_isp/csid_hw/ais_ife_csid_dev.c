@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -92,7 +92,6 @@ int ais_ife_csid_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, csid_dev);
 	CAM_INFO(CAM_ISP, "CSID:%d probe successful",
 		csid_hw_intf->hw_idx);
-
 
 	if (csid_hw_intf->hw_idx < AIS_IFE_CSID_HW_RES_MAX)
 		ais_ife_csid_hw_list[csid_hw_intf->hw_idx] = csid_hw_intf;
