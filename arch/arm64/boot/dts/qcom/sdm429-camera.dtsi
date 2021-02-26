@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -40,7 +40,7 @@
 		clock-names = "camss_top_ahb_clk", "ispif_ahb_clk",
 			"csiphy_timer_src_clk", "csiphy_timer_clk",
 			"camss_ahb_src", "camss_ahb_clk";
-		qcom,clock-rates = <0 61540000 200000000 0 0 0>;
+		qcom,clock-rates = <0 61538461 200000000 0 0 0>;
 	};
 
 	qcom,csiphy@1b35000 {
@@ -61,7 +61,7 @@
 		clock-names = "camss_top_ahb_clk", "ispif_ahb_clk",
 			"csiphy_timer_src_clk", "csiphy_timer_clk",
 			"camss_ahb_src", "camss_ahb_clk";
-		qcom,clock-rates = <0 61540000 200000000 0 0 0>;
+		qcom,clock-rates = <0 61538461 200000000 0 0 0>;
 	};
 
 
@@ -90,7 +90,7 @@
 			"csi0_phy_clk",
 			"csi_clk",  "csi_pix_clk",
 			"csi_rdi_clk", "camss_ahb_clk";
-		qcom,clock-rates = <0 61540000 0 200000000 0 0 0 0 0>;
+		qcom,clock-rates = <0 61538461 0 200000000 0 0 0 0 0>;
 	};
 
 	qcom,csid@1b30400 {
@@ -117,7 +117,7 @@
 			"csi1_phy_clk",
 			"csi_clk", "csi_pix_clk",
 			"csi_rdi_clk", "camss_ahb_clk";
-		qcom,clock-rates = <0 61540000 0 200000000 0 0 0 0 0>;
+		qcom,clock-rates = <0 61538461 0 200000000 0 0 0 0 0>;
 	};
 
 	qcom,csid@1b30800 {
@@ -144,7 +144,7 @@
 			"csi2_phy_clk",
 			"csi_clk", "csi_pix_clk",
 			"csi_rdi_clk", "camss_ahb_clk";
-		qcom,clock-rates = <0 61540000 0 200000000 0 0 0 0 0>;
+		qcom,clock-rates = <0 61538461 0 200000000 0 0 0 0 0>;
 	};
 
 	qcom,ispif@1b31000 {
@@ -193,7 +193,7 @@
 			"vfe0_clk_src", "camss_vfe_vfe0_clk",
 			"camss_csi_vfe0_clk", "vfe1_clk_src",
 			"camss_vfe_vfe1_clk", "camss_csi_vfe1_clk";
-		qcom,clock-rates = <61540000 0 0 0
+		qcom,clock-rates = <61538461 0 0 0
 			200000000 0 0 0
 			200000000 0 0 0
 			200000000 0 0 0
@@ -400,7 +400,7 @@
 			"camss_top_ahb_clk", "camss_vfe_cpp_ahb_clk",
 			"camss_vfe_cpp_axi_clk", "camss_vfe_cpp_clk",
 			"micro_iface_clk", "camss_ahb_clk";
-		qcom,clock-rates = <61540000 180000000 0 0 0 180000000 0 0>;
+		qcom,clock-rates = <61538461 180000000 0 0 0 180000000 0 0>;
 		qcom,min-clock-rate = <133000000>;
 		resets = <&gcc GCC_CAMSS_MICRO_BCR>;
 		reset-names = "micro_iface_reset";
@@ -444,8 +444,8 @@
 		clock-names = "ispif_ahb_clk", "cci_src_clk",
 			"cci_ahb_clk", "camss_cci_clk",
 			"camss_ahb_clk", "camss_top_ahb_clk";
-		qcom,clock-rates = <61540000 19200000 0 0 0 0>,
-				<61540000 37500000 0 0 0 0>;
+		qcom,clock-rates = <61538461 19200000 0 0 0 0>,
+				<61538461 37500000 0 0 0 0>;
 		pinctrl-names = "cci_default", "cci_suspend";
 			pinctrl-0 = <&cci0_active &cci1_active>;
 			pinctrl-1 = <&cci0_suspend &cci1_suspend>;
