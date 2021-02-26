@@ -1296,9 +1296,12 @@ int ipa_drop_stats_init(void)
 {
 	u32 pipe_bitmask = 0;
 
-	/* Always enable drop stats for USB CONS and DPL Pipe. */
-	pipe_bitmask |= IPA_CLIENT_BIT_32(IPA_CLIENT_USB_CONS) |
-			IPA_CLIENT_BIT_32(IPA_CLIENT_USB_DPL_CONS);
+	pipe_bitmask |= ipa3_ctx->use_tput_est_ep ?
+			(IPA_CLIENT_BIT_32(IPA_CLIENT_USB_CONS) |
+			IPA_CLIENT_BIT_32(IPA_CLIENT_USB_DPL_CONS) |
+			IPA_CLIENT_BIT_32(IPA_CLIENT_TPUT_CONS)) :
+			(IPA_CLIENT_BIT_32(IPA_CLIENT_USB_CONS) |
+			IPA_CLIENT_BIT_32(IPA_CLIENT_USB_DPL_CONS));
 
 	return ipa_init_drop_stats(pipe_bitmask);
 }
