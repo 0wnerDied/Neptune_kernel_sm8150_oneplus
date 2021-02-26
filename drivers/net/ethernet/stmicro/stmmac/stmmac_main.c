@@ -1372,12 +1372,14 @@ static int init_dma_rx_desc_rings(struct net_device *dev, gfp_t flags)
 	 */
 	if (priv->plat->jumbo_mtu >= MIN_JUMBO_FRAME_SIZE) {
 		priv->jumbo_frame_sz =
-		priv->plat->jumbo_mtu == MAX_SUPPORTED_JUMBO_FRAME_SIZE ?
+		priv->plat->jumbo_mtu == MAX_SUPPORTED_JUMBO_MTU ?
 		MAX_SUPPORTED_JUMBO_FRAME_SIZE : bfsize;
 		bfsize = MIN_JUMBO_FRAME_SIZE;
 	}
 	priv->dma_buf_sz = bfsize;
-
+	netif_info(priv, probe, priv->dev,
+		   "bfsize = %u, jumbo_frame_sz = %u\n",
+		   bfsize, priv->jumbo_frame_sz);
 	/* RX INITIALIZATION */
 	netif_dbg(priv, probe, priv->dev,
 		  "SKB addresses:\nskb\t\tskb data\tdma data\n");
@@ -3808,20 +3810,8 @@ jumbo_read_again:
 
 		if (likely(jb_status & rx_fs_only)) {
 			/* Handle first segment
-			 * If jumbo mtu is not configured but user push
-			 * a jumbo frame, handle it as jumbo_error. Else
 			 * alloc a buffer for jumbo frame
 			 */
-			if (!priv->jumbo_frame_sz) {
-				if (net_ratelimit())
-					dev_warn(priv->device,
-						 "desc3 = 0x%x\n",
-						 le32_to_cpu(p->des3));
-				priv->dev->stats.rx_dropped++;
-				rx_q->jumbo_pkt_state.jumbo_error = 1;
-				goto jumbo_read_again;
-			}
-
 			skb = napi_alloc_skb(&rx_q->napi,
 					     priv->jumbo_frame_sz);
 			if (unlikely(!skb)) {
@@ -3986,6 +3976,21 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
 
 		if ((status & rx_fs_only) || (status & rx_ls_only) ||
 		    (status & rx_not_fsls)) {
+			if (!rx_q->jumbo_en) {
+				/* Drop packets here if the queue not
+				 * support jumbo frame
+				 */
+				if (status & rx_ls_only) {
+					priv->dev->stats.rx_dropped++;
+					count++;
+				}
+				rx_q->cur_rx = STMMAC_GET_ENTRY(
+					rx_q->cur_rx, rx_q->dma_rx_desc_sz);
+				next_entry = rx_q->cur_rx;
+				desc_count++;
+				continue;
+			}
+
 			next_entry = stmmac_rx_jumbo(priv, queue, entry,
 						     p, &status);
 			if (unlikely(status & dma_own))

@@ -3507,13 +3507,13 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 					   &plat_dat->jumbo_mtu);
 		if (!ret) {
 			if (plat_dat->jumbo_mtu >
-			    MAX_SUPPORTED_JUMBO_FRAME_SIZE) {
+			    MAX_SUPPORTED_JUMBO_MTU) {
 				ETHQOSDBG("jumbo mtu %u biger than max val\n",
 					  plat_dat->jumbo_mtu);
 				ETHQOSDBG("Set it to max supported value %u\n",
-					  MAX_SUPPORTED_JUMBO_FRAME_SIZE);
+					  MAX_SUPPORTED_JUMBO_MTU);
 				plat_dat->jumbo_mtu =
-					MAX_SUPPORTED_JUMBO_FRAME_SIZE;
+					MAX_SUPPORTED_JUMBO_MTU;
 			}
 
 			if (plat_dat->jumbo_mtu < MIN_JUMBO_FRAME_SIZE) {
@@ -3767,6 +3767,8 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 			priv->rx_queue[i].en_fep = true;
 			if (i == ethqos->cv2x_vlan.rx_queue) {
 				priv->rx_queue[i].dis_mod = true;
+				if (plat_dat->jumbo_mtu)
+					priv->rx_queue[i].jumbo_en = true;
 				priv->rx_queue[i].dma_rx_desc_sz =
 					DMA_RX_SIZE_CV2X;
 			}
