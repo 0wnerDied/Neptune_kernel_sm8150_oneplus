@@ -788,6 +788,14 @@ static int free_buffers(struct subsys_backup *backup_dev)
 	return 0;
 }
 
+static void subsys_backup_set_idle_state(struct subsys_backup *backup_dev)
+{
+	backup_dev->last_notif_sent = -1;
+	backup_dev->backup_type = -1;
+	backup_dev->remote_status = -1;
+	backup_dev->state = IDLE;
+}
+
 static int subsys_qmi_send_request(struct subsys_backup *backup_dev,
 			int msg_id, size_t len, struct qmi_elem_info *req_ei,
 			const void *req_data, struct qmi_elem_info *resp_ei,
@@ -795,7 +803,6 @@ static int subsys_qmi_send_request(struct subsys_backup *backup_dev,
 {
 	int ret;
 	struct qmi_txn txn;
-//	struct qmi_response_type_v01 *resp;
 
 	ret = qmi_txn_init(&backup_dev->qmi.qmi_svc_handle, &txn, resp_ei,
 				resp_data);
@@ -813,20 +820,7 @@ static int subsys_qmi_send_request(struct subsys_backup *backup_dev,
 		goto out;
 	}
 
-	ret = qmi_txn_wait(&txn, 5 * HZ);
-/*	if (ret < 0) {
-		dev_err(backup_dev->dev, "%s: Response wait failed: %d\n",
-				__func__, ret);
-		goto out;
-	}
-
-	resp = (struct qmi_response_type_v01 *)resp_data;
-
-	if (resp->result != QMI_RESULT_SUCCESS_V01) {
-		ret = -resp->result;
-		goto out;
-	}
-*/
+	qmi_txn_wait(&txn, 5 * HZ);
 	return 0;
 
 out:
@@ -1141,7 +1135,7 @@ static void backup_notif_handler(struct qmi_handle *handle,
 	backup_dev = container_of(qmi, struct subsys_backup, qmi);
 
 	if (atomic_read(&backup_dev->open_count) == 0) {
-		dev_err(backup_dev->dev, "%s: No active users\n", __func__);
+		dev_warn(backup_dev->dev, "%s: No active users\n", __func__);
 		return;
 	}
 
@@ -1156,6 +1150,7 @@ static void backup_notif_handler(struct qmi_handle *handle,
 		backup_dev->state = BACKUP_START;
 	} else if (ind->backup_state == END) {
 		backup_dev->state = BACKUP_END;
+		backup_dev->remote_status = ind->backup_status;
 	} else {
 		dev_err(backup_dev->dev, "%s: Invalid request\n", __func__);
 		return;
@@ -1185,7 +1180,7 @@ static void restore_notif_handler(struct qmi_handle *handle,
 	backup_dev = container_of(qmi, struct subsys_backup, qmi);
 
 	if (atomic_read(&backup_dev->open_count) == 0) {
-		dev_err(backup_dev->dev, "%s: No active users\n", __func__);
+		dev_warn(backup_dev->dev, "%s: No active users\n", __func__);
 		return;
 	}
 
@@ -1304,7 +1299,7 @@ static void subsys_backup_del_server(struct qmi_handle *handle,
 	backup_dev = container_of(qmi, struct subsys_backup, qmi);
 
 	backup_dev->qmi.connected = false;
-
+	subsys_backup_set_idle_state(backup_dev);
 	hyp_assign_buffers(backup_dev, VMID_HLOS, VMID_MSS_MSA);
 	free_buffers(backup_dev);
 }
@@ -1353,7 +1348,7 @@ static int backup_buffer_open(struct inode *inodep, struct file *filep)
 					struct subsys_backup, cdev);
 	if (atomic_inc_return(&backup_dev->open_count) != 1) {
 		dev_err(backup_dev->dev,
-				"Multiple instances of open  not allowed\n");
+				"Multiple instances of open not allowed\n");
 		atomic_dec(&backup_dev->open_count);
 		return -EBUSY;
 	}
@@ -1368,7 +1363,7 @@ static ssize_t backup_buffer_read(struct file *filp, char __user *buf,
 	size_t ret;
 
 	if (backup_dev->state != BACKUP_END) {
-		dev_err(backup_dev->dev, "%s: Backup not complete: %d\n",
+		dev_warn(backup_dev->dev, "%s: Backup not complete: %d\n",
 				__func__);
 		return 0;
 	} else if (!backup_dev->img_buf.hyp_assigned_to_hlos) {
@@ -1396,7 +1391,8 @@ static ssize_t backup_buffer_write(struct file *filp, const char __user *buf,
 	struct subsys_backup *backup_dev = filp->private_data;
 
 	if (backup_dev->state != RESTORE_START) {
-		dev_err(backup_dev->dev, "%s: Restore not started\n", __func__);
+		dev_warn(backup_dev->dev, "%s: Restore not started\n",
+				__func__);
 		return 0;
 	} else if (!backup_dev->img_buf.hyp_assigned_to_hlos) {
 		dev_err(backup_dev->dev, "%s: Not hyp_assinged to HLOS\n",
@@ -1419,7 +1415,7 @@ static int backup_buffer_flush(struct file *filp, fl_owner_t id)
 		return 0;
 
 	if (backup_dev->state != RESTORE_START || !backup_dev->img_buf.vaddr) {
-		dev_err(backup_dev->dev, "%s: Invalid operation\n", __func__);
+		dev_warn(backup_dev->dev, "%s: Invalid operation\n", __func__);
 		return -EBUSY;
 	}
 
