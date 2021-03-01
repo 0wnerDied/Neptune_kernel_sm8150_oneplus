@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -62,6 +62,7 @@ struct diag_mhi_info {
 	int mempool;
 	int mempool_init;
 	int num_read;
+	int device_reset;
 	uint8_t enabled;
 	struct mhi_device *mhi_dev;
 	char name[DIAG_MHI_NAME_SZ];
