@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -438,6 +438,7 @@
 			qcom,vdd-wlan-rfa3-info = <1904000 1904000 450000 0>;
 			qcom,wlan-ramdump-dynamic = <0x400000>;
 			mhi,max-channels = <30>;
+			mhi,buffer-len = <0x8000>;
 			mhi,timeout = <10000>;
 			qcom,smmu-s1-enable;
 			mhi_channels {
@@ -548,6 +549,7 @@
 
 			qcom,wlan-ramdump-dynamic = <0x300000>;
 			mhi,max-channels = <30>;
+			mhi,buffer-len = <0x8000>;
 			mhi,timeout = <10000>;
 			mhi,ee = <0x3>, <0x4>;
 			mhi,ee-names = "SBL", "RDDM";
