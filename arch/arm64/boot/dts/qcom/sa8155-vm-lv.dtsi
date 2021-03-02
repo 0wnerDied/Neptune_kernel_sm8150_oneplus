@@ -190,5 +190,6 @@
 
 	qcom,veth-ipa {
 		compatible = "qcom,veth-ipa";
+		com,irq_mark_mapping = <1 1>, <2 2>;
 	};
 };
