@@ -437,6 +437,13 @@ static int qcom_ethqos_add_ipaddr(struct ip_params *ip_info,
 		ETHQOSERR("Sock is null, unable to assign ipv4 address\n");
 		return res;
 	}
+
+	if (!net->ipv4.devconf_dflt) {
+		ETHQOSERR("ipv4.devconf_dflt is null, schedule wq\n");
+		schedule_delayed_work(&pethqos->ipv4_addr_assign_wq,
+				      msecs_to_jiffies(1000));
+		return res;
+	}
 	/*For valid Ipv4 address*/
 	memset(&ir, 0, sizeof(ir));
 	memcpy(&sin->sin_addr.s_addr, &ip_info->ipv4_addr,
@@ -2767,10 +2774,7 @@ static void ethqos_set_early_eth_param(
 	if (pparams.is_valid_ipv4_addr) {
 		INIT_DELAYED_WORK(&ethqos->ipv4_addr_assign_wq,
 				  ethqos_is_ipv4_NW_stack_ready);
-		ret = qcom_ethqos_add_ipaddr(&pparams, priv->dev);
-		if (ret)
-			schedule_delayed_work(&ethqos->ipv4_addr_assign_wq,
-					      msecs_to_jiffies(1000));
+		schedule_delayed_work(&ethqos->ipv4_addr_assign_wq, 0);
 	}
 
 	if (pparams.is_valid_ipv6_addr) {
