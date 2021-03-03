@@ -129,6 +129,7 @@
 #define IPA_IOCTL_SET_MAC_FLT                   81
 #define IPA_IOCTL_ADD_UC_ACT_ENTRY              82
 #define IPA_IOCTL_DEL_UC_ACT_ENTRY              83
+#define IPA_IOCTL_QUERY_CACHED_DRIVER_MSG       84
 
 /**
  * max size of the header to be inserted
@@ -775,7 +776,13 @@ enum ipa_mac_flt_event {
 #define IPA_MAC_FLT_EVENT_MAX IPA_MAC_FLT_EVENT_MAX
 };
 
-#define IPA_EVENT_MAX_NUM (IPA_MAC_FLT_EVENT_MAX)
+enum ipa_done_restore_event {
+	IPA_DONE_RESTORE_EVENT = IPA_MAC_FLT_EVENT_MAX,
+	IPA_DONE_RESTORE_EVENT_MAX
+	#define IPA_DONE_RESTORE_EVENT_MAX IPA_DONE_RESTORE_EVENT_MAX
+};
+
+#define IPA_EVENT_MAX_NUM (IPA_DONE_RESTORE_EVENT_MAX)
 #define IPA_EVENT_MAX ((int)IPA_EVENT_MAX_NUM)
 
 /**
@@ -3214,6 +3221,8 @@ struct ipa_ioc_mac_client_list_type {
 #define IPA_IOC_DEL_UC_ACT_ENTRY _IOWR(IPA_IOC_MAGIC, \
 				IPA_IOCTL_DEL_UC_ACT_ENTRY, \
 				uint16_t)
+#define IPA_IOC_QUERY_CACHED_DRIVER_MSG _IO(IPA_IOC_MAGIC,\
+				IPA_IOCTL_QUERY_CACHED_DRIVER_MSG)
 
 /*
  * unique magic number of the Tethering bridge ioctls
