@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -152,6 +152,10 @@ static struct qmi_dev_info device_clients[] = {
 	{
 		.dev_name = "cpr_cold",
 		.type = QMI_CDEV_MIN_LIMIT_TYPE,
+	},
+	{
+		.dev_name = "adsp_sw",
+		.type = QMI_CDEV_MAX_LIMIT_TYPE,
 	}
 };
 

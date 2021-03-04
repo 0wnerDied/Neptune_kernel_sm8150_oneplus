@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -26,6 +26,7 @@
 &mtl_rx_setup {
 	queue2 {
 		snps,dcb-algorithm;
+		/delete-property/ snps,route-avcp;
 	};
 
 	queue3 {
@@ -59,12 +60,16 @@
 	qcom,nonhotplug;
 	qcom,nonremovable;
 
+	/* Platform design has deviations from eMMC spec recommendation.
+	 * There is a single LDO supply both VCC and VCCQ for this eMMC device.
+	 * Since VCC must be in the range of 2.7-3.6V, that forces the VCCQ IO
+	 * voltage to be the same and the LDO is set to 2.95V.
+	 * Please see eMMC spec for appropriate vdd-io voltages.
+	 */
 	qcom,vdd-io-always-on;
 	qcom,vdd-io-lpm-sup;
-	qcom,vdd-io-voltage-level = <1800000 1800000>;
-	qcom,vdd-io-current-level = <0 325000>;
 
-	qcom,bus-speed-mode = "HS400_1p8v", "HS200_1p8v", "DDR_1p8v";
+	qcom,bus-speed-mode = "DDR_1p8v";
 
 	pinctrl-0 = <&sdc2_clk_on  &sdc2_cmd_on &sdc2_data_on>;
 	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off>;
@@ -73,9 +78,9 @@
 &i2c_3 {
 	status = "okay";
 
-	eeprom@57 {
+	eeprom@56 {
 		compatible = "atmel,24c128";
-		reg = <0x57>;
+		reg = <0x56>;
 		pagesize = <32>;
 	};
 };

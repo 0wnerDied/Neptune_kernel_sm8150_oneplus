@@ -51,6 +51,7 @@
 #define QTIMER_MUL				10000
 #define TIME_OFFSET_MAX_THD		30
 #define TIME_OFFSET_MIN_THD		-30
+#define TIMESTAMP_PRINT_CNTR	10
 
 struct qti_can {
 	struct net_device	**netdev;
@@ -417,6 +418,7 @@ static int qti_can_process_response(struct qti_can *priv_data,
 	static s64 prev_time_diff;
 	static u8 first_offset_est = 1;
 	s64 offset_variation = 0;
+	static u8 offset_print_cntr;
 
 	LOGDI("<%x %2d [%d]\n", resp->cmd, resp->len, resp->seq);
 	if (resp->cmd == CMD_CAN_RECEIVE_FRAME) {
@@ -497,12 +499,15 @@ static int qti_can_process_response(struct qti_can *priv_data,
 
 		if (offset_variation > TIME_OFFSET_MAX_THD ||
 		    offset_variation < TIME_OFFSET_MIN_THD) {
-			dev_info(&priv_data->spidev->dev,
-				 "Off Exceeded: Curr off is %lld\n",
-				 priv_data->time_diff);
-			dev_info(&priv_data->spidev->dev,
-				 "Prev off is %lld\n",
+			if (offset_print_cntr < TIMESTAMP_PRINT_CNTR) {
+				dev_info(&priv_data->spidev->dev,
+					 "Off Exceeded: Curr off is %lld\n",
+					 priv_data->time_diff);
+				dev_info(&priv_data->spidev->dev,
+					 "Prev off is %lld\n",
 				prev_time_diff);
+				offset_print_cntr++;
+			}
 			/* Set curr off to prev off if */
 			/* variation is beyond threshold */
 			priv_data->time_diff = prev_time_diff;
@@ -899,6 +904,8 @@ static int qti_can_send_release_can_buffer_cmd(struct net_device *netdev)
 	*mode = priv_data->driver_mode;
 
 	ret = qti_can_do_spi_transaction(priv_data);
+	dev_info(&priv_data->spidev->dev,
+		 "Release can buffer cmd sent\n");
 	mutex_unlock(&priv_data->spi_lock);
 	return ret;
 }

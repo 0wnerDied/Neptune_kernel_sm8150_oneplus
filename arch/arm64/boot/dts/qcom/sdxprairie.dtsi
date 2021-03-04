@@ -1,4 +1,4 @@
-/* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -99,6 +99,12 @@
 			no-map;
 			reg = <0x8ef00000 0x800000>;
 			label = "mpss_debug_mem";
+		};
+
+		guard_mem: guard_region@8eeff000 {
+			no-map;
+			reg = <0x8eeff000 0x1000>;
+			label = "guard_mem";
 		};
 
 		qseecom_mem: qseecom_region@0 {
@@ -1630,6 +1636,25 @@
 		qcom,status-out-gpio = <&tlmm 63 0x00>;
 		qcom,status-out2-gpio = <&tlmm 66 0x00>;
 		status = "disabled";
+	};
+
+	qfprom: qfprom@780000 {
+		compatible = "qcom,qfprom";
+		reg = <0x00780000 0x300>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		read-only;
+		ranges;
+
+		thermal_revision: thermal-revision@198 {
+			reg = <0x198 0x1>;
+			bits = <4 2>;
+		};
+
+		thermal_cpe: thermal-cpe@20b {
+			reg = <0x20b 0x1>;
+			bits = <4 1>;
+		};
 	};
 };
 

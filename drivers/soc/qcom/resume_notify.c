@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -16,6 +16,7 @@
 #include <linux/string.h>
 #include <linux/sysfs.h>
 #include <linux/pm_wakeup.h>
+#include <soc/qcom/sb_notification.h>
 
 static char system_stat[8];
 static struct kobject *state_kobj;
@@ -27,7 +28,7 @@ static int suspend_resume_notifier(struct notifier_block *nb,
 {
 	switch (event) {
 
-	case PM_POST_SUSPEND:
+	case EVENT_REMOTE_WOKEN_UP:
 		__pm_stay_awake(notify_resume_ws);
 		atomic_inc(&counter);
 		strlcpy(system_stat, "resume", sizeof(system_stat));
@@ -100,9 +101,9 @@ static int __init sdx_power_init(void)
 	}
 
 	strlcpy(system_stat, "resume", sizeof(system_stat));
-	error = register_pm_notifier(&sdx_power_pm_nb);
+	error = sb_register_evt_listener(&sdx_power_pm_nb);
 	if (error) {
-		pr_err("%s: register_pm_notifier error %d\n", __func__, error);
+		pr_err("%s: sb_reg_evt_listener err %d\n", __func__, error);
 		goto free_sysfs;
 	}
 /* Register as a wakeup source */
@@ -111,12 +112,10 @@ static int __init sdx_power_init(void)
 		error = -ENOMEM;
 		goto err_wakeup_source_register;
 	}
-	__pm_stay_awake(notify_resume_ws);
-	atomic_inc(&counter);
 	return 0;
 
 err_wakeup_source_register:
-	unregister_pm_notifier(&sdx_power_pm_nb);
+	sb_unregister_evt_listener(&sdx_power_pm_nb);
 
 free_sysfs:
 	sysfs_remove_group(state_kobj, &attr_group);

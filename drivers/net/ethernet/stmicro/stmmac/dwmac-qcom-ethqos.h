@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -14,24 +14,19 @@
 
 #include <linux/ipc_logging.h>
 #include <linux/msm-bus.h>
+#include <linux/clk.h>
 #include <linux/mailbox_client.h>
 #include <linux/mailbox/qmp.h>
 #include <linux/mailbox_controller.h>
-
 #include <linux/inetdevice.h>
 #include <linux/inet.h>
-
 #include <net/addrconf.h>
 #include <net/ipv6.h>
 #include <net/inet_common.h>
-
 #include <linux/uaccess.h>
 
 extern void *ipc_stmmac_log_ctxt;
 extern void *ipc_stmmac_log_ctxt_low;
-
-#define SSR_EVENT_UP 20
-#define SSR_EVENT_DOWN 21
 
 #define QCOM_ETH_QOS_MAC_ADDR_LEN 6
 #define QCOM_ETH_QOS_MAC_ADDR_STR_LEN 18
@@ -240,6 +235,21 @@ do {\
 #define VOTE_IDX_10MBPS 1
 #define VOTE_IDX_100MBPS 2
 #define VOTE_IDX_1000MBPS 3
+
+/* Clock rates */
+#define RGMII_1000_NOM_CLK_FREQ			(250 * 1000 * 1000UL)
+
+#define RGMII_ID_MODE_100_LOW_SVS_CLK_FREQ	 (50 * 1000 * 1000UL)
+#define RGMII_NON_ID_MODE_100_LOW_SVS_CLK_FREQ   (25 * 1000 * 1000UL)
+
+#define RGMII_ID_MODE_10_LOW_SVS_CLK_FREQ	  (5 * 1000 * 1000UL)
+#define RGMII_NON_ID_MODE_10_LOW_SVS_CLK_FREQ	 (2.5 * 1000 * 1000UL)
+
+#define RMII_100_LOW_SVS_CLK_FREQ  (50 * 1000 * 1000UL)
+#define RMII_10_LOW_SVS_CLK_FREQ  (50 * 1000 * 1000UL)
+
+#define MII_100_LOW_SVS_CLK_FREQ  (25 * 1000 * 1000UL)
+#define MII_10_LOW_SVS_CLK_FREQ  (2.5 * 1000 * 1000UL)
 
 //Mac config
 #define MAC_CONFIGURATION 0x0
@@ -518,10 +528,14 @@ struct qcom_ethqos {
 	struct cdev *avb_class_b_cdev;
 	struct class *avb_class_b_class;
 
+	/* Mac recovery dev node variables*/
 	dev_t emac_dev_t;
 	struct cdev *emac_cdev;
 	struct class *emac_class;
 
+	dev_t emac_rec_dev_t;
+	struct cdev *emac_rec_cdev;
+	struct class *emac_rec_class;
 	unsigned long avb_class_a_intr_cnt;
 	unsigned long avb_class_b_intr_cnt;
 	struct dentry *debugfs_dir;
@@ -584,6 +598,16 @@ struct qcom_ethqos {
 	/* SSR over ethernet parameters */
 	struct work_struct eth_ssr;
 	unsigned long action;
+
+	/* Mac recovery parameters */
+	int mac_err_cnt[MAC_ERR_CNT];
+	bool mac_rec_en[MAC_ERR_CNT];
+	bool mac_rec_fail[MAC_ERR_CNT];
+	int mac_rec_cnt[MAC_ERR_CNT];
+	int mac_rec_threshold[MAC_ERR_CNT];
+	struct delayed_work tdu_rec;
+	bool tdu_scheduled;
+	int tdu_chan;
 };
 
 struct pps_cfg {

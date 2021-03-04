@@ -67,6 +67,7 @@ ifdef CONFIG_COMPAT
   obj-$(CONFIG_MSM_ADSPRPC)	+= adsprpc_compat.o
 endif
 obj-$(CONFIG_VIRTIO_FASTRPC)	+= virtio_fastrpc.o
+obj-$(CONFIG_VIRTIO_EAVB)	+= virtio_eavb/
 ifdef CONFIG_COMPAT
   obj-$(CONFIG_VIRTIO_FASTRPC)	+= adsprpc_compat.o
 endif

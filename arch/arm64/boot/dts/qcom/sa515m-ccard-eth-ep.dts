@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -58,6 +58,7 @@
 &mtl_rx_setup {
 	queue2 {
 		snps,dcb-algorithm;
+		/delete-property/ snps,route-avcp;
 	};
 
 	queue3 {
@@ -84,4 +85,5 @@
 	qcom,cv2x_mode = <1>;
 	qcom,cv2x-queue = <3>;
 	qcom,cv2x-vlan-offset = <1>;
+	jumbo-mtu = <8188>;
 };

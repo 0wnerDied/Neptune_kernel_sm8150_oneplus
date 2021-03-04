@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -26,6 +26,7 @@
 &mtl_rx_setup {
 	queue2 {
 		snps,dcb-algorithm;
+		/delete-property/ snps,route-avcp;
 	};
 
 	queue3 {
@@ -57,9 +58,9 @@
 &i2c_3 {
 	status = "okay";
 
-	eeprom@57 {
+	eeprom@56 {
 		compatible = "atmel,24c128";
-		reg = <0x57>;
+		reg = <0x56>;
 		pagesize = <32>;
 	};
 };

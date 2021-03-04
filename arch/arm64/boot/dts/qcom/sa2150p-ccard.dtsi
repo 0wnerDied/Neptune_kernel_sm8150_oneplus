@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -9,6 +9,17 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
+&aliases {
+	mhi0 = &mhi_0;
+	mhi1 = &mhi_1;
+	mhi_netdev0 = &mhi_netdev_0;
+	mhi_netdev1 = &mhi_netdev_1;
+	mhi_netdev2 = &mhi_netdev_2;
+	mhi_netdev3 = &mhi_netdev_3;
+	mhi_netdev4 = &mhi_netdev_4;
+	mhi_netdev5 = &mhi_netdev_5;
+};
 
 &tlmm {
 	pinctrl-0 = <&status_gpio>;
@@ -179,6 +190,25 @@
 				qcom,qmi-dev-name = "cpuv_restriction_cold";
 				#cooling-cells = <2>;
 			};
+
+			adsp_sw: adsp {
+				qcom,qmi-dev-name = "adsp_sw";
+				#cooling-cells = <2>;
+			};
+		};
+
+		cdsp {
+			qcom,instance-id = <0x43>;
+
+			cdsp_sw: cdsp {
+				qcom,qmi-dev-name = "cdsp_sw";
+				#cooling-cells = <2>;
+			};
+
+			cdsp_hw: hvx {
+				qcom,qmi-dev-name = "cdsp_hw";
+				#cooling-cells = <2>;
+			};
 		};
 	};
 
@@ -200,6 +230,55 @@
 			adsp_vdd_cdev {
 				trip = <&aoss_lowf>;
 				cooling-device = <&adsp_vdd 0 0>;
+			};
+		};
+	};
+
+	q6-hvx-step {
+		polling-delay-passive = <50>;
+		polling-delay = <0>;
+		thermal-governor = "step_wise";
+		thermal-sensors = <&tsens0 1>;
+		wake-capable-sensor;
+
+		trips {
+			hvx_trip: hvx-trip {
+				temperature = <105000>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+		};
+
+		cooling-maps {
+			cdsp_cdev0 {
+				trip = <&hvx_trip>;
+				cooling-device =
+					<&cdsp_sw THERMAL_NO_LIMIT
+						THERMAL_NO_LIMIT>;
+			};
+		};
+	};
+
+	lpass-step {
+		polling-delay-passive = <50>;
+		polling-delay = <0>;
+		thermal-governor = "step_wise";
+		thermal-sensors = <&tsens0 2>;
+		wake-capable-sensor;
+
+		trips {
+			lpass_trip: lpass-trip {
+				temperature = <105000>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+		};
+
+		cooling-maps {
+			adsp_cdev {
+				trip = <&lpass_trip>;
+				cooling-device =
+					<&adsp_sw THERMAL_NO_LIMIT 2>;
 			};
 		};
 	};
@@ -373,3 +452,5 @@
 			qcom,pre-scaling = <1 1>;
 	};
 };
+
+#include "sa2150p-ccard-mhi.dtsi"

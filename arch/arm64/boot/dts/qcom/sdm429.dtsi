@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -37,7 +37,7 @@
 		compatible = "android,firmware";
 		vbmeta {
 		   compatible = "android,vbmeta";
-		   parts = "vbmeta,boot,system,vendor,dtbo,recovery";
+		   parts = "vbmeta,boot,system,vendor,dtbo";
 		};
 
 		fstab {
@@ -48,7 +48,7 @@
 			"/dev/block/platform/soc/7824900.sdhci/by-name/vendor";
 		      type = "ext4";
 		      mnt_flags = "ro,barrier=1,discard";
-		      fsmgr_flags = "wait,avb";
+		      fsmgr_flags = "wait,avb,slotselect";
 		      status = "ok";
 		   };
 		};
@@ -63,7 +63,7 @@
 		other_ext_mem: other_ext_region@0 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x85b00000 0x0 0xd00000>;
+			reg = <0x0 0x85c00000 0x0 0xc00000>;
 		};
 
 		modem_mem: modem_region@0 {
@@ -144,9 +144,9 @@
 
 	};
 
-	qcom_seecom: qseecom@85b00000 {
+	qcom_seecom: qseecom@85c00000 {
 		compatible = "qcom,qseecom";
-		reg = <0x85b00000 0x800000>;
+		reg = <0x85c00000 0x700000>;
 		reg-names = "secapp-region";
 		qcom,hlos-num-ce-hw-instances = <1>;
 		qcom,hlos-ce-hw-instance = <0>;
@@ -1086,6 +1086,13 @@
 			qcom,apr_tal_rpmsg {
 				qcom,smd-channels = "apr_audio_svc";
 			};
+
+			qcom,diag {
+				qcom,smd-channels = "DIAG";
+			};
+			qcom,diag_cntl {
+				qcom,smd-channels = "DIAG_CNTL";
+			};
 		};
 
 		rpm {
@@ -1281,12 +1288,14 @@
 			qcom,smdpkt-edge = "wcnss";
 			qcom,smdpkt-ch-name = "APPS_RIVA_BT_ACL";
 			qcom,smdpkt-dev-name = "smd2";
+			qcom,smdpkt-fragmented-read;
 		};
 
 		qcom,smdpkt-apps-riva-bt-cmd {
 			qcom,smdpkt-edge = "wcnss";
 			qcom,smdpkt-ch-name = "APPS_RIVA_BT_CMD";
 			qcom,smdpkt-dev-name = "smd3";
+			qcom,smdpkt-fragmented-read;
 		};
 
 		qcom,smdpkt-mbalbridge {
@@ -1476,7 +1485,7 @@
 			<&tlmm 79 0>, <&tlmm 80 0>;
 
 		clocks = <&rpmcc CXO_SMD_WLAN_CLK>,
-			 <&rpmcc RPM_SMD_RF_CLK2>,
+			 <&rpmcc RPM_SMD_RF_CLK1>,
 			 <&rpmcc SNOC_WCNSS_A_CLK>;
 
 		clock-names = "xo", "rf_clk", "snoc_wcnss";

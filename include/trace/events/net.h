@@ -63,7 +63,7 @@ TRACE_EVENT(net_dev_start_xmit,
 
 	),
 
-	TP_printk("dev=%s queue_mapping=%u skbaddr=%pK vlan_tagged=%d\t"
+	TP_printk("dev=%s queue_mapping=%u skbaddr=%px vlan_tagged=%d\t"
 		  "vlan_proto=0x%04x vlan_tci=0x%04x protocol=0x%04x\t"
 		  "ip_summed=%d len=%u data_len=%u network_offset=%d\t"
 		  "transport_offset_valid=%d transport_offset=%d tx_flags=%d\t"
@@ -97,7 +97,7 @@ TRACE_EVENT(net_receive_skb_exit,
 
 	),
 
-	TP_printk(" skbaddr=%pK UTC = %ld", __entry->skbaddr, __entry->utctime)
+	TP_printk(" skbaddr=%px UTC = %ld", __entry->skbaddr, __entry->utctime)
 );
 
 TRACE_EVENT(net_dev_xmit,
@@ -125,7 +125,7 @@ TRACE_EVENT(net_dev_xmit,
 		__entry->utctime = ktime_get_tai_ns();
 	),
 
-	TP_printk("dev=%s skbaddr=%pK len=%u rc=%d UTC: %ld",
+	TP_printk("dev=%s skbaddr=%px len=%u rc=%d UTC: %ld",
 		  __get_str(name), __entry->skbaddr, __entry->len, __entry->rc,
 		  __entry->utctime)
 );
@@ -150,7 +150,7 @@ DECLARE_EVENT_CLASS(net_dev_template,
 		__entry->utctime = ktime_get_tai_ns();
 	),
 
-	TP_printk("dev=%s skbaddr=%pK len=%u UTC: %ld",
+	TP_printk("dev=%s skbaddr=%px len=%u UTC: %ld",
 		__get_str(name), __entry->skbaddr, __entry->len,
 		__entry->utctime)
 )
@@ -227,7 +227,7 @@ DECLARE_EVENT_CLASS(net_dev_rx_verbose_template,
 
 	),
 
-	TP_printk("dev=%s napi_id=%#x queue_mapping=%u skbaddr=%pK\t"
+	TP_printk("dev=%s napi_id=%#x queue_mapping=%u skbaddr=%px\t"
 		  "vlan_tagged=%d vlan_proto=0x%04x vlan_tci=0x%04x\t"
 		  "protocol=0x%04x ip_summed=%d hash=0x%08x l4_hash=%d\t"
 		  "len=%u data_len=%u truesize=%u mac_header_valid=%d\t"

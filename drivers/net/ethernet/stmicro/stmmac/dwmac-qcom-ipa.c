@@ -3060,11 +3060,11 @@ void ethqos_ipa_offload_event_handler(void *data,
 	IPA_LOCK();
 
 	switch (ev) {
-	case SSR_EVENT_UP:
+	case EV_IPA_SSR_UP:
 		ethqos_ipa_cv2x_offload_resume(eth_ipa_ctx.ethqos,
 					       IPA_QUEUE_CV2X);
 		break;
-	case SSR_EVENT_DOWN:
+	case EV_IPA_SSR_DOWN:
 		ethqos_ipa_cv2x_offload_suspend(eth_ipa_ctx.ethqos,
 						IPA_QUEUE_CV2X);
 		break;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -54,6 +54,7 @@
 
 /* pm runtime auto suspend timer in msecs */
 #define BG_SPI_AUTOSUSPEND_TIMEOUT		5000
+#define BG_RESUME_IRQ_TIMEOUT 100
 
 enum bgcom_state {
 	/*BGCOM Staus ready*/
@@ -123,10 +124,13 @@ static struct mutex bg_task_mutex;
 
 static atomic_t  bg_is_spi_active;
 static atomic_t  bg_is_runtime_suspend;
+static atomic_t  ok_to_sleep;
 static int bg_irq;
 
 static uint8_t *fxd_mem_buffer;
 static struct mutex cma_buffer_lock;
+
+static DECLARE_COMPLETION(bg_resume_wait);
 
 static struct spi_device *get_spi_device(void)
 {
@@ -515,6 +519,7 @@ static int bgcom_resume_l(void *handle)
 	struct bg_spi_priv *bg_spi;
 	struct bg_context *cntx;
 	int retry = 0;
+	int ret;
 
 	if (handle == NULL)
 		return -EINVAL;
@@ -544,6 +549,14 @@ static int bgcom_resume_l(void *handle)
 
 	do {
 		if (is_bg_resume(handle)) {
+			if (atomic_read(&ok_to_sleep)) {
+				reinit_completion(&bg_resume_wait);
+				ret = wait_for_completion_timeout(
+					&bg_resume_wait, msecs_to_jiffies(
+						BG_RESUME_IRQ_TIMEOUT));
+				if (!ret)
+					pr_err("Time out on BG Resume\n");
+			}
 			bg_spi->bg_state = BGCOM_STATE_ACTIVE;
 			break;
 		}
@@ -1033,6 +1046,11 @@ static irqreturn_t bg_irq_tasklet_hndlr(int irq, void *device)
 {
 	struct bg_spi_priv *bg_spi = device;
 	struct spi_device *spi = get_spi_device();
+
+	/* Once interrupt received. BG is OUT of sleep */
+	complete(&bg_resume_wait);
+	atomic_set(&ok_to_sleep, 0);
+
 	/* check if call-back exists */
 	if (atomic_read(&bg_is_runtime_suspend)) {
 		pr_debug("Interrupt received in suspend state\n");
@@ -1201,6 +1219,7 @@ static int bgcom_pm_suspend(struct device *dev)
 		bg_spi->bg_state = BGCOM_STATE_SUSPEND;
 		atomic_set(&bg_is_spi_active, 0);
 		atomic_set(&bg_is_runtime_suspend, 0);
+		atomic_set(&ok_to_sleep, 1);
 		disable_irq(bg_irq);
 	}
 	pr_info("suspended with : %d\n", ret);
@@ -1245,6 +1264,7 @@ static int bgcom_pm_runtime_suspend(struct device *dev)
 		bg_spi->bg_state = BGCOM_STATE_RUNTIME_SUSPEND;
 		atomic_set(&bg_is_spi_active, 0);
 		atomic_set(&bg_is_runtime_suspend, 1);
+		atomic_set(&ok_to_sleep, 1);
 	}
 	pr_info("Runtime suspended with : %d\n", ret);
 	mutex_unlock(&bg_task_mutex);

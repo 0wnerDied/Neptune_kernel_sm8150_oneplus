@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  * Copyright (c) 2016-2017, Linaro Ltd
  *
  * This program is free software; you can redistribute it and/or modify
@@ -783,6 +783,12 @@ static int glink_bgcom_request_intent(struct glink_bgcom *glink,
 	if (!ret) {
 		dev_err(glink->dev, "intent request ack timed out\n");
 		ret = -ETIMEDOUT;
+	}
+
+	if (!channel->intent_req_result) {
+		dev_err(glink->dev, "intent request not granted for lcid\n");
+		ret = -EAGAIN;
+		goto unlock;
 	}
 
 	ret = wait_for_completion_timeout(&channel->intent_alloc_comp, 10 * HZ);

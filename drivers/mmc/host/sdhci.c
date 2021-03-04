@@ -39,6 +39,10 @@
 
 #include "sdhci.h"
 #include "cmdq_hci.h"
+#if IS_ENABLED(CONFIG_MMC_QTI_NONCMDQ_ICE)
+#include "cmdq_hci-crypto.h"
+#include "cmdq_hci-crypto-qti.h"
+#endif
 
 #define DRIVER_NAME "sdhci"
 
@@ -1899,6 +1903,13 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 				host->ops->config_auto_tuning_cmd(host, false,
 					sdhci_get_tuning_cmd(host));
 		}
+#if IS_ENABLED(CONFIG_MMC_QTI_NONCMDQ_ICE)
+		if (sdhci_crypto_cfg(host, mrq, 0)) {
+			pr_err("%s: crypto cfg failed\n",
+					mmc_hostname(host->mmc));
+			return;
+		}
+#endif
 
 		if (mrq->sbc && !(host->flags & SDHCI_AUTO_CMD23))
 			sdhci_send_command(host, mrq->sbc);
@@ -4854,6 +4865,10 @@ int __sdhci_add_host(struct sdhci_host *host)
 		else
 			host->cq_host->ops = &sdhci_cmdq_ops;
 	}
+
+#if IS_ENABLED(CONFIG_MMC_QTI_NONCMDQ_ICE)
+	crypto_qti_enable_noncmdq(host);
+#endif
 
 	pr_info("%s: SDHCI controller on %s [%s] using %s in %s mode\n",
 	mmc_hostname(mmc), host->hw_name, dev_name(mmc_dev(mmc)),

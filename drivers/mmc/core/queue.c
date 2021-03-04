@@ -484,6 +484,10 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
 	blk_queue_max_segments(mq->queue, host->max_segs);
 	blk_queue_max_segment_size(mq->queue, host->max_seg_size);
 
+#if IS_ENABLED(CONFIG_MMC_QTI_NONCMDQ_ICE)
+	if (host->cmdq_ops && host->cmdq_ops->cqe_crypto_update_queue)
+		host->cmdq_ops->cqe_crypto_update_queue(host, mq->queue);
+#endif
 	sema_init(&mq->thread_sem, 1);
 
 	mq->thread = kthread_run(mmc_queue_thread, mq, "mmcqd/%d%s",
@@ -558,6 +562,12 @@ int mmc_queue_suspend(struct mmc_queue *mq, int wait)
 			 * cmdq shutdown to avoid race between issuing
 			 * requests and shutdown of cmdq.
 			 */
+
+			/*
+			 * Remove sysfs attributes
+			 * before calling  blk_cleanup_queue
+			 */
+			kobject_del(&q->kobj);
 			blk_cleanup_queue(q);
 
 			if (host->cmdq_ctx.active_reqs)
@@ -590,6 +600,12 @@ int mmc_queue_suspend(struct mmc_queue *mq, int wait)
 			spin_unlock_irqrestore(q->queue_lock, flags);
 		} else {
 			/* shutdown the queue in case of shutdown/reboot */
+
+			/*
+			 * Remove sysfs attributes
+			 * before calling  blk_cleanup_queue
+			 */
+			kobject_del(&q->kobj);
 			blk_cleanup_queue(q);
 		}
 

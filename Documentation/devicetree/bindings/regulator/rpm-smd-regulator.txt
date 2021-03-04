@@ -49,6 +49,9 @@ Optional properties:
 			  Must be one of the below:
 			  "pmic4-ldo" for PMIC4.
 			  "pmic5-ldo" for PMIC5.
+- qcom,send-ipeak:      Flag which indicates that updates to load current will
+			send a RPM request with load current in uA. If this flag
+			is set, the regulator mode will not be sent to RPM.
 
 [Second Level Nodes]
 

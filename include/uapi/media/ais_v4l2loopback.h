@@ -1,8 +1,8 @@
 #ifndef _UAPI_AIS_V4L2_H
 #define _UAPI_AIS_V4L2_H
 
-#define AIS_V4L2_DRV_MAX_VERSION    1
-#define AIS_V4L2_DRV_MIN_VERSION    2
+#define AIS_V4L2_DRV_MAX_VERSION    2
+#define AIS_V4L2_DRV_MIN_VERSION    0
 #define AIS_V4L2_DRV_BUGFIX_VERSION 0
 
 #define MAX_AIS_V4L2_PAYLOAD_SIZE     256
@@ -66,6 +66,10 @@ enum AIS_V4L2_OUTPUT_PRIVATE_CMD {
 	AIS_V4L2_OUTPUT_PRIV_SET_PARAM_EVENT,
 	AIS_V4L2_OUTPUT_PRIV_SET_PARAM2,
 	AIS_V4L2_OUTPUT_PRIV_GET_PARAM,
+	AIS_V4L2_OUTPUT_PRIV_OPEN_RET,
+	AIS_V4L2_OUTPUT_PRIV_CLOSE_RET,
+	AIS_V4L2_OUTPUT_PRIV_START_RET,
+	AIS_V4L2_OUTPUT_PRIV_STOP_RET,
 };
 
 enum AIS_V4L2_CAPTURE_PRIVATE_CMD {
@@ -73,13 +77,19 @@ enum AIS_V4L2_CAPTURE_PRIVATE_CMD {
 	AIS_V4L2_CAPTURE_PRIV_GET_PARAM,
 };
 
+
+
 struct ais_v4l2_control_t {
 	__u32 type;
 	__u32 size;
 	__u64 payload;
 	__u8  cmd;
-	__u8  param_type;
+	union {
+		__u8  param_type;
+		__u8  ctrl_ret;  /* 0: succeed; 1: fail */
+	};
 };
+
 
 
 #endif /* _UAPI_AIS_V4L2_H */

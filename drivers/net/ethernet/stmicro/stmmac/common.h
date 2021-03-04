@@ -266,6 +266,9 @@ enum rx_frame_status {
 	dma_own = 0x8,
 	rx_not_ls = 0x10,
 	ctxt_desc = 0x20,
+	rx_fs_only = 0x40,
+	rx_ls_only = 0x80,
+	rx_not_fsls = 0x100,
 };
 
 /* Tx status */
@@ -281,6 +284,7 @@ enum dma_irq_status {
 	tx_hard_error_bump_tc = 0x2,
 	handle_rx = 0x4,
 	handle_tx = 0x8,
+	rbu_err = 0x10,
 };
 
 /* EEE and LPI defines */
@@ -405,6 +409,8 @@ struct stmmac_desc_ops {
 	/* Return the reception status looking at the RDES1 */
 	int (*rx_status) (void *data, struct stmmac_extra_stats *x,
 			  struct dma_desc *p);
+	int (*rx_status_err)(void *data, struct stmmac_extra_stats *x,
+			     struct dma_desc *p, int *status);
 	void (*rx_extended_status) (void *data, struct stmmac_extra_stats *x,
 				    struct dma_extended_desc *p);
 	/* Set tx timestamp enable bit */
@@ -672,4 +678,18 @@ static inline u32 stmmac_get_synopsys_id(u32 hwid)
 	}
 	return 0;
 }
+
+enum mac_err_type {
+	PHY_RW_ERR = 0,
+	PHY_DET_ERR,
+	CRC_ERR,
+	RECEIVE_ERR,
+	OVERFLOW_ERR,
+	FBE_ERR,
+	RBU_ERR,
+	TDU_ERR,
+	DRIBBLE_ERR,
+	WDT_ERR,
+	MAC_ERR_CNT,
+};
 #endif /* __COMMON_H__ */

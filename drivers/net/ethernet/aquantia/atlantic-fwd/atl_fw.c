@@ -655,6 +655,33 @@ unlock:
 	return ret;
 }
 
+static int atl_fw2_set_downshift(struct atl_hw *hw, bool on)
+{
+	uint32_t req;
+	int res = 0;
+	int ret = 0;
+
+	atl_lock_fw(hw);
+
+	if (on)
+		hw->mcp.req_high |= atl_fw2_downshift;
+	else
+		hw->mcp.req_high &= ~atl_fw2_downshift;
+	req = hw->mcp.req_high;
+	atl_write(hw, ATL_MCP_SCRATCH(FW2_LINK_REQ_HIGH), req);
+
+	busy_wait(10000, udelay(10), res,
+		atl_read(hw, ATL_MCP_SCRATCH(FW2_LINK_RES_HIGH)),
+		((res ^ req) & atl_fw2_downshift) != 0);
+	if (((res ^ req) & atl_fw2_downshift) != 0) {
+		atl_dev_err("Timeout waiting for statistics\n");
+		ret = -EIO;
+	}
+
+	atl_unlock_fw(hw);
+	return ret;
+}
+
 static int __atl_fw2x_apply_msm_settings(struct atl_hw *hw)
 {
 
@@ -901,6 +928,7 @@ static int atl_fw2_update_thermal(struct atl_hw *hw)
 static int atl_fw2_send_ptp_request(struct atl_hw *hw,
 				    struct ptp_msg_fw_request *msg)
 {
+	u32 high_req, high_status;
 	size_t size;
 	int ret = 0;
 
@@ -924,10 +952,23 @@ static int atl_fw2_send_ptp_request(struct atl_hw *hw,
 
 	atl_lock_fw(hw);
 
-	/* Write macsec request to cfg memory */
+	/* Write ptp request to cfg memory */
 	ret = atl_write_mcp_mem(hw, 0, msg, (size + 3) & ~3, MCP_AREA_CONFIG);
 	if (ret) {
 		atl_dev_err("Failed to upload ptp request: %d\n", ret);
+		goto err_exit;
+	}
+
+	high_req = atl_read(hw, ATL_MCP_SCRATCH(FW2_LINK_REQ_HIGH));
+	high_req ^= atl_fw2_fw_request;
+	atl_write(hw, ATL_MCP_SCRATCH(FW2_LINK_REQ_HIGH), high_req);
+
+	busy_wait(1000, mdelay(1), high_status,
+		atl_read(hw, ATL_MCP_SCRATCH(FW2_LINK_RES_HIGH)),
+		((high_req ^ high_status) & atl_fw2_fw_request) != 0);
+	if (((high_req ^ high_status) & atl_fw2_fw_request) != 0) {
+		atl_dev_err("Timeout waiting for fw request\n");
+		ret = -EIO;
 		goto err_exit;
 	}
 
@@ -968,7 +1009,8 @@ static struct atl_fw_ops atl_fw_ops[2] = {
 		.dump_cfg = atl_fw1_unsupported,
 		.restore_cfg = atl_fw1_unsupported,
 		.set_phy_loopback = (void *)atl_fw1_unsupported,
-		.set_mediadetect =  (void *)atl_fw1_unsupported,
+		.set_mediadetect = (void *)atl_fw1_unsupported,
+		.set_downshift = (void *)atl_fw1_unsupported,
 		.send_macsec_req = (void *)atl_fw1_unsupported,
 		.set_pad_stripping = (void *)atl_fw1_unsupported,
 		.__get_hbeat = (void *)atl_fw1_unsupported,
@@ -989,6 +1031,7 @@ static struct atl_fw_ops atl_fw_ops[2] = {
 		.restore_cfg = atl_fw2_restore_cfg,
 		.set_phy_loopback = atl_fw2_set_phy_loopback,
 		.set_mediadetect = atl_fw2_set_mediadetect,
+		.set_downshift = atl_fw2_set_downshift,
 		.send_macsec_req = atl_fw2_send_macsec_request,
 		.set_pad_stripping = atl_fw2_set_pad_stripping,
 		.__get_hbeat = __atl_fw2_get_hbeat,
