@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -45,6 +45,7 @@
 			15 01 00 00 00 00 02 6A 15
 			15 01 00 00 00 00 02 FE 00
 			15 01 00 00 00 00 02 35 00
+			15 01 00 00 00 00 02 53 20
 			15 01 00 00 00 00 02 51 FF
 			39 01 00 00 00 00 05 2A 00 10 01 7F
 			39 01 00 00 00 00 05 2B 00 00 01 BF
@@ -64,6 +65,7 @@
 			];
 		qcom,mdss-dsi-idle-off-command = [
 			15 01 00 00 00 00 02 FE 00
+			15 01 00 00 00 00 02 53 20
 			05 01 00 00 00 00 01 38
 			];
 		qcom,mdss-dsi-idle-on-command-state = "dsi_hs_mode";
