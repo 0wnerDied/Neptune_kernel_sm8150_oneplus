@@ -2921,6 +2921,7 @@ static int stmmac_open(struct net_device *dev)
 		stmmac_mac2mac_adjust_link(priv->plat->mac2mac_rgmii_speed,
 					   priv);
 		priv->plat->mac2mac_link = true;
+		netif_carrier_on(dev);
 	}
 
 	return 0;
