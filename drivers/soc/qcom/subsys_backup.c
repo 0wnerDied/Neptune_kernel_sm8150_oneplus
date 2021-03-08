@@ -677,6 +677,19 @@ static struct attribute *subsys_backup_attrs[] = {
 static struct attribute_group subsys_backup_attr_group = {
 	.attrs = subsys_backup_attrs,
 };
+
+static bool is_hyp_assigned(int dest, struct subsys_backup *backup_dev)
+{
+	/*
+	 * If already hyp assinged to the destination, return true.
+	 */
+	if ((dest == VMID_HLOS && backup_dev->img_buf.hyp_assigned_to_hlos) ||
+		(dest == VMID_MSS_MSA &&
+		!backup_dev->img_buf.hyp_assigned_to_hlos))
+		return true;
+	return false;
+}
+
 static int hyp_assign_buffers(struct subsys_backup *backup_dev, int dest,
 				int src)
 {
@@ -688,28 +701,20 @@ static int hyp_assign_buffers(struct subsys_backup *backup_dev, int dest,
 	if (dest == VMID_HLOS)
 		dest_perms[0] |= PERM_EXEC;
 
-	if ((dest == VMID_HLOS && backup_dev->img_buf.hyp_assigned_to_hlos &&
-		backup_dev->scratch_buf.hyp_assigned_to_hlos) ||
-		(dest == VMID_MSS_MSA &&
-		!backup_dev->img_buf.hyp_assigned_to_hlos
-		&& !backup_dev->scratch_buf.hyp_assigned_to_hlos))
+	if (is_hyp_assigned(dest, backup_dev))
 		return 0;
 
 	ret = hyp_assign_phys(backup_dev->img_buf.paddr,
 			backup_dev->img_buf.total_size, src_vmids, 1,
 			dest_vmids, dest_perms, 1);
 	if (ret)
-		goto error_hyp;
+		goto error_img_assign;
 
 	ret = hyp_assign_phys(backup_dev->scratch_buf.paddr,
 			backup_dev->scratch_buf.total_size, src_vmids, 1,
 			dest_vmids, dest_perms, 1);
-	if (ret && dest != VMID_HLOS) {
-		ret = hyp_assign_phys(backup_dev->img_buf.paddr,
-				backup_dev->img_buf.total_size, dest_vmids, 1,
-				src_vmids, dest_perms, 1);
-		goto error_hyp;
-	}
+	if (ret)
+		goto error_scratch_assign;
 
 	if (dest == VMID_HLOS) {
 		backup_dev->img_buf.hyp_assigned_to_hlos = true;
@@ -720,8 +725,15 @@ static int hyp_assign_buffers(struct subsys_backup *backup_dev, int dest,
 	}
 
 	return 0;
+error_scratch_assign:
+	if (dest != VMID_HLOS) {
+		ret = hyp_assign_phys(backup_dev->img_buf.paddr,
+				backup_dev->img_buf.total_size, dest_vmids, 1,
+				src_vmids, dest_perms, 1);
+		BUG_ON(ret);
+	}
 
-error_hyp:
+error_img_assign:
 	dev_err(backup_dev->dev, "%s: Failed: %d\n", __func__, ret);
 	return ret;
 }
