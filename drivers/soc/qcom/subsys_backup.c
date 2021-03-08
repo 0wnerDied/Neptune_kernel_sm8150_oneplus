@@ -1413,7 +1413,8 @@ static ssize_t backup_buffer_write(struct file *filp, const char __user *buf,
 			backup_dev->img_buf.total_size, offp, buf, size);
 }
 
-static int backup_buffer_flush(struct file *filp, fl_owner_t id)
+static int backup_buffer_sync(struct file *filp, loff_t l1, loff_t l2,
+			int datasync)
 {
 	int ret;
 	struct subsys_backup *backup_dev = filp->private_data;
@@ -1473,7 +1474,7 @@ static const struct file_operations backup_buffer_fops = {
 	.open	= backup_buffer_open,
 	.read	= backup_buffer_read,
 	.write	= backup_buffer_write,
-	.flush	= backup_buffer_flush,
+	.fsync	= backup_buffer_sync,
 	.release = backup_buffer_release,
 };
 
