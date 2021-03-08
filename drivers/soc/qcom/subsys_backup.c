@@ -1476,6 +1476,7 @@ static const struct file_operations backup_buffer_fops = {
 	.write	= backup_buffer_write,
 	.fsync	= backup_buffer_sync,
 	.release = backup_buffer_release,
+	.llseek	= default_llseek,
 };
 
 static int subsys_backup_init_device(struct platform_device *pdev,
