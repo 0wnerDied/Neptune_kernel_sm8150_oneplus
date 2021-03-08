@@ -747,12 +747,17 @@ static int allocate_buffers(struct subsys_backup *backup_dev)
 				backup_dev->img_buf.total_size, &img_dma_addr,
 				GFP_KERNEL);
 
+	if (!backup_dev->img_buf.vaddr) {
+		dev_err(backup_dev->dev, "Failed dma_alloc_coherent\n");
+		return -ENOMEM;
+	}
+
 	backup_dev->scratch_buf.vaddr = (void *)
 				dma_alloc_coherent(backup_dev->dev,
 				backup_dev->scratch_buf.total_size,
 				&scratch_dma_addr, GFP_KERNEL);
 
-	if (!backup_dev->img_buf.vaddr || !backup_dev->scratch_buf.vaddr)
+	if (!backup_dev->scratch_buf.vaddr)
 		goto error;
 
 	backup_dev->img_buf.paddr = img_dma_addr;
@@ -760,25 +765,14 @@ static int allocate_buffers(struct subsys_backup *backup_dev)
 	backup_dev->img_buf.hyp_assigned_to_hlos = true;
 	backup_dev->scratch_buf.hyp_assigned_to_hlos = true;
 
-	memset(backup_dev->img_buf.vaddr, 0, backup_dev->img_buf.total_size);
-	memset(backup_dev->scratch_buf.vaddr, 0,
-			backup_dev->scratch_buf.total_size);
 	return 0;
-
 error:
 	dev_err(backup_dev->dev, "%s: Failed\n", __func__);
 
-	if (backup_dev->img_buf.vaddr)
-		dma_free_coherent(backup_dev->dev,
-				backup_dev->img_buf.total_size,
-				backup_dev->img_buf.vaddr, img_dma_addr);
-	if (backup_dev->scratch_buf.vaddr)
-		dma_free_coherent(backup_dev->dev,
-				backup_dev->scratch_buf.total_size,
-				backup_dev->scratch_buf.vaddr,
-				scratch_dma_addr);
+	dma_free_coherent(backup_dev->dev,
+		backup_dev->img_buf.total_size,
+		backup_dev->img_buf.vaddr, img_dma_addr);
 	backup_dev->img_buf.vaddr = NULL;
-	backup_dev->scratch_buf.vaddr = NULL;
 	return ret;
 }
 
