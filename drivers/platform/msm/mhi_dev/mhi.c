@@ -2958,8 +2958,8 @@ static int mhi_dev_alloc_cmd_ack_buf_req(struct mhi_dev *mhi)
 						sizeof(*cmd_ctx->ereqs),
 						GFP_KERNEL);
 	if (!cmd_ctx->ereqs) {
+		rc = -ENOMEM;
 		goto free_ereqs;
-		return -ENOMEM;
 	}
 
 	mhi_log(MHI_MSG_INFO,
@@ -2996,15 +2996,16 @@ static int mhi_dev_alloc_cmd_ack_buf_req(struct mhi_dev *mhi)
 
 	return 0;
 free_ereqs:
-		kfree(mhi->cmd_ctx);
-		mhi_log(MHI_MSG_INFO,
-				"MEM_DEALLOC: size:%d CMD_CTX\n",
-				sizeof(struct mhi_cmd_cmpl_ctx));
 		kfree(cmd_ctx->ereqs);
 		mhi_log(MHI_MSG_INFO,
 			"MEM_DEALLOC: size:%d EREQ CMD\n",
 			NUM_CMD_EVENTS_DEFAULT);
 		cmd_ctx->ereqs = NULL;
+
+		kfree(mhi->cmd_ctx);
+		mhi_log(MHI_MSG_INFO,
+				"MEM_DEALLOC: size:%d CMD_CTX\n",
+				sizeof(struct mhi_cmd_cmpl_ctx));
 		mhi->cmd_ctx = NULL;
 		return rc;
 }
