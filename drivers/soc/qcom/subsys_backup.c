@@ -772,16 +772,19 @@ error:
 
 static int free_buffers(struct subsys_backup *backup_dev)
 {
-	if (backup_dev->img_buf.vaddr)
-		dma_free_coherent(backup_dev->dev,
-			backup_dev->img_buf.total_size,
-			backup_dev->img_buf.vaddr, backup_dev->img_buf.paddr);
+	BUG_ON(!backup_dev->img_buf.hyp_assigned_to_hlos);
 
-	if (backup_dev->scratch_buf.vaddr)
-		dma_free_coherent(backup_dev->dev,
-			backup_dev->scratch_buf.total_size,
-			backup_dev->scratch_buf.vaddr,
-			backup_dev->scratch_buf.paddr);
+	if (backup_dev->img_buf.vaddr == NULL)
+		return 0;
+
+	dma_free_coherent(backup_dev->dev,
+		backup_dev->img_buf.total_size,
+		backup_dev->img_buf.vaddr, backup_dev->img_buf.paddr);
+
+	dma_free_coherent(backup_dev->dev,
+		backup_dev->scratch_buf.total_size,
+		backup_dev->scratch_buf.vaddr,
+		backup_dev->scratch_buf.paddr);
 
 	backup_dev->img_buf.vaddr = NULL;
 	backup_dev->scratch_buf.vaddr = NULL;
