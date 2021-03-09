@@ -67,6 +67,15 @@
 			output-low;
 		};
 	};
+
+	sdm_dp_en {
+		sdm_dp_en_default: sdm_dp_en_default {
+			pins = "gpio4";
+			function = "normal";
+			power-source = <0>;
+			output-high;
+		};
+	};
 };
 
 &soc {
@@ -396,18 +405,6 @@
 	regulator-max-microvolt = <2912000>;
 };
 
-&sde_dp {
-	status="disabled";
-};
-
-&mdss_dp_pll {
-	status="disabled";
-};
-
-&mdss_mdp {
-	connectors = <&sde_rscc &sde_wb &sde_dsi>;
-};
-
 &cont_splash_memory {
 	status = "disabled";
 };
@@ -522,5 +519,52 @@
 				remote-endpoint = <&lt9611_in>;
 			};
 		};
+	};
+};
+
+&sde_dp {
+	status="ok";
+	qcom,dp-aux-switch = <>;
+	/delete-property/qcom,dp-aux-switch;
+	/delete-property/pinctrl-2;
+	qcom,dp-low-power-hw-hpd;
+	qcom,dp-hpd-gpio = <&tlmm 104 0>;
+	pinctrl-2 = <&sdm_dp_en_default &sde_dp_switch_suspend
+					&sde_dp_hotplug_tlmm>;
+};
+
+&mdss_dp_pll {
+	status="ok";
+};
+
+&mdss_mdp {
+	connectors = <&sde_rscc &sde_wb &sde_dsi &sde_dp>;
+};
+
+&sde_dp_hotplug_ctrl {
+	mux {
+		pins = "gpio104";
+		function = "debug_hot";
+	};
+
+	config {
+		pins = "gpio104";
+		bias-disable;
+		input-enable;
+		drive-strength = <2>;
+	};
+};
+
+&sde_dp_hotplug_tlmm {
+	mux {
+		pins = "gpio104";
+		function = "gpio";
+	};
+
+	config {
+		pins = "gpio104";
+		bias-disable;
+		input-enable;
+		drive-strength = <2>;
 	};
 };
