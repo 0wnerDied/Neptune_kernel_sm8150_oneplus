@@ -677,6 +677,19 @@ static struct attribute *subsys_backup_attrs[] = {
 static struct attribute_group subsys_backup_attr_group = {
 	.attrs = subsys_backup_attrs,
 };
+
+static bool is_hyp_assigned(int dest, struct subsys_backup *backup_dev)
+{
+	/*
+	 * If already hyp assinged to the destination, return true.
+	 */
+	if ((dest == VMID_HLOS && backup_dev->img_buf.hyp_assigned_to_hlos) ||
+		(dest == VMID_MSS_MSA &&
+		!backup_dev->img_buf.hyp_assigned_to_hlos))
+		return true;
+	return false;
+}
+
 static int hyp_assign_buffers(struct subsys_backup *backup_dev, int dest,
 				int src)
 {
@@ -688,28 +701,20 @@ static int hyp_assign_buffers(struct subsys_backup *backup_dev, int dest,
 	if (dest == VMID_HLOS)
 		dest_perms[0] |= PERM_EXEC;
 
-	if ((dest == VMID_HLOS && backup_dev->img_buf.hyp_assigned_to_hlos &&
-		backup_dev->scratch_buf.hyp_assigned_to_hlos) ||
-		(dest == VMID_MSS_MSA &&
-		!backup_dev->img_buf.hyp_assigned_to_hlos
-		&& !backup_dev->scratch_buf.hyp_assigned_to_hlos))
+	if (is_hyp_assigned(dest, backup_dev))
 		return 0;
 
 	ret = hyp_assign_phys(backup_dev->img_buf.paddr,
 			backup_dev->img_buf.total_size, src_vmids, 1,
 			dest_vmids, dest_perms, 1);
 	if (ret)
-		goto error_hyp;
+		goto error_img_assign;
 
 	ret = hyp_assign_phys(backup_dev->scratch_buf.paddr,
 			backup_dev->scratch_buf.total_size, src_vmids, 1,
 			dest_vmids, dest_perms, 1);
-	if (ret && dest != VMID_HLOS) {
-		ret = hyp_assign_phys(backup_dev->img_buf.paddr,
-				backup_dev->img_buf.total_size, dest_vmids, 1,
-				src_vmids, dest_perms, 1);
-		goto error_hyp;
-	}
+	if (ret)
+		goto error_scratch_assign;
 
 	if (dest == VMID_HLOS) {
 		backup_dev->img_buf.hyp_assigned_to_hlos = true;
@@ -720,8 +725,15 @@ static int hyp_assign_buffers(struct subsys_backup *backup_dev, int dest,
 	}
 
 	return 0;
+error_scratch_assign:
+	if (dest != VMID_HLOS) {
+		ret = hyp_assign_phys(backup_dev->img_buf.paddr,
+				backup_dev->img_buf.total_size, dest_vmids, 1,
+				src_vmids, dest_perms, 1);
+		BUG_ON(ret);
+	}
 
-error_hyp:
+error_img_assign:
 	dev_err(backup_dev->dev, "%s: Failed: %d\n", __func__, ret);
 	return ret;
 }
@@ -735,12 +747,17 @@ static int allocate_buffers(struct subsys_backup *backup_dev)
 				backup_dev->img_buf.total_size, &img_dma_addr,
 				GFP_KERNEL);
 
+	if (!backup_dev->img_buf.vaddr) {
+		dev_err(backup_dev->dev, "Failed dma_alloc_coherent\n");
+		return -ENOMEM;
+	}
+
 	backup_dev->scratch_buf.vaddr = (void *)
 				dma_alloc_coherent(backup_dev->dev,
 				backup_dev->scratch_buf.total_size,
 				&scratch_dma_addr, GFP_KERNEL);
 
-	if (!backup_dev->img_buf.vaddr || !backup_dev->scratch_buf.vaddr)
+	if (!backup_dev->scratch_buf.vaddr)
 		goto error;
 
 	backup_dev->img_buf.paddr = img_dma_addr;
@@ -748,25 +765,14 @@ static int allocate_buffers(struct subsys_backup *backup_dev)
 	backup_dev->img_buf.hyp_assigned_to_hlos = true;
 	backup_dev->scratch_buf.hyp_assigned_to_hlos = true;
 
-	memset(backup_dev->img_buf.vaddr, 0, backup_dev->img_buf.total_size);
-	memset(backup_dev->scratch_buf.vaddr, 0,
-			backup_dev->scratch_buf.total_size);
 	return 0;
-
 error:
 	dev_err(backup_dev->dev, "%s: Failed\n", __func__);
 
-	if (backup_dev->img_buf.vaddr)
-		dma_free_coherent(backup_dev->dev,
-				backup_dev->img_buf.total_size,
-				backup_dev->img_buf.vaddr, img_dma_addr);
-	if (backup_dev->scratch_buf.vaddr)
-		dma_free_coherent(backup_dev->dev,
-				backup_dev->scratch_buf.total_size,
-				backup_dev->scratch_buf.vaddr,
-				scratch_dma_addr);
+	dma_free_coherent(backup_dev->dev,
+		backup_dev->img_buf.total_size,
+		backup_dev->img_buf.vaddr, img_dma_addr);
 	backup_dev->img_buf.vaddr = NULL;
-	backup_dev->scratch_buf.vaddr = NULL;
 	return ret;
 }
 
