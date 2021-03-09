@@ -91,7 +91,10 @@
 };
 
 &cnss_sdio {
-	status = "disabled";
+	/delete-property/ vdd-wlan-io-supply;
+	/delete-property/ qcom,cap-tsf-gpio;
+
+	status = "okay";
 };
 
 &spi_2 {
@@ -443,10 +446,14 @@
 
 	vdd-io-supply = <&pms405_l11>;
 	qcom,vdd-io-voltage-level = <2950000 2950000>;
+
+	qcom,core_3_0v_support;
+	qcom,nonremovable;
+
 	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on
-		    &sdc2_cd_on>;
+		    &sdc2_cd_on &sdc2_dsrc_on>;
 	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off
-		    &sdc2_cd_off>;
+		    &sdc2_cd_off &sdc2_dsrc_off>;
 	cd-gpios = <&tlmm 21 GPIO_ACTIVE_LOW>;
 
 	status = "ok";

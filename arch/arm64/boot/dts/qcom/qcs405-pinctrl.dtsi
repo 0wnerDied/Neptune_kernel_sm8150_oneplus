@@ -1529,6 +1529,34 @@
 			};
 		};
 
+		sdc2_dsrc_on: sdc2_dsrc_on {
+			mux {
+				pins = "gpio119";
+				function = "gpio";
+			};
+
+			config {
+				pins = "gpio119";
+				drive-strength = <16>;
+				output-high;
+				bias-pull-up;
+			};
+		};
+
+		sdc2_dsrc_off: sdc2_dsrc_off {
+			mux {
+				pins = "gpio119";
+				function = "gpio";
+			};
+
+			config {
+				pins = "gpio119";
+				drive-strength = <2>;
+				output-low;
+				bias-pull-down;
+			};
+		};
+
 		sdc2_cd_off: cd_off {
 			mux {
 				pins = "gpio21";
