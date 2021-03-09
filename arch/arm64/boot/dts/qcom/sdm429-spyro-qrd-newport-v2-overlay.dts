@@ -100,6 +100,14 @@
 	qcom,wcn-bt-slim = <1>;
 };
 
+&qcom_seecom {
+	reg = <0x85c00000 0x700000>;
+};
+
+&other_ext_mem {
+	reg = <0x0 0x85c00000 0x0 0xc00000>;
+};
+
 &wcnss_prima {
 	qcom,multi_sku = <1>;
 };
