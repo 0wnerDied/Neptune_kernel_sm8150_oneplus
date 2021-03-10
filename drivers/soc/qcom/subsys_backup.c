@@ -778,16 +778,19 @@ error:
 
 static int free_buffers(struct subsys_backup *backup_dev)
 {
-	if (backup_dev->img_buf.vaddr)
-		dma_free_coherent(backup_dev->dev,
-			backup_dev->img_buf.total_size,
-			backup_dev->img_buf.vaddr, backup_dev->img_buf.paddr);
+	BUG_ON(!backup_dev->img_buf.hyp_assigned_to_hlos);
 
-	if (backup_dev->scratch_buf.vaddr)
-		dma_free_coherent(backup_dev->dev,
-			backup_dev->scratch_buf.total_size,
-			backup_dev->scratch_buf.vaddr,
-			backup_dev->scratch_buf.paddr);
+	if (backup_dev->img_buf.vaddr == NULL)
+		return 0;
+
+	dma_free_coherent(backup_dev->dev,
+		backup_dev->img_buf.total_size,
+		backup_dev->img_buf.vaddr, backup_dev->img_buf.paddr);
+
+	dma_free_coherent(backup_dev->dev,
+		backup_dev->scratch_buf.total_size,
+		backup_dev->scratch_buf.vaddr,
+		backup_dev->scratch_buf.paddr);
 
 	backup_dev->img_buf.vaddr = NULL;
 	backup_dev->scratch_buf.vaddr = NULL;
@@ -1416,7 +1419,8 @@ static ssize_t backup_buffer_write(struct file *filp, const char __user *buf,
 			backup_dev->img_buf.total_size, offp, buf, size);
 }
 
-static int backup_buffer_flush(struct file *filp, fl_owner_t id)
+static int backup_buffer_sync(struct file *filp, loff_t l1, loff_t l2,
+			int datasync)
 {
 	int ret;
 	struct subsys_backup *backup_dev = filp->private_data;
@@ -1476,8 +1480,9 @@ static const struct file_operations backup_buffer_fops = {
 	.open	= backup_buffer_open,
 	.read	= backup_buffer_read,
 	.write	= backup_buffer_write,
-	.flush	= backup_buffer_flush,
+	.fsync	= backup_buffer_sync,
 	.release = backup_buffer_release,
+	.llseek	= default_llseek,
 };
 
 static int subsys_backup_init_device(struct platform_device *pdev,
