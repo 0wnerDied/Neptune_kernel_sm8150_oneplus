@@ -51,6 +51,7 @@
 #define MAX_LOADED_NETWORK		32
 #define MAX_DEBUGFS_PARAM_NUM	4
 #define MAX_BIST_PARAM_NUM		4
+#define MAX_NPU_POWER_LVL_NUM	6
 
 #define VIRTIO_NPU_CMD_OPEN				1
 #define VIRTIO_NPU_CMD_CLOSE			2
@@ -1717,29 +1718,6 @@ static int npu_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static int32_t npu_get_powerlevel_num(struct npu_device *npu_dev)
-{
-	struct npu_client client;
-	struct msm_npu_property prop;
-	int rc;
-
-	client.npu_dev = npu_dev;
-	client.cid = -1;
-	memset(&prop, 0, sizeof(prop));
-	prop.prop_id = MSM_NPU_PROP_ID_PERF_MODE_MAX;
-	prop.num_of_params = 1;
-	rc = npu_virt_get_property(&client, &prop);
-	if (rc) {
-		NPU_ERR("get perf_mode_max failed\n");
-		return rc;
-	}
-
-	npu_dev->pwrctrl.num_pwrlevels = prop.prop_param[0];
-	NPU_DBG("NPU power level num %d\n", prop.prop_param[0]);
-
-	return rc;
-}
-
 static const struct file_operations npu_fops = {
 	.open = npu_open,
 	.release = npu_release,
@@ -2368,7 +2346,7 @@ static int virt_npu_probe(struct virtio_device *vdev)
 	virtqueue_kick(npu_dev->rvq);
 
 	npu_debugfs_init(npu_dev);
-	npu_get_powerlevel_num(npu_dev);
+	npu_dev->pwrctrl.num_pwrlevels = MAX_NPU_POWER_LVL_NUM;
 
 	return 0;
 

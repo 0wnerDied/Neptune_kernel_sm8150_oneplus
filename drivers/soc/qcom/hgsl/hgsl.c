@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -917,12 +917,6 @@ static int hgsl_dbq_init(struct file *filep, unsigned long arg)
 	}
 	WARN_ON(param.head_dwords < 2);
 
-	dbq_set_qindex((uint32_t *)dbq->vbase,
-				DBQ_WRITE_INDEX_IN_DWORD, 0);
-
-	dbq_set_qindex((uint32_t *)dbq->vbase,
-				DBQ_READ_INDEX_IN_DWORD, 0);
-
 	dbq->data.vaddr = dbq->vbase + (param.queue_off_dwords << 2);
 	dbq->data.dwords = param.queue_dwords;
 
@@ -1350,7 +1344,8 @@ static int hgsl_ioctl_isync_fence_create(struct file *filep,
 
 	copy_from_user(&param, USRPTR(arg), sizeof(param));
 
-	ret = hgsl_isync_fence_create(priv, param.timeline_id, &fence);
+	ret = hgsl_isync_fence_create(priv, param.timeline_id,
+						param.ts, &fence);
 
 	if (ret == 0) {
 		param.fence_id = fence;
@@ -1371,6 +1366,21 @@ static int hgsl_ioctl_isync_fence_signal(struct file *filep,
 
 	ret = hgsl_isync_fence_signal(priv, param.timeline_id,
 						  param.fence_id);
+
+	return ret;
+}
+
+static int hgsl_ioctl_isync_forward(struct file *filep,
+					   unsigned long arg)
+{
+	struct hgsl_priv *priv = filep->private_data;
+	struct hgsl_isync_forward param;
+	int ret = 0;
+
+	copy_from_user(&param, USRPTR(arg), sizeof(param));
+
+	ret = hgsl_isync_forward(priv, param.timeline_id,
+						  param.ts);
 
 	return ret;
 }
@@ -1418,6 +1428,9 @@ static long hgsl_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 		break;
 	case HGSL_IOCTL_ISYNC_FENCE_SIGNAL:
 		ret = hgsl_ioctl_isync_fence_signal(filep, arg);
+		break;
+	case HGSL_IOCTL_ISYNC_FORWARD:
+		ret = hgsl_ioctl_isync_forward(filep, arg);
 		break;
 
 	default:

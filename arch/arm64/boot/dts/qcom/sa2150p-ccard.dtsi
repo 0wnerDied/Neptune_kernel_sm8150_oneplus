@@ -10,17 +10,6 @@
  * GNU General Public License for more details.
  */
 
-&aliases {
-	mhi0 = &mhi_0;
-	mhi1 = &mhi_1;
-	mhi_netdev0 = &mhi_netdev_0;
-	mhi_netdev1 = &mhi_netdev_1;
-	mhi_netdev2 = &mhi_netdev_2;
-	mhi_netdev3 = &mhi_netdev_3;
-	mhi_netdev4 = &mhi_netdev_4;
-	mhi_netdev5 = &mhi_netdev_5;
-};
-
 &tlmm {
 	pinctrl-0 = <&status_gpio>;
 	pinctrl-names = "default";
@@ -219,6 +208,64 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&sdx_ext_ipc_gpio_default>;
 	};
+};
+
+&blsp1_uart1_active {
+	mux {
+		pins = "gpio30", "gpio31";
+	};
+
+	config {
+		pins = "gpio30", "gpio31";
+		};
+};
+
+&blsp1_uart1_sleep {
+	mux {
+		pins = "gpio30", "gpio31";
+	};
+
+	config {
+		pins = "gpio30", "gpio31";
+	};
+};
+
+&blsp1_uart4 {
+	blsp1_uart4_active: blsp1_uart4_active {
+		mux {
+			pins = "gpio82", "gpio83";
+			function = "blsp_uart3";
+		};
+
+		config {
+			pins = "gpio82", "gpio83";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	blsp1_uart4_sleep: blsp1_uart4_sleep {
+		mux {
+			pins = "gpio82", "gpio83";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio82", "gpio83";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+};
+
+&blsp1_uart4_hs {
+	pinctrl-0 = <&blsp1_uart4_sleep>;
+	pinctrl-1 = <&blsp1_uart4_active>;
+	status = "okay";
+};
+
+&blsp1_uart1_hs {
+	status = "okay";
 };
 
 &thermal_zones {
@@ -452,5 +499,3 @@
 			qcom,pre-scaling = <1 1>;
 	};
 };
-
-#include "sa2150p-ccard-mhi.dtsi"

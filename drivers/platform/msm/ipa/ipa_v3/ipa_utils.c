@@ -5114,7 +5114,7 @@ int ipa3_cfg_ep_ctrl(u32 clnt_hdl, const struct ipa_ep_cfg_ctrl *ep_ctrl)
 	}
 
 	if (ipa3_ctx->ipa_endp_delay_wa) {
-		IPAERR("pipe setting delay is not supported\n");
+		IPADBG("pipe setting delay is not supported\n");
 		return 0;
 	}
 
@@ -6593,9 +6593,9 @@ mark_sw_cnt:
 done:
 	/* get a handle from idr for dealloc */
 	counter->hdl = __ipa3_alloc_counter_hdl(counter);
+	memcpy(header, counter, sizeof(struct ipa_ioc_flt_rt_counter_alloc));
 	spin_unlock(&ipa3_ctx->flt_rt_counters.hdl_lock);
 	idr_preload_end();
-	memcpy(header, counter, sizeof(struct ipa_ioc_flt_rt_counter_alloc));
 	return 0;
 
 err:

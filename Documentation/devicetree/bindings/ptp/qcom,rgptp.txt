@@ -1,0 +1,19 @@
+Qualcomm Technologies, Inc. rgptp device
+
+rgptp device implements a mechanism that allows APQ to get synchronized gptp time available in MDM.
+
+Required properties:
+
+- compatible: Should be "qcom,rgptp".
+- qcom,toggle-gpio: Reference to the GPIO connected to the toggle input.
+- pinctrl-names : Names corresponding to the numbered pinctrl states.
+- pinctrl-<n> : Pinctrl states as described in bindings/pinctrl/pinctrl-bindings.txt.
+
+Example:
+
+	qcom,rgptp {
+		compatible = "qcom,rgptp";
+		qcom,toggle-gpio = <&tlmm 46 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&rgptp_gpio_default>;
+	};

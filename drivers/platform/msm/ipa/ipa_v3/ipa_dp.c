@@ -2964,8 +2964,8 @@ begin:
 							status.endp_src_idx,
 							status.endp_dest_idx,
 							status.pkt_len);
-						/* Unexpected HW status */
-						BUG();
+						sys->drop_packet = true;
+						dev_kfree_skb_any(skb2);
 					} else {
 						skb2->truesize = skb2->len +
 						sizeof(struct sk_buff) +

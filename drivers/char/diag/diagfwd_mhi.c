@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -50,6 +50,7 @@ struct diag_mhi_info diag_mhi[NUM_MHI_DEV] = {
 		.name = "MDM",
 		.enabled = 0,
 		.num_read = 0,
+		.device_reset = 0,
 		.mempool = POOL_TYPE_MDM,
 		.mempool_init = 0,
 		.mhi_wq = NULL,
@@ -67,6 +68,7 @@ struct diag_mhi_info diag_mhi[NUM_MHI_DEV] = {
 		.name = "MDM_DCI",
 		.enabled = 0,
 		.num_read = 0,
+		.device_reset = 0,
 		.mempool = POOL_TYPE_MDM_DCI,
 		.mempool_init = 0,
 		.mhi_wq = NULL,
@@ -251,6 +253,7 @@ static int __mhi_close(struct diag_mhi_info *mhi_info, int close_flag)
 	}
 	mhi_buf_tbl_clear(mhi_info);
 	diag_remote_dev_close(mhi_info->dev_id);
+	mhi_info->device_reset = 1;
 	return 0;
 }
 
@@ -327,6 +330,7 @@ static int __mhi_open(struct diag_mhi_info *mhi_info, int open_flag)
 		}
 	}
 
+	mhi_info->device_reset = 0;
 	diag_remote_dev_open(mhi_info->dev_id);
 	queue_work(mhi_info->mhi_wq, &(mhi_info->read_work));
 	return 0;
@@ -573,6 +577,13 @@ static int mhi_fwd_complete(int id, unsigned char *buf, int len, int ctxt)
 
 	if (!buf)
 		return -EINVAL;
+
+	if (diag_mhi[id].device_reset) {
+		DIAG_LOG(DIAG_DEBUG_MHI,
+		"Device (id: %d) has gone down, skip freeing buffer %pK len:%d\n",
+		id, buf, len);
+		return -ENODEV;
+	}
 
 	DIAG_LOG(DIAG_DEBUG_MHI,
 		"Remove buffer from mhi read table after write completion %pK len:%d\n",

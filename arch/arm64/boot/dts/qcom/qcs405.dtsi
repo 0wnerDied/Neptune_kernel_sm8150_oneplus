@@ -1616,6 +1616,7 @@
 		reg = <0x07A80000 0x10000>,
 			  <0x7A96000 0x100>;
 		qcom,arm-smmu;
+		emac-phy-addr = <7>;
 		reg-names = "stmmaceth", "rgmii";
 		dma-bit-mask = <32>;
 		emac-core-version = <0x20030000>;
@@ -1974,5 +1975,14 @@
 			gpio-key,wakeup;
 			linux,can-disable;
 		};
+	};
+};
+
+&soc {
+	qcom,rgptp {
+		compatible = "qcom,rgptp";
+		qcom,toggle-gpio = <&tlmm 46 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&rgptp_gpio_default>;
 	};
 };

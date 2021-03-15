@@ -38,7 +38,8 @@
 #include <linux/icmp.h>
 
 #define MIN_JUMBO_FRAME_SIZE	2048
-#define MAX_SUPPORTED_JUMBO_FRAME_SIZE	8188
+#define MAX_SUPPORTED_JUMBO_MTU	8188
+#define MAX_SUPPORTED_JUMBO_FRAME_SIZE	9022
 
 struct stmmac_resources {
 	void __iomem *addr;
@@ -69,6 +70,7 @@ struct stmmac_tx_queue {
 	dma_addr_t dma_tx_phy;
 	u32 tx_tail_addr;
 	bool skip_sw;
+	u32 dma_tx_desc_sz;
 };
 
 struct stmmac_rx_queue {
@@ -85,6 +87,8 @@ struct stmmac_rx_queue {
 	u32 rx_tail_addr;
 	struct napi_struct napi ____cacheline_aligned_in_smp;
 	bool skip_sw;
+	bool jumbo_en;
+	u32 dma_rx_desc_sz;
 	bool en_fep;
 	bool dis_mod;
 	struct {

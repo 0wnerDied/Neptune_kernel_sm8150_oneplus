@@ -53,4 +53,6 @@
 	qcom,cv2x-queue = <3>;
 	qcom,cv2x-vlan-offset = <1>;
 	jumbo-mtu = <8188>;
+	dma-rx-desc-cnt = <128>;
+	dma-tx-desc-cnt = <128>;
 };
