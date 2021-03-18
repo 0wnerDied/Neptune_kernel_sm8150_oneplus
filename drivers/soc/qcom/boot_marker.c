@@ -54,7 +54,8 @@ static void delete_boot_marker(const char *name)
 
 	list_for_each_entry_safe(marker, temp_addr, &boot_marker_list.list,
 			list) {
-		if (strnstr(marker->marker_name, name,
+		if (marker && strlen(marker->marker_name) &&
+			strnstr(marker->marker_name, name,
 			 strlen(marker->marker_name))) {
 			list_del(&marker->list);
 			kfree(marker);
@@ -93,22 +94,13 @@ static void _create_boot_marker(const char *name,
  */
 void update_marker(const char *name)
 {
-	struct boot_marker *marker;
-	struct boot_marker *temp_addr;
-
 	unsigned long long timer_value = msm_timer_get_sclk_ticks();
 
 	spin_lock(&boot_marker_list.slock);
-	list_for_each_entry_safe(marker, temp_addr, &boot_marker_list.list,
-				list) {
-		if (strnstr(marker->marker_name, name,
-				strlen(marker->marker_name))) {
-			delete_boot_marker(marker->marker_name);
-			break;
-		}
-	}
 
+	delete_boot_marker(name);
 	_create_boot_marker(name, timer_value);
+
 	spin_unlock(&boot_marker_list.slock);
 }
 EXPORT_SYMBOL(update_marker);
