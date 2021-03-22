@@ -94,7 +94,7 @@
 	/delete-property/ vdd-wlan-io-supply;
 	/delete-property/ qcom,cap-tsf-gpio;
 
-	status = "okay";
+	status = "disabled";
 };
 
 &spi_2 {
