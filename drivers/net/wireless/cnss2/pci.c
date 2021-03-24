@@ -3657,10 +3657,10 @@ int cnss_pci_start_mhi(struct cnss_pci_data *pci_priv)
 		}
 	}
 	ret = cnss_pci_set_mhi_state(pci_priv, CNSS_MHI_POWER_ON);
-	if (ret)
-		goto out;
-
-	return 0;
+	if (ret == -ETIMEDOUT) {
+		mhi_debug_reg_dump(pci_priv->mhi_ctrl);
+		cnss_pci_dump_bl_sram_mem(pci_priv);
+	}
 
 out:
 	return ret;
