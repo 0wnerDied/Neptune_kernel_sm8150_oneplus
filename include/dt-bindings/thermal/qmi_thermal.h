@@ -50,6 +50,8 @@
 #define QMI_QFE_WTR_PA_4_FR1	34
 #define QMI_QFE_WTR_PA_5_FR1	35
 #define QMI_QFE_WTR_PA_6_FR1	36
+#define QMI_QFE_RET_PA_1	37
+#define QMI_QFE_RET_PA_1_FR1	38
 
 
 #define QMI_MODEM_INST_ID	0x0

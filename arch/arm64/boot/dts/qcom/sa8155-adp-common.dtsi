@@ -237,6 +237,9 @@
 };
 
 &usb1 {
+	interrupts = <0 491 0>, <0 487 0>, <0 490 0>;
+	interrupt-names = "dp_hs_phy_irq",
+			"ss_phy_irq", "dm_hs_phy_irq";
 	status = "ok";
 	qcom,default-mode-host;
 	qcom,ignore-wakeup-src-in-hostmode;

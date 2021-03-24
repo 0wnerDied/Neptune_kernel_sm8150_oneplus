@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -459,11 +459,12 @@ void msm_bus_dbg_remove_bcm(struct msm_bus_node_device_type *cur_bcm)
 static int msm_bus_dbg_record_client(const struct msm_bus_scale_pdata *pdata,
 	int index, uint32_t clid, struct dentry *file)
 {
-	dbg_cldata2 = kmalloc(sizeof(struct msm_bus_cldata), GFP_KERNEL);
+	dbg_cldata2 = kzalloc(sizeof(struct msm_bus_cldata), GFP_KERNEL);
 	if (!dbg_cldata2) {
 		MSM_BUS_DBG("Failed to allocate memory for client data\n");
 		return -ENOMEM;
 	}
+	memset(dbg_cldata2, 0, sizeof(struct msm_bus_cldata));
 	dbg_cldata2->pdata = pdata;
 	dbg_cldata2->index = index;
 	dbg_cldata2->clid = clid;

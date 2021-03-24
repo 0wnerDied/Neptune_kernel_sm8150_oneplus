@@ -243,7 +243,7 @@ int stmmac_mdio_register(struct net_device *ndev)
 		new_bus->phy_mask = mdio_bus_data->phy_mask;
 	} else {
 		err = new_bus->read(new_bus, phyaddr, MII_BMSR);
-		if (err == -EBUSY) {
+		if (err == -EBUSY || !err || err == 0xffff) {
 			dev_warn(dev, "Invalid PHY address read from dtsi: %d",
 				 phyaddr);
 			new_bus->phy_mask = mdio_bus_data->phy_mask;
