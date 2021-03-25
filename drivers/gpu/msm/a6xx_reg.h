@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -534,6 +534,13 @@
 #define A6XX_RBBM_CLOCK_MODE_HLSQ	 0x0011b
 #define A6XX_RBBM_CLOCK_DELAY_HLSQ       0x0011c
 #define A6XX_RBBM_CLOCK_HYST_HLSQ        0x0011d
+
+#define A6XX_GMUAO_GMU_CGC_MODE_CNTL     0x23b09
+#define A6XX_GMUAO_GMU_CGC_DELAY_CNTL    0x23b0a
+#define A6XX_GMUAO_GMU_CGC_HYST_CNTL     0x23b0b
+#define A6XX_GMUCX_GMU_WFI_CONFIG        0x1f802
+#define A6XX_GMUGX_GMU_SP_RF_CONTROL_0   0x1a883
+#define A6XX_GMUGX_GMU_SP_RF_CONTROL_1   0x1a884
 
 /* ISDB SP0 and SP1 registers */
 #define A6XX_SP0_ISDB_ISDB_EN                           0xf40001
