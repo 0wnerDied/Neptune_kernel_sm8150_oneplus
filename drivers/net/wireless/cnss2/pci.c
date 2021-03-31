@@ -267,6 +267,29 @@ static int cnss_pci_reg_read(struct cnss_pci_data *pci_priv,
 	return 0;
 }
 
+static void cnss_pci_get_jtag_id(struct cnss_pci_data *pci_priv)
+{
+	u32 jtag_id, reg;
+
+	switch (pci_priv->device_id) {
+	case QCA6390_DEVICE_ID:
+		reg = QCA6390_PCIE_JTAG_ID_REG;
+		break;
+	case QCN7605_DEVICE_ID:
+		reg = QCN7605_PCIE_JTAG_ID_REG;
+		break;
+	default:
+		cnss_pr_dbg("device 0x%x not support JTAG ID\n",
+			    pci_priv->device_id);
+		return;
+	}
+
+	if (cnss_pci_reg_read(pci_priv, reg, &jtag_id))
+		cnss_pr_err("Failed to get device JTAG ID");
+	else
+		cnss_pr_dbg("Get device JTAG ID 0x%x", jtag_id);
+}
+
 static int cnss_pci_reg_write(struct cnss_pci_data *pci_priv, u32 offset,
 			      u32 val)
 {
@@ -3942,6 +3965,8 @@ static int cnss_pci_probe(struct pci_dev *pci_dev,
 		}
 		/* Update fw name according to different chip subtype */
 		cnss_pci_update_fw_name(pci_priv);
+
+		cnss_pci_get_jtag_id(pci_priv);
 
 		if (EMULATION_HW)
 			break;
