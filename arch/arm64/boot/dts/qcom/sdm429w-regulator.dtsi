@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -142,6 +142,7 @@
 
 	rpm-regulator-ldoa1 {
 		status = "okay";
+		qcom,send-ipeak;
 		L1A: pm660_l1: regulator-l1 {
 			regulator-min-microvolt = <970000>;
 			regulator-max-microvolt = <1280000>;
@@ -152,6 +153,7 @@
 
 	rpm-regulator-ldoa2 {
 		status = "okay";
+		qcom,send-ipeak;
 		L2A: pm660_l2: regulator-l2 {
 			regulator-min-microvolt = <900000>;
 			regulator-max-microvolt = <1280000>;
@@ -162,6 +164,7 @@
 
 	rpm-regulator-ldoa3 {
 		status = "okay";
+		qcom,send-ipeak;
 		L3A: pm660_l3: regulator-l3 {
 			regulator-min-microvolt = <900000>;
 			regulator-max-microvolt = <1280000>;
@@ -172,6 +175,7 @@
 
 	rpm-regulator-ldoa5 {
 		status = "okay";
+		qcom,send-ipeak;
 		L5A: pm660_l5: regulator-l5 {
 			regulator-min-microvolt = <1150000>;
 			regulator-max-microvolt = <1450000>;
@@ -182,6 +186,7 @@
 
 	rpm-regulator-ldoa6 {
 		status = "okay";
+		qcom,send-ipeak;
 		L6A: pm660_l6: regulator-l6 {
 			regulator-min-microvolt = <670000>;
 			regulator-max-microvolt = <930000>;
@@ -192,6 +197,7 @@
 
 	rpm-regulator-ldoa7 {
 		status = "okay";
+		qcom,send-ipeak;
 		L7A: pm660_l7: regulator-l7 {
 			regulator-min-microvolt = <1140000>;
 			regulator-max-microvolt = <1280000>;
@@ -202,6 +208,7 @@
 
 	rpm-regulator-ldoa8 {
 		status = "okay";
+		qcom,send-ipeak;
 		L8A: pm660_l8: regulator-l8 {
 			regulator-min-microvolt = <1500000>;
 			regulator-max-microvolt = <2040000>;
@@ -212,6 +219,7 @@
 
 	rpm-regulator-ldoa9 {
 		status = "okay";
+		qcom,send-ipeak;
 		L9A: pm660_l9: regulator-l9 {
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <2040000>;
@@ -222,6 +230,7 @@
 
 	rpm-regulator-ldoa10 {
 		status = "okay";
+		qcom,send-ipeak;
 		L10A: pm660_l10: regulator-l10 {
 			regulator-min-microvolt = <500000>;
 			regulator-max-microvolt = <2040000>;
@@ -232,6 +241,7 @@
 
 	rpm-regulator-ldoa11 {
 		status = "okay";
+		qcom,send-ipeak;
 		L11A: pm660_l11: regulator-l11 {
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <2040000>;
@@ -242,6 +252,7 @@
 
 	rpm-regulator-ldoa12 {
 		status = "okay";
+		qcom,send-ipeak;
 		L12A: pm660_l12: regulator-l12 {
 			regulator-min-microvolt = <1620000>;
 			regulator-max-microvolt = <2040000>;
@@ -261,16 +272,19 @@
 
 	rpm-regulator-ldoa13 {
 		status = "okay";
+		qcom,send-ipeak;
 		L13A: pm660_l13: regulator-l13 {
 			regulator-min-microvolt = <1600000>;
 			regulator-max-microvolt = <2040000>;
 			qcom,init-voltage = <1600000>;
+			regulator-system-load = <20000>;
 			status = "okay";
 		};
 	};
 
 	rpm-regulator-ldoa14 {
 		status = "okay";
+		qcom,send-ipeak;
 		L14A: pm660_l14: regulator-l14 {
 			regulator-min-microvolt = <1700000>;
 			regulator-max-microvolt = <1900000>;
@@ -281,6 +295,7 @@
 
 	rpm-regulator-ldoa15 {
 		status = "okay";
+		qcom,send-ipeak;
 		L15A: pm660_l15: regulator-l15 {
 			regulator-min-microvolt = <2650000>;
 			regulator-max-microvolt = <3400000>;
@@ -291,6 +306,7 @@
 
 	rpm-regulator-ldoa16 {
 		status = "okay";
+		qcom,send-ipeak;
 		L16A: pm660_l16: regulator-l16 {
 			regulator-min-microvolt = <2970000>;
 			regulator-max-microvolt = <3400000>;
@@ -301,6 +317,7 @@
 
 	rpm-regulator-ldoa17 {
 		status = "okay";
+		qcom,send-ipeak;
 		L17A: pm660_l17: regulator-l17 {
 			regulator-min-microvolt = <2400000>;
 			regulator-max-microvolt = <3300000>;
@@ -311,6 +328,7 @@
 
 	rpm-regulator-ldoa18 {
 		status = "okay";
+		qcom,send-ipeak;
 		L18A: pm660_l18: regulator-l18 {
 			regulator-min-microvolt = <1650000>;
 			regulator-max-microvolt = <3050000>;
@@ -321,6 +339,7 @@
 
 	rpm-regulator-ldoa19 {
 		status = "okay";
+		qcom,send-ipeak;
 		L19A: pm660_l19: regulator-l19 {
 			regulator-min-microvolt = <2700000>;
 			regulator-max-microvolt = <3400000>;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -88,11 +88,17 @@
 #define PCIE20_PARF_L1SUB_AHB_CLK_MAX_TIMER (0x180)
 #define PCIE20_PARF_DEBUG_INT_EN (0x190)
 
+#define PCIE20_PARF_DEBUG_CNT_IN_L0S (0xc10)
+#define PCIE20_PARF_DEBUG_CNT_IN_L1 (0xc0c)
+#define PCIE20_PARF_DEBUG_CNT_IN_L1SUB_L1 (0xc84)
+#define PCIE20_PARF_DEBUG_CNT_IN_L1SUB_L2 (0xc88)
+
 #define PCIE20_ELBI_VERSION		0x00
 #define PCIE20_ELBI_SYS_CTRL	     0x04
 #define PCIE20_ELBI_SYS_STTS		 0x08
 
 #define PCIE20_CAP			   0x70
+#define PCIE20_CAP_DEVCAP		(PCIE20_CAP + 0x04)
 #define PCIE20_CAP_DEVCTRLSTATUS	(PCIE20_CAP + 0x08)
 #define PCIE20_CAP_LINKCTRLSTATUS	(PCIE20_CAP + 0x10)
 
@@ -309,6 +315,7 @@ enum msm_pcie_res {
 	MSM_PCIE_RES_ELBI,
 	MSM_PCIE_RES_IATU,
 	MSM_PCIE_RES_CONF,
+	MSM_PCIE_RES_MHI,
 	MSM_PCIE_RES_TCSR,
 	MSM_PCIE_MAX_RES,
 };
@@ -649,6 +656,7 @@ struct msm_pcie_dev_t {
 	void __iomem		     *iatu;
 	void __iomem		     *dm_core;
 	void __iomem		     *conf;
+	void __iomem		     *mhi;
 	void __iomem		     *tcsr;
 
 	uint32_t			    axi_bar_start;
@@ -1003,6 +1011,7 @@ static const struct msm_pcie_res_info_t msm_pcie_res_info[MSM_PCIE_MAX_RES] = {
 	{"elbi",	NULL, NULL},
 	{"iatu",	NULL, NULL},
 	{"conf",	NULL, NULL},
+	{"mhi",		NULL, NULL},
 	{"tcsr",	NULL, NULL}
 };
 
@@ -1234,6 +1243,11 @@ static void msm_pcie_cfg_recover(struct msm_pcie_dev_t *dev, bool rc)
 			cfg = dev->dm_core;
 			shadow = dev->rc_shadow;
 		} else {
+			/* do not restore for endpoints (Type 0) */
+			if (dev->pcidev_table[i].dev->hdr_type ==
+			    PCI_HEADER_TYPE_NORMAL)
+				continue;
+
 			if (!msm_pcie_confirm_linkup(dev, false, true,
 				dev->pcidev_table[i].conf_base))
 				continue;
@@ -1704,6 +1718,11 @@ static void msm_pcie_sel_debug_testcase(struct msm_pcie_dev_t *dev,
 
 		break;
 	case MSM_PCIE_DUMP_PCIE_REGISTER_SPACE:
+		if (!base_sel) {
+			PCIE_DBG_FS(dev, "Invalid base_sel: 0x%x\n", base_sel);
+			break;
+		}
+
 		if (((base_sel - 1) >= MSM_PCIE_MAX_RES) ||
 					(!dev->res[base_sel - 1].resource)) {
 			PCIE_DBG_FS(dev, "PCIe: RC%d Resource does not exist\n",
@@ -1711,10 +1730,7 @@ static void msm_pcie_sel_debug_testcase(struct msm_pcie_dev_t *dev,
 			break;
 		}
 
-		if (!base_sel) {
-			PCIE_DBG_FS(dev, "Invalid base_sel: 0x%x\n", base_sel);
-			break;
-		} else if (base_sel - 1 == MSM_PCIE_RES_PARF) {
+		if (base_sel - 1 == MSM_PCIE_RES_PARF) {
 			pcie_parf_dump(dev);
 			break;
 		} else if (base_sel - 1 == MSM_PCIE_RES_PHY) {
@@ -2195,6 +2211,36 @@ static ssize_t msm_pcie_enumerate_store(struct device *dev,
 
 static DEVICE_ATTR(enumerate, 0200, NULL, msm_pcie_enumerate_store);
 
+static ssize_t aspm_stat_show(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	struct msm_pcie_dev_t *pcie_dev = dev_get_drvdata(dev);
+
+	if (!pcie_dev->mhi)
+		return scnprintf(buf, PAGE_SIZE,
+				 "PCIe: RC%d: MHI register space is not defined\n",
+				 pcie_dev->rc_idx);
+
+	if (pcie_dev->link_status != MSM_PCIE_LINK_ENABLED)
+		return scnprintf(buf, PAGE_SIZE,
+				 "PCIe: RC%d: registers are not accessible\n",
+				 pcie_dev->rc_idx);
+
+	return scnprintf(buf, PAGE_SIZE,
+			 "PCIe: RC%d: L0s: %u L1: %u L1.1: %u L1.2: %u\n",
+			 pcie_dev->rc_idx,
+			 readl_relaxed(pcie_dev->mhi +
+				       PCIE20_PARF_DEBUG_CNT_IN_L0S),
+			 readl_relaxed(pcie_dev->mhi +
+				       PCIE20_PARF_DEBUG_CNT_IN_L1),
+			 readl_relaxed(pcie_dev->mhi +
+				       PCIE20_PARF_DEBUG_CNT_IN_L1SUB_L1),
+			 readl_relaxed(pcie_dev->mhi +
+				       PCIE20_PARF_DEBUG_CNT_IN_L1SUB_L2));
+}
+static DEVICE_ATTR_RO(aspm_stat);
+
 static ssize_t l23_rdy_poll_timeout_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
@@ -2228,6 +2274,7 @@ static DEVICE_ATTR_RW(l23_rdy_poll_timeout);
 
 static struct attribute *msm_pcie_debug_attrs[] = {
 	&dev_attr_enumerate.attr,
+	&dev_attr_aspm_stat.attr,
 	&dev_attr_l23_rdy_poll_timeout.attr,
 	NULL,
 };
@@ -3528,6 +3575,8 @@ static void msm_pcie_iatu_config_all_ep(struct msm_pcie_dev_t *dev)
 
 static void msm_pcie_config_controller(struct msm_pcie_dev_t *dev)
 {
+	u32 val;
+
 	PCIE_DBG(dev, "RC%d\n", dev->rc_idx);
 
 	/*
@@ -3572,6 +3621,13 @@ static void msm_pcie_config_controller(struct msm_pcie_dev_t *dev)
 		msm_pcie_write_reg_field(dev->dm_core,
 					PCIE20_DEVICE_CONTROL2_STATUS2,
 					0xf, dev->cpl_timeout);
+
+	/* update RC Max Payload Size based on Max Payload Size Supported */
+	val = readl_relaxed(dev->dm_core + PCIE20_CAP_DEVCAP) &
+	      PCI_EXP_DEVCAP_PAYLOAD;
+	msm_pcie_write_reg_field(dev->dm_core,
+				 PCIE20_CAP_DEVCTRLSTATUS,
+				 PCI_EXP_DEVCTL_PAYLOAD, val);
 
 	/* Enable AER on RC */
 	if (dev->aer_enable) {
@@ -4045,6 +4101,7 @@ static int msm_pcie_get_resources(struct msm_pcie_dev_t *dev,
 	dev->iatu = dev->res[MSM_PCIE_RES_IATU].base;
 	dev->dm_core = dev->res[MSM_PCIE_RES_DM_CORE].base;
 	dev->conf = dev->res[MSM_PCIE_RES_CONF].base;
+	dev->mhi = dev->res[MSM_PCIE_RES_MHI].base;
 	dev->tcsr = dev->res[MSM_PCIE_RES_TCSR].base;
 
 out:
@@ -4062,6 +4119,7 @@ static void msm_pcie_release_resources(struct msm_pcie_dev_t *dev)
 	dev->iatu = NULL;
 	dev->dm_core = NULL;
 	dev->conf = NULL;
+	dev->mhi = NULL;
 	dev->tcsr = NULL;
 }
 
@@ -4724,7 +4782,7 @@ int msm_pcie_enumerate(u32 rc_idx)
 			struct pci_dev *pcidev = NULL;
 			struct pci_host_bridge *bridge;
 			bool found = false;
-			struct pci_bus *bus;
+			struct pci_bus *bus, *child;
 			resource_size_t iobase = 0;
 			u32 ids = readl_relaxed(msm_pcie_dev[rc_idx].dm_core);
 			u32 vendor_id = ids & 0xffff;
@@ -4785,6 +4843,9 @@ int msm_pcie_enumerate(u32 rc_idx)
 			bus = bridge->bus;
 
 			pci_assign_unassigned_bus_resources(bus);
+			list_for_each_entry(child, &bus->children, node)
+				pcie_bus_configure_settings(child);
+
 			pci_bus_add_devices(bus);
 
 			dev->enumerated = true;

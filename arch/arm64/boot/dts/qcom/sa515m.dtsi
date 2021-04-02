@@ -1,0 +1,29 @@
+/* Copyright (c) 2021, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+&soc {
+	subsys_backup: qcom,subsys-backup {
+		compatible = "qcom,subsys-backup";
+		qcom,buf-size = <0x600000>;
+		memory-region = <&subsys_backup_region>;
+	};
+};
+
+&reserved_mem {
+	subsys_backup_region: subsys_backup_region {
+		compatible = "shared-dma-pool";
+		reusable;
+		size = <0x600000>;
+	};
+};
+
+

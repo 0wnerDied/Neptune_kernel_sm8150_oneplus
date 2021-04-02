@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -304,6 +304,16 @@ struct ais_ife_rdi_out_cfg {
 };
 
 /**
+ * struct ais_ife_diag_info - queries total number of packets received
+ *
+ * @pkts_rcvd : CSID packets received
+ *
+ */
+struct ais_ife_diag_info {
+	uint32_t pkts_rcvd;
+};
+
+/**
  * struct ais_ife_csid_csi_info
  *
  * @brief CSI Configuration
@@ -321,7 +331,8 @@ struct ais_ife_csid_csi_info {
 	uint32_t dt;
 	uint32_t num_lanes;
 	uint32_t lane_assign;
-	uint32_t is_3Phase;
+	uint8_t is_3Phase;
+	uint8_t vcx_mode;
 };
 
 /**

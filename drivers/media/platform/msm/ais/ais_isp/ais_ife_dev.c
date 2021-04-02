@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2018, 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2018, 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -361,8 +361,14 @@ static int ais_ife_driver_cmd(struct ais_ife_dev *p_ife_dev, void *arg)
 				cmd->size)) {
 			rc = -EFAULT;
 		} else {
-			rc = vfe_drv->hw_ops.stop(
+			int tmp;
+
+			rc = csid_drv->hw_ops.stop(
+				csid_drv->hw_priv, &rdi_stop, cmd->size);
+			tmp = vfe_drv->hw_ops.stop(
 				vfe_drv->hw_priv, &rdi_stop, cmd->size);
+			if (!rc)
+				rc = tmp;
 		}
 	}
 		break;
@@ -379,6 +385,18 @@ static int ais_ife_driver_cmd(struct ais_ife_dev *p_ife_dev, void *arg)
 		} else {
 			rc = vfe_drv->hw_ops.start(
 				vfe_drv->hw_priv, &rdi_start, cmd->size);
+			if (!rc) {
+				rc = csid_drv->hw_ops.start(
+					csid_drv->hw_priv, &rdi_start,
+					cmd->size);
+				if (rc) {
+					struct ais_ife_rdi_stop_args rdi_stop;
+
+					rdi_stop.path = rdi_start.path;
+					vfe_drv->hw_ops.stop(vfe_drv->hw_priv,
+						&rdi_stop, sizeof(rdi_stop));
+				}
+			}
 		}
 	}
 		break;
@@ -396,6 +414,27 @@ static int ais_ife_driver_cmd(struct ais_ife_dev *p_ife_dev, void *arg)
 			rc = vfe_drv->hw_ops.process_cmd(vfe_drv->hw_priv,
 					AIS_VFE_CMD_ENQ_BUFFER, &enq_buf,
 					cmd->size);
+		}
+	}
+		break;
+	case AIS_IFE_DIAG_INFO: {
+		struct ais_ife_diag_info ife_diag;
+
+		if (cmd->size != sizeof(ife_diag)) {
+			rc = -EINVAL;
+		} else if (copy_from_user(&ife_diag,
+				u64_to_user_ptr(cmd->handle),
+				cmd->size)) {
+			rc = -EFAULT;
+		} else {
+			rc = csid_drv->hw_ops.process_cmd(csid_drv->hw_priv,
+					AIS_IFE_CSID_CMD_DIAG_INFO, &ife_diag,
+					cmd->size);
+			if (!rc) {
+				if (copy_to_user(u64_to_user_ptr(cmd->handle),
+						&ife_diag, cmd->size))
+					rc = -EFAULT;
+			}
 		}
 	}
 		break;

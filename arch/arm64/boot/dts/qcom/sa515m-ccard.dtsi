@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -11,6 +11,7 @@
  */
 
 #include "sdxprairie-mtp.dtsi"
+#include "sa515m.dtsi"
 
 &soc {
 	/delete-node/ qcom,battery-data;
@@ -28,7 +29,7 @@
 		qcom,model = "sdx-auto-i2s-snd-card";
 		qcom,prim_mi2s_aux_master = <&prim_master>;
 		qcom,prim_mi2s_aux_slave = <&prim_slave>;
-		qcom,sec_mi2s_aux_master = <&sec_master>;
+		qcom,sec_mi2s_aux_master = <&sec_master_slave>;
 		qcom,sec_mi2s_aux_slave = <&sec_slave>;
 
 		pinctrl-names = "default";
@@ -437,6 +438,7 @@
 			qcom,vdd-wlan-rfa3-info = <1904000 1904000 450000 0>;
 			qcom,wlan-ramdump-dynamic = <0x400000>;
 			mhi,max-channels = <30>;
+			mhi,buffer-len = <0x8000>;
 			mhi,timeout = <10000>;
 			qcom,smmu-s1-enable;
 			mhi_channels {
@@ -547,6 +549,7 @@
 
 			qcom,wlan-ramdump-dynamic = <0x300000>;
 			mhi,max-channels = <30>;
+			mhi,buffer-len = <0x8000>;
 			mhi,timeout = <10000>;
 			mhi,ee = <0x3>, <0x4>;
 			mhi,ee-names = "SBL", "RDDM";
@@ -654,6 +657,19 @@
 			pins = "gpio96";
 			drive-strength = <2>;
 			bias-pull-down;
+		};
+	};
+};
+
+&ipa_hw {
+	qcom,ipa-config-is-sa;
+};
+
+&soc {
+	qcom,msm-imem@1468F000 {
+		dload_type@18 {
+			compatible = "qcom,msm-imem-dload-type";
+			reg = <0x18 0x4>;
 		};
 	};
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2016-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013, 2016-2021, The Linux Foundation. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -1197,6 +1197,9 @@ static int clk_pixel_set_rate(struct clk_hw *hw, unsigned long rate,
 	u32 mask = BIT(rcg->hid_width) - 1;
 	u32 hid_div, cfg;
 	int i, num_parents = clk_hw_get_num_parents(hw);
+
+	if (!(strcmp(hw->init->name, "pclk0_clk_src")))
+		delta = 130000;
 
 	regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG, &cfg);
 	cfg &= CFG_SRC_SEL_MASK;

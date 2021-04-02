@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2015, 2018-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2015, 2018-2019, 2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -199,6 +199,7 @@ struct rpm_vreg {
 	bool			wait_for_ack_active;
 	bool			wait_for_ack_sleep;
 	bool			always_wait_for_ack;
+	bool			send_ipeak;
 	bool			apps_only;
 	struct msm_rpm_request	*handle_active;
 	struct msm_rpm_request	*handle_sleep;
@@ -936,6 +937,49 @@ static int _rpm_vreg_ldo_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	return rc;
 }
 
+static int rpm_vreg_set_ipeak(struct regulator_dev *rdev, unsigned int mode)
+{
+	struct rpm_regulator *reg = rdev_get_drvdata(rdev);
+	int rc = 0;
+	u32 prev_current;
+	int prev_uA;
+
+	prev_current = reg->req.param[RPM_REGULATOR_PARAM_CURRENT];
+	prev_uA = MILLI_TO_MICRO(prev_current);
+
+	if (mode == REGULATOR_MODE_NORMAL) {
+		/* Make sure that request current is in HPM range. */
+		if (prev_uA < rpm_vreg_hpm_min_uA(reg->rpm_vreg))
+			RPM_VREG_SET_PARAM(reg, CURRENT,
+			    MICRO_TO_MILLI(rpm_vreg_hpm_min_uA(reg->rpm_vreg)));
+	} else if (mode == REGULATOR_MODE_IDLE) {
+		/* Make sure that request current is in LPM range. */
+		if (prev_uA > rpm_vreg_lpm_max_uA(reg->rpm_vreg))
+			RPM_VREG_SET_PARAM(reg, CURRENT,
+			    MICRO_TO_MILLI(rpm_vreg_lpm_max_uA(reg->rpm_vreg)));
+	} else {
+		vreg_err(reg, "invalid mode: %u\n", mode);
+		return -EINVAL;
+	}
+
+	/*
+	 * Only send a new load current value if the regulator is currently
+	 * enabled or if the regulator has been configured to always send
+	 * current updates.
+	 */
+	if (reg->always_send_current
+	    || rpm_vreg_active_or_sleep_enabled(reg->rpm_vreg)
+	    || rpm_vreg_shared_active_or_sleep_enabled_valid(reg->rpm_vreg))
+		rc = rpm_vreg_aggregate_requests(reg);
+
+	if (rc) {
+		vreg_err(reg, "set current failed, rc=%d\n", rc);
+		RPM_VREG_SET_PARAM(reg, CURRENT, prev_current);
+	}
+
+	return rc;
+}
+
 static int rpm_vreg_ldo_set_mode(struct regulator_dev *rdev, unsigned int mode)
 {
 	struct rpm_regulator *reg = rdev_get_drvdata(rdev);
@@ -943,7 +987,10 @@ static int rpm_vreg_ldo_set_mode(struct regulator_dev *rdev, unsigned int mode)
 
 	rpm_vreg_lock(reg->rpm_vreg);
 
-	rc = _rpm_vreg_ldo_set_mode(rdev, mode);
+	if (reg->rpm_vreg->send_ipeak)
+		rc = rpm_vreg_set_ipeak(rdev, mode);
+	else
+		rc = _rpm_vreg_ldo_set_mode(rdev, mode);
 
 	rpm_vreg_unlock(reg->rpm_vreg);
 
@@ -955,12 +1002,18 @@ static unsigned int rpm_vreg_ldo_get_mode(struct regulator_dev *rdev)
 	struct rpm_regulator *reg = rdev_get_drvdata(rdev);
 	u32 hw_mode;
 
-	hw_mode = reg->req.param[RPM_REGULATOR_PARAM_MODE_LDO];
-	if (hw_mode == REGULATOR_MODE_PMIC4_LDO_HPM ||
-			hw_mode == REGULATOR_MODE_PMIC5_LDO_HPM)
-		return REGULATOR_MODE_NORMAL;
+	if (reg->rpm_vreg->send_ipeak) {
+		return (reg->req.param[RPM_REGULATOR_PARAM_CURRENT]
+			>= MICRO_TO_MILLI(reg->rpm_vreg->hpm_min_load))
+			? REGULATOR_MODE_NORMAL : REGULATOR_MODE_IDLE;
+	} else {
+		hw_mode = reg->req.param[RPM_REGULATOR_PARAM_MODE_LDO];
+		if (hw_mode == REGULATOR_MODE_PMIC4_LDO_HPM ||
+				hw_mode == REGULATOR_MODE_PMIC5_LDO_HPM)
+			return REGULATOR_MODE_NORMAL;
 
-	return REGULATOR_MODE_IDLE;
+		return REGULATOR_MODE_IDLE;
+	}
 }
 
 static int rpm_vreg_ldo_set_load(struct regulator_dev *rdev, int load_uA)
@@ -973,7 +1026,11 @@ static int rpm_vreg_ldo_set_load(struct regulator_dev *rdev, int load_uA)
 
 	mode = (load_uA + reg->system_load >= reg->rpm_vreg->hpm_min_load)
 		? REGULATOR_MODE_NORMAL : REGULATOR_MODE_IDLE;
-	rc = _rpm_vreg_ldo_set_mode(rdev, mode);
+
+	if (reg->rpm_vreg->send_ipeak)
+		rc = rpm_vreg_set_ipeak(rdev, mode);
+	else
+		rc = _rpm_vreg_ldo_set_mode(rdev, mode);
 
 	rpm_vreg_unlock(reg->rpm_vreg);
 
@@ -1936,6 +1993,9 @@ static int rpm_vreg_resource_probe(struct platform_device *pdev)
 				prop, type);
 			goto fail_free_vreg;
 		}
+
+		rpm_vreg->send_ipeak
+			= of_property_read_bool(node, "qcom,send-ipeak");
 	}
 
 	/* Optional device tree properties: */

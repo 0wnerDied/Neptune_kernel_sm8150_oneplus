@@ -103,6 +103,9 @@ static int cmdq_crypto_qti_keyslot_program(struct keyslot_manager *ksm,
 	int err = 0;
 	u8 data_unit_mask;
 	int crypto_alg_id;
+	struct sdhci_host *sdhci = mmc_priv(host->mmc);
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
+	struct sdhci_msm_host *msm_host = pltfm_host->priv;
 
 	crypto_alg_id = cmdq_crypto_cap_find(host, key->crypto_mode,
 					       key->data_unit_size);
@@ -120,12 +123,28 @@ static int cmdq_crypto_qti_keyslot_program(struct keyslot_manager *ksm,
 		return -EINVAL;
 	}
 
+	if (!IS_ERR(msm_host->pclk) && !IS_ERR(msm_host->ice_clk)) {
+		err = clk_prepare_enable(msm_host->pclk);
+		if (err)
+			return err;
+		err = clk_prepare_enable(msm_host->ice_clk);
+		if (err)
+			return err;
+	} else {
+		pr_err("%s: Invalid clock value", __func__);
+		return -EINVAL;
+	}
+
 	mmc_host_clk_hold(host->mmc);
 
 	err = crypto_qti_keyslot_program(host->crypto_vops->priv, key,
 					 slot, data_unit_mask, crypto_alg_id);
 	if (err)
 		pr_err("%s: failed with error %d\n", __func__, err);
+
+
+	clk_disable_unprepare(msm_host->pclk);
+	clk_disable_unprepare(msm_host->ice_clk);
 
 	mmc_host_clk_release(host->mmc);
 
@@ -139,9 +158,24 @@ static int cmdq_crypto_qti_keyslot_evict(struct keyslot_manager *ksm,
 	int err = 0;
 	int val = 0;
 	struct cmdq_host *host = keyslot_manager_private(ksm);
+	struct sdhci_host *sdhci = mmc_priv(host->mmc);
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
+	struct sdhci_msm_host *msm_host = pltfm_host->priv;
 
 	if (!cmdq_is_crypto_enabled(host) ||
 	    !cmdq_keyslot_valid(host, slot)) {
+		return -EINVAL;
+	}
+
+	if (!IS_ERR(msm_host->pclk) && !IS_ERR(msm_host->ice_clk)) {
+		err = clk_prepare_enable(msm_host->pclk);
+		if (err)
+			return err;
+		err = clk_prepare_enable(msm_host->ice_clk);
+		if (err)
+			return err;
+	} else {
+		pr_err("%s: Invalid clock value", __func__);
 		return -EINVAL;
 	}
 
@@ -153,6 +187,11 @@ static int cmdq_crypto_qti_keyslot_evict(struct keyslot_manager *ksm,
 		mmc_host_clk_release(host->mmc);
 		return err;
 	}
+	mmc_host_clk_release(host->mmc);
+
+	clk_disable_unprepare(msm_host->pclk);
+	clk_disable_unprepare(msm_host->ice_clk);
+
 	mmc_host_clk_release(host->mmc);
 
 	val = atomic_read(&keycache) & ~(1 << slot);
@@ -217,6 +256,8 @@ int cmdq_host_init_crypto_qti_spec(struct cmdq_host *host,
 		CMDQ_CRYPTO_ALG_AES_XTS;
 	host->crypto_cap_array[CRYPTO_ICE_INDEX].key_size =
 		CMDQ_CRYPTO_KEY_SIZE_256;
+	host->crypto_cap_array[CRYPTO_ICE_INDEX].sdus_mask =
+		CRYPTO_CDU_SIZE;
 
 	blk_mode_num = cmdq_blk_crypto_qti_mode_num_for_alg_dusize(
 			host->crypto_cap_array[CRYPTO_ICE_INDEX].algorithm_id,
@@ -463,3 +504,90 @@ int cmdq_crypto_qti_resume(struct cmdq_host *host)
 {
 	return crypto_qti_resume(host->crypto_vops->priv);
 }
+
+#if IS_ENABLED(CONFIG_MMC_QTI_NONCMDQ_ICE)
+void crypto_qti_enable_noncmdq(struct sdhci_host *host)
+{
+	if (host->cq_host && cmdq_host_is_crypto_supported(host->cq_host))
+		cmdq_crypto_qti_enable(host->cq_host);
+}
+
+void sdhci_msm_ice_update_cfg(struct sdhci_host *host, u64 lba, u32 slot,
+			      unsigned int bypass, short key_index, u32 cdu_sz)
+{
+	unsigned int ctrl_info_val = 0;
+
+	/* Configure ICE index */
+	ctrl_info_val =
+		(key_index &
+		 MASK_SDHCI_MSM_ICE_CTRL_INFO_KEY_INDEX)
+		<< OFFSET_SDHCI_MSM_ICE_CTRL_INFO_KEY_INDEX;
+
+	/* Configure data unit size of transfer request */
+	ctrl_info_val |=
+		(cdu_sz &
+		 MASK_SDHCI_MSM_ICE_CTRL_INFO_CDU)
+		<< OFFSET_SDHCI_MSM_ICE_CTRL_INFO_CDU;
+
+	/* Configure ICE bypass mode */
+	ctrl_info_val |=
+		(bypass & MASK_SDHCI_MSM_ICE_CTRL_INFO_BYPASS)
+		<< OFFSET_SDHCI_MSM_ICE_CTRL_INFO_BYPASS;
+	writel_relaxed((lba & 0xFFFFFFFF),
+		host->ioaddr + CORE_VENDOR_SPEC_ICE_CTRL_INFO_1_n + 16 * slot);
+	writel_relaxed(((lba >> 32) & 0xFFFFFFFF),
+		host->ioaddr + CORE_VENDOR_SPEC_ICE_CTRL_INFO_2_n + 16 * slot);
+	writel_relaxed(ctrl_info_val,
+		host->ioaddr + CORE_VENDOR_SPEC_ICE_CTRL_INFO_3_n + 16 * slot);
+}
+
+int sdhci_crypto_cfg(struct sdhci_host *host, struct mmc_request *mrq,
+			    u32 slot)
+{
+	short key_index = 0;
+	u64 dun = 0;
+	unsigned int bypass = true;
+	u32 cdu_sz = ICE_CRYPTO_DATA_UNIT_512B;
+	struct request *req = NULL;
+	struct bio_crypt_ctx *bc = NULL;
+#if IS_ENABLED(CONFIG_CRYPTO_DEV_QCOM_ICE)
+	struct ice_data_setting setting;
+#endif
+
+	if (!mrq)
+		return -EINVAL;
+
+	req = mrq->req;
+
+	if (req && req->bio) {
+		if (bio_crypt_should_process(req)) {
+			bc = req->bio->bi_crypt_context;
+			if (bc) {
+				dun = bc->bc_dun[0];
+				key_index = bc->bc_keyslot;
+				bypass = false;
+				cdu_sz = ICE_CRYPTO_DATA_UNIT_4K;
+			}
+		} else {
+#if IS_ENABLED(CONFIG_CRYPTO_DEV_QCOM_ICE)
+			if (!qcom_ice_config_start(req, &setting)) {
+				key_index = setting.crypto_data.key_index;
+				bypass = (rq_data_dir(req) == WRITE) ?
+					setting.encr_bypass :
+					setting.decr_bypass;
+			} else {
+				pr_err("%s crypto config failed err = %d\n",
+						__func__);
+				return -EIO;
+			}
+#endif
+			dun = req->__sector;
+		}
+	}
+
+	sdhci_msm_ice_update_cfg(host, dun, slot, bypass, key_index,
+				 cdu_sz);
+
+	return 0;
+}
+#endif

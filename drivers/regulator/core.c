@@ -57,6 +57,7 @@ static LIST_HEAD(regulator_map_list);
 static LIST_HEAD(regulator_ena_gpio_list);
 static LIST_HEAD(regulator_supply_alias_list);
 static bool has_full_constraints;
+static bool debug_suspend;
 
 static struct dentry *debugfs_root;
 
@@ -1219,7 +1220,7 @@ static int set_consumer_device_supply(struct regulator_dev *rdev,
 				      const char *consumer_dev_name,
 				      const char *supply)
 {
-	struct regulator_map *node;
+	struct regulator_map *node, *new_node;
 	int has_dev;
 
 	if (supply == NULL)
@@ -1230,6 +1231,22 @@ static int set_consumer_device_supply(struct regulator_dev *rdev,
 	else
 		has_dev = 0;
 
+	new_node = kzalloc(sizeof(struct regulator_map), GFP_KERNEL);
+	if (new_node == NULL)
+		return -ENOMEM;
+
+	new_node->regulator = rdev;
+	new_node->supply = supply;
+
+	if (has_dev) {
+		new_node->dev_name = kstrdup(consumer_dev_name, GFP_KERNEL);
+		if (new_node->dev_name == NULL) {
+			kfree(new_node);
+			return -ENOMEM;
+		}
+	}
+
+	mutex_lock(&regulator_list_mutex);
 	list_for_each_entry(node, &regulator_map_list, list) {
 		if (node->dev_name && consumer_dev_name) {
 			if (strcmp(node->dev_name, consumer_dev_name) != 0)
@@ -1247,26 +1264,19 @@ static int set_consumer_device_supply(struct regulator_dev *rdev,
 			 node->regulator->desc->name,
 			 supply,
 			 dev_name(&rdev->dev), rdev_get_name(rdev));
-		return -EBUSY;
+		goto fail;
 	}
 
-	node = kzalloc(sizeof(struct regulator_map), GFP_KERNEL);
-	if (node == NULL)
-		return -ENOMEM;
+	list_add(&new_node->list, &regulator_map_list);
+	mutex_unlock(&regulator_list_mutex);
 
-	node->regulator = rdev;
-	node->supply = supply;
-
-	if (has_dev) {
-		node->dev_name = kstrdup(consumer_dev_name, GFP_KERNEL);
-		if (node->dev_name == NULL) {
-			kfree(node);
-			return -ENOMEM;
-		}
-	}
-
-	list_add(&node->list, &regulator_map_list);
 	return 0;
+
+fail:
+	mutex_unlock(&regulator_list_mutex);
+	kfree(new_node->dev_name);
+	kfree(new_node);
+	return -EBUSY;
 }
 
 static void unset_regulator_supplies(struct regulator_dev *rdev)
@@ -4465,33 +4475,35 @@ regulator_register(const struct regulator_desc *regulator_desc,
 	else if (regulator_desc->supply_name)
 		rdev->supply_name = regulator_desc->supply_name;
 
-	/*
-	 * Attempt to resolve the regulator supply, if specified,
-	 * but don't return an error if we fail because we will try
-	 * to resolve it again later as more regulators are added.
-	 */
-	if (regulator_resolve_supply(rdev))
-		rdev_dbg(rdev, "unable to resolve supply\n");
-
 	ret = set_machine_constraints(rdev, constraints);
+	if (ret == -EPROBE_DEFER) {
+		/* Regulator might be in bypass mode and so needs its supply
+		 * to set the constraints */
+		/* FIXME: this currently triggers a chicken-and-egg problem
+		 * when creating -SUPPLY symlink in sysfs to a regulator
+		 * that is just being created */
+		ret = regulator_resolve_supply(rdev);
+		if (!ret)
+			ret = set_machine_constraints(rdev, constraints);
+		else
+			rdev_dbg(rdev, "unable to resolve supply early: %pe\n",
+				 ERR_PTR(ret));
+	}
 	if (ret < 0)
 		goto wash;
 
 	/* add consumers devices */
 	if (init_data) {
-		mutex_lock(&regulator_list_mutex);
 		for (i = 0; i < init_data->num_consumer_supplies; i++) {
 			ret = set_consumer_device_supply(rdev,
 				init_data->consumer_supplies[i].dev_name,
 				init_data->consumer_supplies[i].supply);
 			if (ret < 0) {
-				mutex_unlock(&regulator_list_mutex);
 				dev_err(dev, "Failed to set supply %s\n",
 					init_data->consumer_supplies[i].supply);
 				goto unset_supplies;
 			}
 		}
-		mutex_unlock(&regulator_list_mutex);
 	}
 
 	if (!rdev->desc->ops->get_voltage &&
@@ -4866,6 +4878,71 @@ static const struct file_operations regulator_summary_fops = {
 #endif
 };
 
+static int _regulator_debug_print_enabled(struct device *dev, void *data)
+{
+	struct regulator_dev *rdev = dev_to_rdev(dev);
+	struct regulator *reg;
+	const char *supply_name;
+	int mode = -EPERM;
+	int uV = -EPERM;
+
+	if (_regulator_is_enabled(rdev) <= 0)
+		return 0;
+
+	uV = _regulator_get_voltage(rdev);
+
+	if (rdev->desc->ops->get_mode)
+		mode = rdev->desc->ops->get_mode(rdev);
+
+	if (uV != -EPERM && mode != -EPERM)
+		pr_info("%s[%u] %d uV, mode=%d\n",
+			rdev_get_name(rdev), rdev->use_count, uV, mode);
+	else if (uV != -EPERM)
+		pr_info("%s[%u] %d uV\n",
+			rdev_get_name(rdev), rdev->use_count, uV);
+	else if (mode != -EPERM)
+		pr_info("%s[%u], mode=%d\n",
+			rdev_get_name(rdev), rdev->use_count, mode);
+	else
+		pr_info("%s[%u]\n", rdev_get_name(rdev), rdev->use_count);
+
+	/* Print a header if there are consumers. */
+	if (rdev->open_count)
+		pr_info("  %-32s EN    Min_uV   Max_uV  load_uA\n",
+			"Device-Supply");
+
+	list_for_each_entry(reg, &rdev->consumer_list, list) {
+		if (reg->supply_name)
+			supply_name = reg->supply_name;
+		else
+			supply_name = "(null)-(null)";
+
+		pr_info("  %-32s %d   %8d %8d %8d\n", supply_name, reg->enabled,
+			reg->min_uV,
+			reg->max_uV,
+			reg->uA_load);
+	}
+
+	return 0;
+}
+
+/**
+ * regulator_debug_print_enabled - log enabled regulators
+ *
+ * Print the names of all enabled regulators and their consumers to the kernel
+ * log if debug_suspend is set from debugfs.
+ */
+void regulator_debug_print_enabled(void)
+{
+	if (likely(!debug_suspend))
+		return;
+
+	pr_info("Enabled regulators:\n");
+	class_for_each_device(&regulator_class, NULL, NULL,
+			     _regulator_debug_print_enabled);
+}
+EXPORT_SYMBOL(regulator_debug_print_enabled);
+
 static int __init regulator_init(void)
 {
 	int ret;
@@ -4881,6 +4958,9 @@ static int __init regulator_init(void)
 
 	debugfs_create_file("regulator_summary", 0444, debugfs_root,
 			    NULL, &regulator_summary_fops);
+
+	debugfs_create_bool("debug_suspend", 0644, debugfs_root,
+			    &debug_suspend);
 
 	regulator_dummy_init();
 

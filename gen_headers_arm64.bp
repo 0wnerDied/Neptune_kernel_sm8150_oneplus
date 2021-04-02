@@ -631,6 +631,7 @@ gen_headers_out_arm64 = [
     "linux/zorro_ids.h",
     "media/ais_isp.h",
     "media/ais_sensor.h",
+    "media/ais_v4l2loopback.h",
     "media/cam_cpas.h",
     "media/cam_defs.h",
     "media/cam_fd.h",
@@ -939,7 +940,8 @@ gen_headers_out_arm64 = [
     "linux/netfilter/ipset/ip_set_bitmap.h",
     "linux/netfilter/ipset/ip_set_hash.h",
     "linux/netfilter/ipset/ip_set_list.h",
-     "linux/msm_eth.h",
+    "linux/msm_eth.h",
+    "linux/eth_adapt_power.h",
 
     // From arch/arm64/include/uapi/**/*.h
 

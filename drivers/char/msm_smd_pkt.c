@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -45,10 +45,15 @@
  * @queue:      incoming message queue
  * @readq:      wait object for incoming queue
  * @sig_change: flag to indicate serial signal change
+ * @notify_state_update: notify channel state
+ * @fragmented_read: set from dt node for partial read
  * @dev_name:   /dev/@dev_name for smd_pkt device
  * @ch_name:    smd channel to match to
  * @edge:       smd edge to match to
  * @open_tout:  timeout for open syscall, configurable in sysfs
+ * @rskb:       current skb being read
+ * @rdata:      data pointer in current skb
+ * @rdata_len:  remaining data to be read from skb
  */
 struct smd_pkt_dev {
 
@@ -64,10 +69,15 @@ struct smd_pkt_dev {
 	struct sk_buff_head queue;
 	wait_queue_head_t readq;
 	int sig_change;
+	bool notify_state_update;
+	bool fragmented_read;
 	const char *dev_name;
 	const char *ch_name;
 	const char *edge;
 	int open_tout;
+	struct sk_buff *rskb;
+	unsigned char *rdata;
+	size_t rdata_len;
 };
 
 #define dev_to_smd_pkt_devp(_dev) container_of(_dev, struct smd_pkt_dev, dev)
@@ -87,11 +97,11 @@ enum {
 };
 
 #define SMD_PKT_INFO(x, ...)                                          \
-do {                                                                    \
+do {									 \
 	if (smd_pkt_debug_mask & SMD_PKT_INFO) {                    \
 		ipc_log_string(smd_pkt_ilctxt,                        \
 			"[%s]: "x, __func__, ##__VA_ARGS__);            \
-	}                                                               \
+	}								\
 } while (0)
 
 #define SMD_PKT_ERR(x, ...)                                                 \
@@ -153,6 +163,7 @@ static int smd_pkt_rpdev_probe(struct rpmsg_device *rpdev)
 
 	mutex_lock(&smd_pkt_devp->lock);
 	smd_pkt_devp->rpdev = rpdev;
+	smd_pkt_devp->notify_state_update = true;
 	mutex_unlock(&smd_pkt_devp->lock);
 	dev_set_drvdata(&rpdev->dev, smd_pkt_devp);
 	complete_all(&smd_pkt_devp->ch_open);
@@ -262,7 +273,7 @@ static long smd_pkt_ioctl(struct file *file, unsigned int cmd,
 {
 	struct smd_pkt_dev *smd_pkt_devp;
 	unsigned long flags;
-	u32 lsigs, rsigs;
+	u32 lsigs, rsigs, resetsigs;
 	int ret;
 
 	smd_pkt_devp = file->private_data;
@@ -277,19 +288,37 @@ static long smd_pkt_ioctl(struct file *file, unsigned int cmd,
 
 	if (!completion_done(&smd_pkt_devp->ch_open)) {
 		SMD_PKT_ERR("%s channel in reset\n", smd_pkt_devp->ch_name);
+		if ((cmd == TIOCMGET) && (smd_pkt_devp->notify_state_update)) {
+			resetsigs = TIOCM_OUT1 | TIOCM_OUT2;
+			smd_pkt_devp->notify_state_update = false;
+			mutex_unlock(&smd_pkt_devp->lock);
+
+			SMD_PKT_ERR("%s: reset notified resetsigs=%d\n",
+					smd_pkt_devp->ch_name, resetsigs);
+			ret = put_user(resetsigs, (uint32_t __user *)arg);
+			return ret;
+		}
 		mutex_unlock(&smd_pkt_devp->lock);
 		return -ENETRESET;
 	}
 
 	switch (cmd) {
 	case TIOCMGET:
+		resetsigs = 0;
 		spin_lock_irqsave(&smd_pkt_devp->queue_lock, flags);
 		smd_pkt_devp->sig_change = false;
+		if (smd_pkt_devp->notify_state_update) {
+			resetsigs = TIOCM_OUT2;
+			smd_pkt_devp->notify_state_update = false;
+			SMD_PKT_ERR("%s: reset notified resetsigs=%d\n",
+					smd_pkt_devp->ch_name, resetsigs);
+		}
 		spin_unlock_irqrestore(&smd_pkt_devp->queue_lock, flags);
 
 		ret = rpmsg_get_sigs(smd_pkt_devp->rpdev->ept, &lsigs, &rsigs);
 		if (!ret)
-			ret = put_user(rsigs, (uint32_t *)arg);
+			ret = put_user(rsigs | resetsigs,
+				       (uint32_t __user *)arg);
 		break;
 	case TIOCMSET:
 	case TIOCMBIS:
@@ -330,7 +359,6 @@ ssize_t smd_pkt_read(struct file *file,
 
 	struct smd_pkt_dev *smd_pkt_devp = file->private_data;
 	unsigned long flags;
-	struct sk_buff *skb;
 	int use;
 
 	if (!smd_pkt_devp ||
@@ -344,15 +372,17 @@ ssize_t smd_pkt_read(struct file *file,
 		return -ENETRESET;
 	}
 
-			SMD_PKT_INFO("begin for %s by %s:%d ref_cnt[%d]\n",
+	SMD_PKT_INFO(
+		"begin for %s by %s:%d ref_cnt[%d], remaining[%d], count[%d]\n",
 			smd_pkt_devp->ch_name, current->comm,
 			task_pid_nr(current),
-			refcount_read(&smd_pkt_devp->refcount));
+			refcount_read(&smd_pkt_devp->refcount),
+			smd_pkt_devp->rdata_len, count);
 
-			spin_lock_irqsave(&smd_pkt_devp->queue_lock, flags);
+	spin_lock_irqsave(&smd_pkt_devp->queue_lock, flags);
 
 	/* Wait for data in the queue */
-	if (skb_queue_empty(&smd_pkt_devp->queue)) {
+	if (skb_queue_empty(&smd_pkt_devp->queue) && !smd_pkt_devp->rskb) {
 		spin_unlock_irqrestore(&smd_pkt_devp->queue_lock, flags);
 
 		if (file->f_flags & O_NONBLOCK)
@@ -367,19 +397,53 @@ ssize_t smd_pkt_read(struct file *file,
 		spin_lock_irqsave(&smd_pkt_devp->queue_lock, flags);
 	}
 
-	skb = skb_dequeue(&smd_pkt_devp->queue);
+	if (!smd_pkt_devp->rskb) {
+		smd_pkt_devp->rskb = skb_dequeue(&smd_pkt_devp->queue);
+		if (!smd_pkt_devp->rskb) {
+			spin_unlock_irqrestore(&smd_pkt_devp->queue_lock,
+					       flags);
+			return -EFAULT;
+		}
+		smd_pkt_devp->rdata = smd_pkt_devp->rskb->data;
+		smd_pkt_devp->rdata_len = smd_pkt_devp->rskb->len;
+	}
 	spin_unlock_irqrestore(&smd_pkt_devp->queue_lock, flags);
-	if (!skb)
-		return -EFAULT;
 
-	use = min_t(size_t, count, skb->len);
-	if (copy_to_user(buf, skb->data, use))
+	use = min_t(size_t, count, smd_pkt_devp->rdata_len);
+
+	if (copy_to_user(buf, smd_pkt_devp->rdata, use))
 		use = -EFAULT;
 
-	kfree_skb(skb);
+	if (!smd_pkt_devp->fragmented_read && smd_pkt_devp->rdata_len == use) {
+		struct sk_buff *skb = smd_pkt_devp->rskb;
 
-	SMD_PKT_INFO("end for %s by %s:%d ret[%d]\n", smd_pkt_devp->ch_name,
-			current->comm, task_pid_nr(current), use);
+		spin_lock_irqsave(&smd_pkt_devp->queue_lock, flags);
+		smd_pkt_devp->rskb = NULL;
+		smd_pkt_devp->rdata = NULL;
+		smd_pkt_devp->rdata_len = 0;
+		spin_unlock_irqrestore(&smd_pkt_devp->queue_lock, flags);
+
+		kfree_skb(skb);
+	} else {
+		struct sk_buff *skb = NULL;
+
+		spin_lock_irqsave(&smd_pkt_devp->queue_lock, flags);
+		smd_pkt_devp->rdata += use;
+		smd_pkt_devp->rdata_len -= use;
+		if (smd_pkt_devp->rdata_len == 0) {
+			skb = smd_pkt_devp->rskb;
+			smd_pkt_devp->rskb = NULL;
+			smd_pkt_devp->rdata = NULL;
+			smd_pkt_devp->rdata_len = 0;
+		}
+		spin_unlock_irqrestore(&smd_pkt_devp->queue_lock, flags);
+		if (skb)
+			kfree_skb(skb);
+	}
+
+	SMD_PKT_INFO("end for %s by %s:%d ret[%d], remaining[%d]\n",
+			smd_pkt_devp->ch_name, current->comm,
+			task_pid_nr(current), use, smd_pkt_devp->rdata_len);
 
 	return use;
 }
@@ -484,7 +548,7 @@ static unsigned int smd_pkt_poll(struct file *file, poll_table *wait)
 	}
 
 	spin_lock_irqsave(&smd_pkt_devp->queue_lock, flags);
-	if (!skb_queue_empty(&smd_pkt_devp->queue))
+	if (!skb_queue_empty(&smd_pkt_devp->queue) || smd_pkt_devp->rskb)
 		mask |= POLLIN | POLLRDNORM;
 
 	if (smd_pkt_devp->sig_change)
@@ -506,6 +570,7 @@ static void smd_pkt_rpdev_remove(struct rpmsg_device *rpdev)
 
 	mutex_lock(&smd_pkt_devp->lock);
 	smd_pkt_devp->rpdev = NULL;
+	smd_pkt_devp->notify_state_update = true;
 	mutex_unlock(&smd_pkt_devp->lock);
 
 	dev_set_drvdata(&rpdev->dev, NULL);
@@ -583,6 +648,13 @@ int smd_pkt_release(struct inode *inode, struct file *file)
 		spin_lock_irqsave(&smd_pkt_devp->queue_lock, flags);
 
 		/* Discard all SKBs */
+		if (smd_pkt_devp->rskb) {
+			kfree_skb(smd_pkt_devp->rskb);
+			smd_pkt_devp->rskb = NULL;
+			smd_pkt_devp->rdata = NULL;
+			smd_pkt_devp->rdata_len = 0;
+		}
+
 		while (!skb_queue_empty(&smd_pkt_devp->queue)) {
 			skb = skb_dequeue(&smd_pkt_devp->queue);
 			kfree_skb(skb);
@@ -655,9 +727,14 @@ static int smd_pkt_parse_devicetree(struct device_node *np,
 	if (ret < 0)
 		goto error;
 
+	key = "qcom,smdpkt-fragmented-read";
+
+	smd_pkt_devp->fragmented_read = of_property_read_bool(np, key);
+
 	SMD_PKT_INFO("Parsed %s:%s /dev/%s\n", smd_pkt_devp->edge,
 						smd_pkt_devp->ch_name,
-						smd_pkt_devp->dev_name);
+						smd_pkt_devp->dev_name,
+						smd_pkt_devp->fragmented_read);
 	return 0;
 
 error:
@@ -739,6 +816,11 @@ static int smd_pkt_create_device(struct device *parent,
 	smd_pkt_devp->sig_change = false;
 
 	spin_lock_init(&smd_pkt_devp->queue_lock);
+
+	smd_pkt_devp->rskb = NULL;
+	smd_pkt_devp->rdata = NULL;
+	smd_pkt_devp->rdata_len = 0;
+
 	skb_queue_head_init(&smd_pkt_devp->queue);
 	init_waitqueue_head(&smd_pkt_devp->readq);
 

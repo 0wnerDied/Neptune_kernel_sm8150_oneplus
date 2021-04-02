@@ -131,6 +131,7 @@ struct stmmac_rxq_cfg {
 	u8 pkt_route;
 	bool use_prio;
 	u32 prio;
+	bool use_rtc;
 };
 
 struct stmmac_txq_cfg {
@@ -198,10 +199,13 @@ struct plat_stmmacenet_data {
 		 select_queue_fallback_t fallback);
 	unsigned int (*get_plat_tx_coal_frames)
 		(struct sk_buff *skb);
+	int (*handle_mac_err)(void *priv, int type, int chan);
 	bool early_eth;
 	bool crc_strip_en;
 	bool phy_intr_en;
 	int mac2mac_rgmii_speed;
+	int mac2mac_link;
 	bool mac2mac_en;
+	unsigned int jumbo_mtu;
 };
 #endif

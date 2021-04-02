@@ -1,4 +1,4 @@
-/* Copyright (c) 2016-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -41,6 +41,8 @@ hab_msg_alloc(struct physical_channel *pchan, size_t sizebytes)
 
 	message->sizebytes =
 		physical_channel_read(pchan, message->data, sizebytes);
+
+	message->sequence_rx = pchan->sequence_rx;
 
 	return message;
 }

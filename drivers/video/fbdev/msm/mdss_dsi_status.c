@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2018, 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2018, 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -123,9 +123,10 @@ irqreturn_t hw_vsync_handler(int irq, void *data)
 	else
 		pr_err("Pstatus data is NULL\n");
 
-	if (!atomic_read(&ctrl_pdata->te_irq_ready))
+	if (!atomic_read(&ctrl_pdata->te_irq_ready)) {
+		complete_all(&ctrl_pdata->te_irq_comp);
 		atomic_inc(&ctrl_pdata->te_irq_ready);
-
+	}
 	return IRQ_HANDLED;
 }
 
@@ -159,14 +160,15 @@ static int fb_event_callback(struct notifier_block *self,
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
 	struct mdss_panel_info *pinfo;
 	struct msm_fb_data_type *mfd;
-
+	char fb_id[7] = {'\0'};
 	if (!evdata) {
 		pr_err("%s: event data not available\n", __func__);
 		return NOTIFY_BAD;
 	}
 
 	/* handle only mdss fb device */
-	if (strcmp("mdssfb", evdata->info->fix.id))
+	strlcpy(fb_id, evdata->info->fix.id, 7);
+	if (strcmp("mdssfb", fb_id))
 		return NOTIFY_DONE;
 
 	mfd = evdata->info->par;
@@ -199,10 +201,12 @@ static int fb_event_callback(struct notifier_block *self,
 			schedule_delayed_work(&pdata->check_status,
 				msecs_to_jiffies(interval));
 			break;
-		case FB_BLANK_POWERDOWN:
-		case FB_BLANK_HSYNC_SUSPEND:
 		case FB_BLANK_VSYNC_SUSPEND:
 		case FB_BLANK_NORMAL:
+			pr_debug("%s : ESD thread running\n", __func__);
+			break;
+		case FB_BLANK_POWERDOWN:
+		case FB_BLANK_HSYNC_SUSPEND:
 			cancel_delayed_work(&pdata->check_status);
 			break;
 		default:

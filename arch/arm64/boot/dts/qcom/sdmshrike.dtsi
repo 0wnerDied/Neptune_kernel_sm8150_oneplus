@@ -2054,6 +2054,7 @@
 		phys = <&ufsphy_mem>;
 		phy-names = "ufsphy";
 		spm-level = <5>;
+		rpm-level = <1>;
 
 		lanes-per-direction = <2>;
 		dev-ref-clk-freq = <0>; /* 19.2 MHz */
@@ -2207,6 +2208,8 @@
 		phys = <&ufs2phy_mem>;
 		phy-names = "ufsphy";
 		ufs-qcom-crypto = <&ufs2_ice>;
+		spm-level = <5>;
+		rpm-level = <1>;
 
 		lanes-per-direction = <2>;
 		dev-ref-clk-freq = <0>; /* 19.2 MHz */
@@ -2525,10 +2528,6 @@
 			virtual-size = <0x40000000>;
 			qcom,secure-context-bank;
 		};
-	};
-
-	qcom_msmhdcp: qcom,msm_hdcp {
-		compatible = "qcom,msm-hdcp";
 	};
 
 	qcom_crypto: qcrypto@1de0000 {
