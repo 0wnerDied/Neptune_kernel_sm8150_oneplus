@@ -1080,8 +1080,10 @@ static void msm_vidc_detach_context_banks(
 
 	list_for_each_entry(cb, &res->context_banks, list) {
 		arm_iommu_detach_device(cb->dev);
-		if (cb->mapping)
+		if (cb->mapping) {
 			arm_iommu_release_mapping(cb->mapping);
+			cb->mapping = NULL;
+		}
 	}
 }
 
@@ -1282,6 +1284,7 @@ static int msm_vidc_populate_context_bank(struct device *dev,
 				cb->name, j, cb->sids[j]);
 	}
 	cb->num_sids = j;
+	cb->secure_vmid_switch = false;
 
 	rc = of_property_read_u32_array(np, "virtual-addr-pool",
 			(u32 *)&cb->addr_range, 2);
@@ -1538,10 +1541,14 @@ int msm_vidc_enable_cma(struct msm_vidc_platform_resources *res, bool enable)
 				}
 			} else {
 				secure_vmid = get_secure_vmid(cb);
-				rc = msm_vidc_switch_vmid(secure_vmid, cb);
-				if (rc)
-					goto detach_cb;
+				if (cb->secure_vmid_switch) {
+					rc = msm_vidc_switch_vmid
+					(secure_vmid, cb);
+					if (rc)
+						goto detach_cb;
+				}
 			}
+			cb->secure_vmid_switch = enable;
 		}
 		rc = msm_vidc_setup_context_bank(res, cb, cb->dev, enable);
 		if (rc)

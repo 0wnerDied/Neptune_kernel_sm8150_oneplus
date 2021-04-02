@@ -1,6 +1,6 @@
 /*
  * SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note
- * Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  */
 
 #ifndef _UAPI_MSM_HGSL_H
@@ -98,8 +98,10 @@ struct hgsl_hsync_fence_create {
 				HGSL_IOW(0x15, uint32_t)
 
 struct hgsl_isync_create_fence {
-	uint32_t timeline_id;
-	int fence_id;
+	__u32 timeline_id;
+	__s32 fence_id;
+	__u32 ts;
+	__u32 padding;
 };
 #define HGSL_IOCTL_ISYNC_FENCE_CREATE	\
 				HGSL_IOW(0x16,  \
@@ -113,4 +115,17 @@ struct hgsl_isync_signal_fence {
 				HGSL_IOW(0x17, \
 					 struct hgsl_isync_signal_fence)
 
+
+/**
+ * struct hgsl_isync_signal_fence - signal an i-sync fence
+ * @timeline_id: The timestamp for current fence
+ * @fence_id: id of fence to be signalled
+ */
+struct hgsl_isync_forward {
+	__u32 timeline_id;
+	__s32 ts;
+};
+#define HGSL_IOCTL_ISYNC_FORWARD \
+				HGSL_IOW(0x18, \
+					 struct hgsl_isync_forward)
 #endif /* _UAPI_MSM_HGSL_H */

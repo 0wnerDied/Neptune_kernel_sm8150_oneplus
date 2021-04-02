@@ -200,6 +200,7 @@ struct msm_geni_serial_port {
 	void *ipc_log_pwr;
 	void *ipc_log_misc;
 	void *console_log;
+	void *ipc_log_single;
 	unsigned int cur_baud;
 	int ioctl_count;
 	int edge_count;
@@ -618,6 +619,16 @@ static int msm_geni_serial_ioctl(struct uart_port *uport, unsigned int cmd,
 	}
 	case TIOCPMACT: {
 		ret = !pm_runtime_status_suspended(uport->dev);
+		break;
+	}
+	case TIOCFAULT: {
+		geni_se_dump_dbg_regs(&port->serial_rsc,
+				uport->membase, port->ipc_log_misc);
+		port->ipc_log_rx = port->ipc_log_single;
+		port->ipc_log_tx = port->ipc_log_single;
+		port->ipc_log_misc = port->ipc_log_single;
+		port->ipc_log_pwr = port->ipc_log_single;
+		ret = 0;
 		break;
 	}
 	default:
@@ -1809,6 +1820,40 @@ exit_ssr:
 	return ret;
 }
 
+static void check_rx_buf(char *buf, struct uart_port *uport, int size)
+{
+	struct msm_geni_serial_port *msm_port = GET_DEV_PORT(uport);
+	unsigned int rx_data;
+	bool fault = false;
+
+	rx_data = *(u32 *)buf;
+	/* check for first 4 bytes of RX data for faulty zero pattern */
+	if (rx_data == 0x0) {
+		if (size <= 4) {
+			fault = true;
+		} else {
+			/*
+			 * check for last 4 bytes of data in RX buffer for
+			 * faulty pattern
+			 */
+			if (memcmp(buf+(size-4), "\x0\x0\x0\x0", 4) == 0)
+				fault = true;
+		}
+
+		if (fault) {
+			IPC_LOG_MSG(msm_port->ipc_log_rx,
+				"RX Invalid packet %s\n", __func__);
+			geni_se_dump_dbg_regs(&msm_port->serial_rsc,
+				uport->membase, msm_port->ipc_log_misc);
+			/*
+			 * Add 2 msecs delay in order for dma rx transfer
+			 * to be actually completed.
+			 */
+			udelay(2000);
+		}
+	}
+}
+
 static int msm_geni_serial_handle_dma_rx(struct uart_port *uport, bool drop_rx)
 {
 	struct msm_geni_serial_port *msm_port = GET_DEV_PORT(uport);
@@ -1843,6 +1888,10 @@ static int msm_geni_serial_handle_dma_rx(struct uart_port *uport, bool drop_rx)
 					__func__, rx_bytes);
 		goto exit_handle_dma_rx;
 	}
+
+	/* Check RX buffer data for faulty pattern*/
+	check_rx_buf((char *)msm_port->rx_buf, uport, rx_bytes);
+
 	if (drop_rx)
 		goto exit_handle_dma_rx;
 
@@ -3044,6 +3093,16 @@ static void msm_geni_serial_debug_init(struct uart_port *uport, bool console)
 					IPC_LOG_MISC_PAGES, name, 0);
 			if (!msm_port->ipc_log_misc)
 				dev_info(uport->dev, "Err in Misc IPC Log\n");
+		}
+		/* New set of UART IPC log for RX Invalid case */
+		memset(name, 0, sizeof(name));
+		if (!msm_port->ipc_log_single) {
+			scnprintf(name, sizeof(name), "%s%s",
+					dev_name(uport->dev), "_single");
+			msm_port->ipc_log_single = ipc_log_context_create(
+					IPC_LOG_MISC_PAGES, name, 0);
+			if (!msm_port->ipc_log_single)
+				dev_info(uport->dev, "Err in single IPC Log\n");
 		}
 	} else {
 		memset(name, 0, sizeof(name));

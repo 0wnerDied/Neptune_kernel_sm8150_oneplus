@@ -102,3 +102,12 @@
 &int_codec {
 	qcom,model = "sdm429w-wtp-snd-card";
 };
+
+&qcom_seecom {
+	reg = <0x85c00000 0x700000>;
+};
+
+&other_ext_mem {
+	reg = <0x0 0x85c00000 0x0 0xc00000>;
+};
+

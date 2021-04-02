@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -71,6 +71,7 @@ struct hgsl_hsync_fence *hgsl_hsync_fence_create(
 			&timeline->lock, timeline->fence_context, ts);
 
 	fence->sync_file = sync_file_create(&fence->fence);
+	dma_fence_put(&fence->fence);
 	if (fence->sync_file == NULL) {
 		hgsl_hsync_timeline_put(timeline);
 		kfree(fence);
@@ -271,6 +272,7 @@ int hgsl_isync_timeline_create(struct hgsl_priv *priv,
 		return -ENOMEM;
 
 	kref_init(&timeline->kref);
+	timeline->context = dma_fence_context_alloc(1);
 	INIT_LIST_HEAD(&timeline->fence_list);
 	spin_lock_init(&timeline->lock);
 
@@ -291,7 +293,7 @@ int hgsl_isync_timeline_create(struct hgsl_priv *priv,
 }
 
 int hgsl_isync_fence_create(struct hgsl_priv *priv, uint32_t timeline_id,
-								int *fence_fd)
+						uint32_t ts, int *fence_fd)
 {
 	struct hgsl_isync_timeline *timeline = NULL;
 	struct hgsl_isync_fence *fence = NULL;
@@ -315,10 +317,16 @@ int hgsl_isync_fence_create(struct hgsl_priv *priv, uint32_t timeline_id,
 
 	fence->timeline = timeline;
 
+	/* set a minimal ts if user don't set it */
+	if (ts == 0)
+		ts = 1;
+
+	fence->ts = ts;
+
 	dma_fence_init(&fence->fence, &hgsl_isync_fence_ops,
 						&timeline->lock,
-						dma_fence_context_alloc(1),
-						1);
+						timeline->context,
+						ts);
 
 	sync_file = sync_file_create(&fence->fence);
 
@@ -326,6 +334,8 @@ int hgsl_isync_fence_create(struct hgsl_priv *priv, uint32_t timeline_id,
 		ret = -ENOMEM;
 		goto out;
 	}
+
+	dma_fence_put(&fence->fence);
 
 	*fence_fd = get_unused_fd_flags(0);
 	if (*fence_fd < 0) {
@@ -343,9 +353,6 @@ out:
 	if (ret) {
 		if (sync_file)
 			fput(sync_file->file);
-
-		if (fence)
-			dma_fence_put(&fence->fence);
 
 		if (timeline)
 			hgsl_isync_timeline_put(timeline);
@@ -443,6 +450,38 @@ out:
 	if (timeline)
 		hgsl_isync_timeline_put(timeline);
 	return ret;
+}
+
+int hgsl_isync_forward(struct hgsl_priv *priv, uint32_t timeline_id,
+							uint32_t ts)
+{
+	struct hgsl_isync_timeline *timeline;
+	struct hgsl_isync_fence *cur, *next;
+
+	timeline = hgsl_isync_timeline_get(priv, timeline_id);
+	if (timeline == NULL)
+		return -EINVAL;
+
+	if (ts <= timeline->last_ts)
+		goto out;
+
+	spin_lock(&timeline->lock);
+
+	list_for_each_entry_safe(cur, next, &timeline->fence_list,
+				 child_list) {
+		if (ts >= cur->ts) {
+			dma_fence_signal_locked(&cur->fence);
+			list_del_init(&cur->child_list);
+		}
+	}
+	spin_unlock(&timeline->lock);
+
+out:
+	timeline->last_ts = ts;
+
+	if (timeline)
+		hgsl_isync_timeline_put(timeline);
+	return 0;
 }
 
 static const char *hgsl_isync_get_driver_name(struct dma_fence *base)

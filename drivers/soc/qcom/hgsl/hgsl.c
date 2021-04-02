@@ -1344,7 +1344,8 @@ static int hgsl_ioctl_isync_fence_create(struct file *filep,
 
 	copy_from_user(&param, USRPTR(arg), sizeof(param));
 
-	ret = hgsl_isync_fence_create(priv, param.timeline_id, &fence);
+	ret = hgsl_isync_fence_create(priv, param.timeline_id,
+						param.ts, &fence);
 
 	if (ret == 0) {
 		param.fence_id = fence;
@@ -1365,6 +1366,21 @@ static int hgsl_ioctl_isync_fence_signal(struct file *filep,
 
 	ret = hgsl_isync_fence_signal(priv, param.timeline_id,
 						  param.fence_id);
+
+	return ret;
+}
+
+static int hgsl_ioctl_isync_forward(struct file *filep,
+					   unsigned long arg)
+{
+	struct hgsl_priv *priv = filep->private_data;
+	struct hgsl_isync_forward param;
+	int ret = 0;
+
+	copy_from_user(&param, USRPTR(arg), sizeof(param));
+
+	ret = hgsl_isync_forward(priv, param.timeline_id,
+						  param.ts);
 
 	return ret;
 }
@@ -1412,6 +1428,9 @@ static long hgsl_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 		break;
 	case HGSL_IOCTL_ISYNC_FENCE_SIGNAL:
 		ret = hgsl_ioctl_isync_fence_signal(filep, arg);
+		break;
+	case HGSL_IOCTL_ISYNC_FORWARD:
+		ret = hgsl_ioctl_isync_forward(filep, arg);
 		break;
 
 	default:

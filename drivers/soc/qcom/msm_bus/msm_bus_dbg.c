@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2012, 2014-2018, 2020, The Linux Foundation. All rights
+/* Copyright (c) 2010-2012, 2014-2018, 2020-2021, The Linux Foundation. All rights
  * reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -436,11 +436,12 @@ static int msm_bus_dbg_record_client(const struct msm_bus_scale_pdata *pdata,
 {
 	struct msm_bus_cldata *cldata;
 
-	cldata = kmalloc(sizeof(struct msm_bus_cldata), GFP_KERNEL);
+	cldata = kzalloc(sizeof(struct msm_bus_cldata), GFP_KERNEL);
 	if (!cldata) {
 		MSM_BUS_DBG("Failed to allocate memory for client data\n");
 		return -ENOMEM;
 	}
+	memset(cldata, 0, sizeof(struct msm_bus_cldata));
 	cldata->pdata = pdata;
 	cldata->index = index;
 	cldata->clid = clid;
