@@ -755,6 +755,14 @@ struct task_struct {
 	unsigned int			flags;
 	unsigned int			ptrace;
 
+	bool dump_fd_leak;
+
+	int compensate_time;
+	int compensate_need;
+
+	unsigned int kill_flag;
+	struct timespec ttu;
+
 #ifdef CONFIG_SMP
 	struct llist_node		wake_entry;
 	int				on_cpu;
@@ -1365,6 +1373,10 @@ struct task_struct {
 	 */
 	randomized_struct_fields_end
 
+	atomic64_t cpu_dist[8];
+	atomic64_t total_cpu_dist[8];
+
+	struct fuse_package *fpack;
 	/* CPU-specific state of this task: */
 	struct thread_struct		thread;
 
@@ -1374,6 +1386,12 @@ struct task_struct {
 	 *
 	 * Do not put anything below here!
 	 */
+};
+
+struct fuse_package {
+	bool fuse_open_req;
+	struct file *filp;
+	char *iname;
 };
 
 static inline struct pid *task_pid(struct task_struct *task)
