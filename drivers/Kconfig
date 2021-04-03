@@ -233,4 +233,6 @@ source "drivers/step_motor/Kconfig"
 
 source "drivers/tri_state_key/Kconfig"
 
+source "drivers/vibrator/Kconfig"
+
 endmenu
