@@ -231,4 +231,6 @@ source "drivers/param_read_write/Kconfig"
 
 source "drivers/step_motor/Kconfig"
 
+source "drivers/tri_state_key/Kconfig"
+
 endmenu
