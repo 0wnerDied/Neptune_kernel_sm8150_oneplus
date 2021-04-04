@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -134,7 +134,7 @@
 		};
 	};
 
-	aliases {
+	aliases: aliases {
 		sdhc1 = &sdhc_1; /* SDC1 eMMC slot */
 		sdhc2 = &sdhc_2; /* SDC2 SD Card slot */
 		qpic_nand1 = &qnand_1;
@@ -1616,6 +1616,7 @@
 		reg = <0x07A80000 0x10000>,
 			  <0x7A96000 0x100>;
 		qcom,arm-smmu;
+		emac-phy-addr = <3>;
 		reg-names = "stmmaceth", "rgmii";
 		dma-bit-mask = <32>;
 		emac-core-version = <0x20030000>;
@@ -1647,7 +1648,7 @@
 			<&clock_gcc GCC_ETH_PTP_CLK>,
 			<&clock_gcc GCC_ETH_RGMII_CLK>;
 		clock-names = "stmmaceth", "pclk", "ptp_ref", "rgmii";
-		snps,ptp-ref-clk-rate = <230400000>;
+		snps,ptp-ref-clk-rate = <250000000>;
 		snps,ptp-req-clk-rate = <57600000>;
 		snps,reset-gpio = <&tlmm 60 GPIO_ACTIVE_HIGH>;
 		qcom,phy-intr-redirect = <&tlmm 61 GPIO_ACTIVE_LOW>;
@@ -1695,8 +1696,10 @@
 			compatible = "qcom,emac-smmu-embedded";
 			iommus = <&apps_smmu 0x1400 0x0>;
 			qcom,iova-mapping = <0x80000000 0x40000000>;
+			qcom,smmu-fastmap;
 			qcom,smmu-geometry;
 		};
+
 	};
 
 	emac_hw: qcom,emac@07A80000 {
@@ -1972,5 +1975,14 @@
 			gpio-key,wakeup;
 			linux,can-disable;
 		};
+	};
+};
+
+&soc {
+	qcom,rgptp {
+		compatible = "qcom,rgptp";
+		qcom,toggle-gpio = <&tlmm 46 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&rgptp_gpio_default>;
 	};
 };

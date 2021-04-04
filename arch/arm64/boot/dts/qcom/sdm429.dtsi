@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -37,7 +37,7 @@
 		compatible = "android,firmware";
 		vbmeta {
 		   compatible = "android,vbmeta";
-		   parts = "vbmeta,boot,system,vendor,dtbo,recovery";
+		   parts = "vbmeta,boot,system,vendor,dtbo";
 		};
 
 		fstab {
@@ -48,7 +48,7 @@
 			"/dev/block/platform/soc/7824900.sdhci/by-name/vendor";
 		      type = "ext4";
 		      mnt_flags = "ro,barrier=1,discard";
-		      fsmgr_flags = "wait,avb";
+		      fsmgr_flags = "wait,avb,slotselect";
 		      status = "ok";
 		   };
 		};
@@ -91,12 +91,6 @@
 			alloc-ranges = <0x0 0x80000000 0x0 0x10000000>;
 			alignment = <0 0x400000>;
 			size = <0 0x0800000>;
-		};
-
-		secure_mem: secure_region@0 {
-			alignment = <0 0x400000>;
-			size = <0 0x800000>;
-			status = "okay";
 		};
 
 		qseecom_mem: qseecom_region@0 {
@@ -1037,6 +1031,22 @@
 				qcom,net-id = <1>;
 				qcom,low-latency;
 			};
+
+			qcom,diag {
+				qcom,smd-channels = "DIAG";
+			};
+			qcom,diag_cntl {
+				qcom,smd-channels = "DIAG_CNTL";
+			};
+			qcom,diag_cmd {
+				qcom,smd-channels = "DIAG_CMD";
+			};
+			qcom,diag_dci {
+				qcom,smd-channels = "DIAG_2";
+			};
+			qcom.diag_dci_cmd {
+				qcom,smd-channels = "DIAG_2_CMD";
+			};
 		};
 
 		wcnss {
@@ -1075,6 +1085,13 @@
 			};
 			qcom,apr_tal_rpmsg {
 				qcom,smd-channels = "apr_audio_svc";
+			};
+
+			qcom,diag {
+				qcom,smd-channels = "DIAG";
+			};
+			qcom,diag_cntl {
+				qcom,smd-channels = "DIAG_CNTL";
 			};
 		};
 
@@ -1169,6 +1186,25 @@
 			interrupt-controller;
 			#interrupt-cells = <2>;
 		};
+
+		sleepstate_smp2p_out: sleepstate-out {
+			qcom,entry-name = "sleepstate";
+			#qcom,smem-state-cells = <1>;
+		};
+
+		sleepstate_smp2p_in: qcom,sleepstate-in {
+			qcom,entry-name = "sleepstate_see";
+			interrupt-controller;
+			#interrupt-cells = <2>;
+		};
+	};
+
+	qcom,smp2p_sleepstate {
+		compatible = "qcom,smp2p-sleepstate";
+		qcom,smem-states = <&sleepstate_smp2p_out 0>;
+		interrupt-parent = <&sleepstate_smp2p_in>;
+		interrupts = <0 0>;
+		interrupt-names = "smp2p-sleepstate-in";
 	};
 
 	qcom,adsprpc-mem {
@@ -1252,12 +1288,14 @@
 			qcom,smdpkt-edge = "wcnss";
 			qcom,smdpkt-ch-name = "APPS_RIVA_BT_ACL";
 			qcom,smdpkt-dev-name = "smd2";
+			qcom,smdpkt-fragmented-read;
 		};
 
 		qcom,smdpkt-apps-riva-bt-cmd {
 			qcom,smdpkt-edge = "wcnss";
 			qcom,smdpkt-ch-name = "APPS_RIVA_BT_CMD";
 			qcom,smdpkt-dev-name = "smd3";
+			qcom,smdpkt-fragmented-read;
 		};
 
 		qcom,smdpkt-mbalbridge {
@@ -1380,7 +1418,7 @@
 		clock-names = "iface_clk";
 	};
 
-	qcom,wcnss-wlan@0a000000 {
+	wcnss_prima: qcom,wcnss-wlan@0a000000 {
 		compatible = "qcom,wcnss_wlan";
 		reg = <0x0a000000 0x280000>,
 		      <0xb011008 0x04>,
@@ -1447,13 +1485,15 @@
 			<&tlmm 79 0>, <&tlmm 80 0>;
 
 		clocks = <&rpmcc CXO_SMD_WLAN_CLK>,
-			 <&rpmcc RPM_SMD_RF_CLK2>,
+			 <&rpmcc RPM_SMD_RF_CLK1>,
 			 <&rpmcc SNOC_WCNSS_A_CLK>;
 
 		clock-names = "xo", "rf_clk", "snoc_wcnss";
 
-		qcom,smem-states = <&apps_smsm 10>, <&apps_smsm 9>;
-		qcom,smem-state-names = "tx-enable", "tx-rings-empty";
+		qcom,smem-states = <&apps_smsm 10>, <&apps_smsm 9>,
+				   <&apps_smsm 12>;
+		qcom,smem-state-names = "tx-enable", "tx-rings-empty",
+					"wake-state";
 
 		qcom,snoc-wcnss-clock-freq = <200000000>;
 
@@ -1461,6 +1501,7 @@
 		qcom,is-pronto-v3;
 		qcom,has-pronto-hw;
 		qcom,has-vsys-adc-channel;
+		qcom,sw_pta=<1>;
 	};
 
 	bluetooth: bt_wcn3990 {
@@ -1468,14 +1509,14 @@
 		qca,bt-3P3-en-gpio = <&tlmm 47 0>; /* WCN3980_3P3_EN_*/
 		qca,bt-1P3-en-gpio = <&tlmm 57 0>; /* WCN3980_1P3_EN */
 
-		qca,bt-vdd-xtal-supply = <&pm660_l12>;
 		qca,bt-vdd-io-supply = <&pm660_l13>;
+		qca,bt-vdd-s5-supply = <&pm660_s5>;
 
-		qca,bt-vdd-xtal-voltage-level = <1800000 1900000>;
 		qca,bt-vdd-io-voltage-level = <1800000 1900000>;
+		qca,bt-vdd-s5-voltage-level = <1352000 1352000>;
 
-		qca,bt-vdd-xtal-current-level = <80000>;
 		qca,bt-vdd-io-current-level = <10000>;
+		qca,bt-vdd-s5-current-level = <10000>;
 	};
 
 	qcom,bam_dmux@4044000 {

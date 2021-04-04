@@ -129,6 +129,7 @@ struct atl_hw {
 	struct pci_dev *pdev;
 	unsigned long state;
 	enum atl_chip chip_id;
+	u32 chip_rev;
 	bool new_rpf;
 	struct atl_link_state link_state;
 	uint32_t lpi_timer;

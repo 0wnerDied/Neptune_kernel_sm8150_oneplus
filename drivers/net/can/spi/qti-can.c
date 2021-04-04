@@ -51,6 +51,9 @@
 #define QTIMER_MUL				10000
 #define TIME_OFFSET_MAX_THD		30
 #define TIME_OFFSET_MIN_THD		-30
+#define TIMESTAMP_PRINT_CNTR	10
+
+static int checksum_enable;
 
 struct qti_can {
 	struct net_device	**netdev;
@@ -417,6 +420,7 @@ static int qti_can_process_response(struct qti_can *priv_data,
 	static s64 prev_time_diff;
 	static u8 first_offset_est = 1;
 	s64 offset_variation = 0;
+	static u8 offset_print_cntr;
 
 	LOGDI("<%x %2d [%d]\n", resp->cmd, resp->len, resp->seq);
 	if (resp->cmd == CMD_CAN_RECEIVE_FRAME) {
@@ -454,6 +458,11 @@ static int qti_can_process_response(struct qti_can *priv_data,
 		}
 	} else if (resp->cmd  == CMD_GET_FW_VERSION) {
 		struct can_fw_resp *fw_resp = (struct can_fw_resp *)resp->data;
+		if (fw_resp->maj > 4 || (fw_resp->maj == 4 && fw_resp->min) ||
+		    (fw_resp->maj == 4 && fw_resp->sub_min > 4)) {
+			dev_info(&priv_data->spidev->dev, "checksum enabled\n");
+			checksum_enable = 1;
+		}
 
 		dev_info(&priv_data->spidev->dev, "fw %d.%d.%d",
 			 fw_resp->maj, fw_resp->min, fw_resp->sub_min);
@@ -497,12 +506,15 @@ static int qti_can_process_response(struct qti_can *priv_data,
 
 		if (offset_variation > TIME_OFFSET_MAX_THD ||
 		    offset_variation < TIME_OFFSET_MIN_THD) {
-			dev_info(&priv_data->spidev->dev,
-				 "Off Exceeded: Curr off is %lld\n",
-				 priv_data->time_diff);
-			dev_info(&priv_data->spidev->dev,
-				 "Prev off is %lld\n",
+			if (offset_print_cntr < TIMESTAMP_PRINT_CNTR) {
+				dev_info(&priv_data->spidev->dev,
+					 "Off Exceeded: Curr off is %lld\n",
+					 priv_data->time_diff);
+				dev_info(&priv_data->spidev->dev,
+					 "Prev off is %lld\n",
 				prev_time_diff);
+				offset_print_cntr++;
+			}
 			/* Set curr off to prev off if */
 			/* variation is beyond threshold */
 			priv_data->time_diff = prev_time_diff;
@@ -593,6 +605,11 @@ static int qti_can_do_spi_transaction(struct qti_can *priv_data)
 	struct spi_message *msg;
 	struct device *dev;
 	int ret;
+	int i = 0;
+	u8 tx_checksum = 0;
+	u8 rx_checksum = 0;
+	int checksum_rx_len = 0;
+	struct spi_mosi *req;
 
 	spi = priv_data->spidev;
 	dev = &spi->dev;
@@ -602,6 +619,15 @@ static int qti_can_do_spi_transaction(struct qti_can *priv_data)
 		return -ENOMEM;
 	LOGDI(">%x %2d [%d]\n", priv_data->tx_buf[0],
 	      priv_data->tx_buf[1], priv_data->tx_buf[2]);
+
+	if (checksum_enable) {
+		req = (struct spi_mosi *)(priv_data->tx_buf);
+		for (i = 0; i < ((req->len) + 4); i++)
+			tx_checksum ^= priv_data->tx_buf[i];
+
+		priv_data->tx_buf[XFER_BUFFER_SIZE - 2] = tx_checksum;
+	}
+
 	spi_message_init(msg);
 	spi_message_add_tail(xfer, msg);
 	xfer->tx_buf = priv_data->tx_buf;
@@ -615,8 +641,32 @@ static int qti_can_do_spi_transaction(struct qti_can *priv_data)
 	      priv_data->rx_buf[4], priv_data->rx_buf[5],
 	      priv_data->rx_buf[6], priv_data->rx_buf[7]);
 
-	if (ret == 0)
+	if (priv_data->rx_buf[0] == CMD_CAN_RECEIVE_FRAME) {
+		/* Two CAN frames can be received in single spi packet*/
+		/* 63rd byte is checksum */
+		checksum_rx_len = XFER_BUFFER_SIZE - 2;
+	} else {
+		checksum_rx_len = (priv_data->rx_buf[1]) + 4;
+	}
+
+	if (ret == 0 && checksum_enable) {
+		for (i = 0; i < checksum_rx_len; i++)
+			rx_checksum ^= priv_data->rx_buf[i];
+
+		if (rx_checksum == priv_data->rx_buf[XFER_BUFFER_SIZE - 2]) {
+			priv_data->rx_buf[XFER_BUFFER_SIZE - 2] = 0;
+			qti_can_process_rx(priv_data, priv_data->rx_buf);
+		} else {
+			LOGDE("checksum validation failed\n");
+			LOGDE("cmd_id: %x chksum_rx_calc: %x chksum_rx: %x\n",
+			      priv_data->rx_buf[0], rx_checksum,
+			      priv_data->rx_buf[XFER_BUFFER_SIZE - 2]);
+			ret = -EINVAL;
+		}
+	} else if (ret == 0) {
 		qti_can_process_rx(priv_data, priv_data->rx_buf);
+	}
+
 	devm_kfree(&spi->dev, msg);
 	devm_kfree(&spi->dev, xfer);
 	return ret;
@@ -657,6 +707,7 @@ static int qti_can_query_firmware_version(struct qti_can *priv_data)
 	req->cmd = CMD_GET_FW_VERSION;
 	req->len = 0;
 	req->seq = atomic_inc_return(&priv_data->msg_seq);
+	req->data[0] = 0xAA;
 
 	priv_data->wait_cmd = CMD_GET_FW_VERSION;
 	priv_data->cmd_result = -1;
@@ -899,6 +950,8 @@ static int qti_can_send_release_can_buffer_cmd(struct net_device *netdev)
 	*mode = priv_data->driver_mode;
 
 	ret = qti_can_do_spi_transaction(priv_data);
+	dev_info(&priv_data->spidev->dev,
+		 "Release can buffer cmd sent\n");
 	mutex_unlock(&priv_data->spi_lock);
 	return ret;
 }

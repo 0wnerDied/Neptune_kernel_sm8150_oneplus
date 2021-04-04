@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -12,6 +12,7 @@
 
 #include "sdxprairie-v2.dtsi"
 #include "sdxprairie-mtp.dtsi"
+#include "sa515m.dtsi"
 
 &mpss_adsp_mem {
 	reg = <0x90800000 0xf800000>;
@@ -25,6 +26,20 @@
 				#cooling-cells = <2>;
 			};
 		};
+	};
+
+	subsys_backup: qcom,subsys-backup {
+		compatible = "qcom,subsys-backup";
+		qcom,buf-size = <0x600000>;
+		memory-region = <&subsys_backup_region>;
+	};
+};
+
+&reserved_mem {
+	subsys_backup_region: subsys_backup_region {
+		compatible = "shared-dma-pool";
+		reusable;
+		size = <0xC00000>;
 	};
 };
 
@@ -504,5 +519,18 @@
 		st,drdy-int-pin= <2>;
 		qcom,regulator_check = <0>; /* 0:Disable 1:Enable */
 		qcom,asm330_hrtimer;
+	};
+};
+
+&ipa_hw {
+	qcom,ipa-config-is-sa;
+};
+
+&soc {
+	qcom,msm-imem@1468F000 {
+		dload_type@18 {
+			compatible = "qcom,msm-imem-dload-type";
+			reg = <0x18 0x4>;
+		};
 	};
 };

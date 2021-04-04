@@ -73,8 +73,9 @@ static int dwmac4_wrback_get_tx_status(void *data, struct stmmac_extra_stats *x,
 	return ret;
 }
 
-static int dwmac4_wrback_get_rx_status(void *data, struct stmmac_extra_stats *x,
-				       struct dma_desc *p)
+static int dwmac4_wrback_get_rx_status_err(void *data,
+					   struct stmmac_extra_stats *x,
+					   struct dma_desc *p, int *status)
 {
 	struct net_device_stats *stats = (struct net_device_stats *)data;
 	unsigned int rdes1 = le32_to_cpu(p->des1);
@@ -89,36 +90,53 @@ static int dwmac4_wrback_get_rx_status(void *data, struct stmmac_extra_stats *x,
 	if (likely((rdes3 & RDES3_CONTEXT_DESCRIPTOR)))
 		return (discard_frame | ctxt_desc);
 
-	/* Verify rx error by looking at the last segment. */
-	if (likely(!(rdes3 & RDES3_LAST_DESCRIPTOR)))
-		return discard_frame;
+	/* Verify rx error by looking at the last segment.
+	 * Status are not set in other segments.
+	 */
+	if (likely(!(rdes3 & RDES3_LAST_DESCRIPTOR) &&
+		   (rdes3 & RDES3_FIRST_DESCRIPTOR)))
+		return rx_fs_only;
 
-	if (unlikely(!(rdes3 & RDES3_PACKET_LEN_TYPE_MASK))) {
-		pr_info("rdes3 = 0xX\n", rdes3);
-		ret = llc_snap;
-	}
+	if (likely(!(rdes3 & RDES3_LAST_DESCRIPTOR) &&
+		   !(rdes3 & RDES3_FIRST_DESCRIPTOR)))
+		return rx_not_fsls;
+
+	if (likely((rdes3 & RDES3_LAST_DESCRIPTOR) &&
+		   !(rdes3 & RDES3_FIRST_DESCRIPTOR)))
+		ret = rx_ls_only;
+
+	if (unlikely(!(rdes3 & RDES3_PACKET_LEN_TYPE_MASK)))
+		ret |= llc_snap;
 
 	if (unlikely(rdes3 & RDES3_ERROR_SUMMARY)) {
 		if (unlikely(rdes3 & RDES3_GIANT_PACKET))
 			stats->rx_length_errors++;
-		if (unlikely(rdes3 & RDES3_OVERFLOW_ERROR))
+		if (unlikely(rdes3 & RDES3_OVERFLOW_ERROR)) {
 			x->rx_gmac_overflow++;
-
-		if (unlikely(rdes3 & RDES3_RECEIVE_WATCHDOG))
+			*status = OVERFLOW_ERR;
+		}
+		if (unlikely(rdes3 & RDES3_RECEIVE_WATCHDOG)) {
 			x->rx_watchdog++;
+			*status = WDT_ERR;
+		}
 
-		if (unlikely(rdes3 & RDES3_RECEIVE_ERROR))
+		if (unlikely(rdes3 & RDES3_RECEIVE_ERROR)) {
 			x->rx_mii++;
+			*status = RECEIVE_ERR;
+		}
 
 		if (unlikely(rdes3 & RDES3_CRC_ERROR)) {
 			x->rx_crc_errors++;
 			stats->rx_crc_errors++;
+			*status = CRC_ERR;
 		}
 
-		if (unlikely(rdes3 & RDES3_DRIBBLE_ERROR))
+		if (unlikely(rdes3 & RDES3_DRIBBLE_ERROR)) {
 			x->dribbling_bit++;
+			*status = DRIBBLE_ERR;
+		}
 
-		ret = discard_frame;
+		ret |= discard_frame;
 	}
 
 	message_type = (rdes1 & ERDES4_MSG_TYPE_MASK) >> 8;
@@ -164,11 +182,11 @@ static int dwmac4_wrback_get_rx_status(void *data, struct stmmac_extra_stats *x,
 
 	if (unlikely(rdes2 & RDES2_SA_FILTER_FAIL)) {
 		x->sa_rx_filter_fail++;
-		ret = discard_frame;
+		ret |= discard_frame;
 	}
 	if (unlikely(rdes2 & RDES2_DA_FILTER_FAIL)) {
 		x->da_rx_filter_fail++;
-		ret = discard_frame;
+		ret |= discard_frame;
 	}
 
 	if (rdes2 & RDES2_L3_FILTER_MATCH)
@@ -180,6 +198,14 @@ static int dwmac4_wrback_get_rx_status(void *data, struct stmmac_extra_stats *x,
 		x->l3_l4_filter_no_match++;
 
 	return ret;
+}
+
+static int dwmac4_wrback_get_rx_status(void *data, struct stmmac_extra_stats *x,
+				       struct dma_desc *p)
+{
+	int status;
+
+	return dwmac4_wrback_get_rx_status_err(data, x, p, &status);
 }
 
 static int dwmac4_rd_get_tx_len(struct dma_desc *p)
@@ -436,6 +462,7 @@ static void dwmac4_set_mss_ctxt(struct dma_desc *p, unsigned int mss)
 const struct stmmac_desc_ops dwmac4_desc_ops = {
 	.tx_status = dwmac4_wrback_get_tx_status,
 	.rx_status = dwmac4_wrback_get_rx_status,
+	.rx_status_err = dwmac4_wrback_get_rx_status_err,
 	.get_tx_len = dwmac4_rd_get_tx_len,
 	.get_tx_owner = dwmac4_get_tx_owner,
 	.set_tx_owner = dwmac4_set_tx_owner,

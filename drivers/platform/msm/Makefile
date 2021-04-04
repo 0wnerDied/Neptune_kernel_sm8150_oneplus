@@ -15,3 +15,4 @@ obj-$(CONFIG_MSM_11AD) += msm_11ad/
 obj-$(CONFIG_SEEMP_CORE) += seemp_core/
 obj-$(CONFIG_VETH_IPA) += veth_ipa/
 obj-$(CONFIG_QCOM_ETHERNET_UTIL) += ethernet/
+obj-$(CONFIG_QTI_MHI_SSR) += mhi_ssr/

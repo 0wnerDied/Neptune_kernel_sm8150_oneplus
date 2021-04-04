@@ -1,3 +1,5 @@
+CFLAGS_hab.o := -I$(src)
+
 msm_hab-objs = \
 	khab.o \
 	hab.o \

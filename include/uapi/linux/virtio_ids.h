@@ -50,5 +50,7 @@
 #define VIRTIO_ID_I2C		32 /* virtio i2c */
 #define VIRTIO_ID_SPMI		33 /* virtio spmi */
 #define VIRTIO_ID_FASTRPC       34 /* virtio fastrpc */
+#define VIRTIO_ID_NPU       35 /* virtio npu */
+#define VIRTIO_ID_EAVB         36 /* virtio eavb */
 
 #endif /* _LINUX_VIRTIO_IDS_H */

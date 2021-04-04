@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -9,8 +9,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-
-#include "qcs405.dtsi"
 
 &tlmm {
 	pinctrl-0 = <&status_gpio>;
@@ -93,7 +91,10 @@
 };
 
 &cnss_sdio {
-	status = "disabled";
+	/delete-property/ vdd-wlan-io-supply;
+	/delete-property/ qcom,cap-tsf-gpio;
+
+	status = "okay";
 };
 
 &spi_2 {
@@ -181,6 +182,25 @@
 				qcom,qmi-dev-name = "cpuv_restriction_cold";
 				#cooling-cells = <2>;
 			};
+
+			adsp_sw: adsp {
+				qcom,qmi-dev-name = "adsp_sw";
+				#cooling-cells = <2>;
+			};
+		};
+
+		cdsp {
+			qcom,instance-id = <0x43>;
+
+			cdsp_sw: cdsp {
+				qcom,qmi-dev-name = "cdsp_sw";
+				#cooling-cells = <2>;
+			};
+
+			cdsp_hw: hvx {
+				qcom,qmi-dev-name = "cdsp_hw";
+				#cooling-cells = <2>;
+			};
 		};
 	};
 
@@ -191,6 +211,64 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&sdx_ext_ipc_gpio_default>;
 	};
+};
+
+&blsp1_uart1_active {
+	mux {
+		pins = "gpio30", "gpio31";
+	};
+
+	config {
+		pins = "gpio30", "gpio31";
+		};
+};
+
+&blsp1_uart1_sleep {
+	mux {
+		pins = "gpio30", "gpio31";
+	};
+
+	config {
+		pins = "gpio30", "gpio31";
+	};
+};
+
+&blsp1_uart4 {
+	blsp1_uart4_active: blsp1_uart4_active {
+		mux {
+			pins = "gpio82", "gpio83";
+			function = "blsp_uart3";
+		};
+
+		config {
+			pins = "gpio82", "gpio83";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	blsp1_uart4_sleep: blsp1_uart4_sleep {
+		mux {
+			pins = "gpio82", "gpio83";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio82", "gpio83";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+};
+
+&blsp1_uart4_hs {
+	pinctrl-0 = <&blsp1_uart4_sleep>;
+	pinctrl-1 = <&blsp1_uart4_active>;
+	status = "okay";
+};
+
+&blsp1_uart1_hs {
+	status = "okay";
 };
 
 &thermal_zones {
@@ -205,6 +283,55 @@
 			};
 		};
 	};
+
+	q6-hvx-step {
+		polling-delay-passive = <50>;
+		polling-delay = <0>;
+		thermal-governor = "step_wise";
+		thermal-sensors = <&tsens0 1>;
+		wake-capable-sensor;
+
+		trips {
+			hvx_trip: hvx-trip {
+				temperature = <105000>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+		};
+
+		cooling-maps {
+			cdsp_cdev0 {
+				trip = <&hvx_trip>;
+				cooling-device =
+					<&cdsp_sw THERMAL_NO_LIMIT
+						THERMAL_NO_LIMIT>;
+			};
+		};
+	};
+
+	lpass-step {
+		polling-delay-passive = <50>;
+		polling-delay = <0>;
+		thermal-governor = "step_wise";
+		thermal-sensors = <&tsens0 2>;
+		wake-capable-sensor;
+
+		trips {
+			lpass_trip: lpass-trip {
+				temperature = <105000>;
+				hysteresis = <0>;
+				type = "passive";
+			};
+		};
+
+		cooling-maps {
+			adsp_cdev {
+				trip = <&lpass_trip>;
+				cooling-device =
+					<&adsp_sw THERMAL_NO_LIMIT 2>;
+			};
+		};
+	};
 };
 
 #include "sdxprairie-thermal-common.dtsi"
@@ -213,12 +340,52 @@
 	qcom,ignore-wakeup-src-in-hostmode;
 };
 
+&usb2_phy1 {
+	qcom,snps-hs-phy-init-seq =
+		<0xc0 0x01 0>,
+		<0xe8 0x0d 0>,
+		<0x74 0x12 0>,
+		<0x98 0x65 0>, /* Compdistune0 set to 0x5 */
+		<0x9c 0xcc 0>, /* Pre-emph set to 0x3, Txvreftune set to 0xc */
+		<0xa0 0x1d 0>,
+		<0xa4 0x03 0>,
+		<0x8c 0x23 0>,
+		<0x78 0x08 0>,
+		<0x7c 0xdc 0>,
+		<0x90 0xe0 20>,
+		<0x74 0x10 0>,
+		<0x90 0x60 0>,
+		<0xffffffff 0xffffffff 0>;
+};
+
+&usb_ss_phy {
+	qcom,vdd-voltage-level = <0 1100000 1100000>;
+};
+
 &usb3_extcon {
 	id-gpio = <&tlmm 113 GPIO_ACTIVE_HIGH>;
 };
 
 &usb2s {
 	extcon = <&usb2_extcon>;
+};
+
+&usb2_phy0 {
+	qcom,snps-hs-phy-init-seq =
+		<0xc0 0x01 0>,
+		<0xe8 0x0d 0>,
+		<0x74 0x12 0>,
+		<0x98 0x63 0>,
+		<0x9c 0x88 0>, /* Pre-emph set to 0x2, Txvreftune set to 0x8 */
+		<0xa0 0x1d 0>,
+		<0xa4 0x03 0>,
+		<0x8c 0x23 0>,
+		<0x78 0x08 0>,
+		<0x7c 0xdc 0>,
+		<0x90 0xe0 20>,
+		<0x74 0x10 0>,
+		<0x90 0x60 0>,
+		<0xffffffff 0xffffffff 0>;
 };
 
 &ethqos_hw {
@@ -236,6 +403,13 @@
 		"dev-emac-rgmii_rxc_state", "dev-emac-rgmii_rx_ctl_state",
 		"dev-emac-phy_intr", "dev-emac-phy_reset_state";
 	pinctrl-15 = <&emac_phy_reset_state>;
+
+	io-macro-info {
+	    prg-rclk-dly = <1500>;
+	    rx-prog-swap;
+	    clear-cdr-ext-en;
+	    sdcc-usr-ctl = <0x00>;
+	};
 };
 
 &emac_hw {
@@ -262,6 +436,8 @@
 
 	perst-gpio = <&tlmm 107 0>;
 	wake-gpio = <&tlmm 115 0>;
+	/delete-property/ qcom,no-l0s-supported;
+	/delete-property/ qcom,no-l1-supported;
 };
 
 &sdhc_2 {
@@ -270,10 +446,14 @@
 
 	vdd-io-supply = <&pms405_l11>;
 	qcom,vdd-io-voltage-level = <2950000 2950000>;
+
+	qcom,core_3_0v_support;
+	qcom,nonremovable;
+
 	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on
-		    &sdc2_cd_on>;
+		    &sdc2_cd_on &sdc2_dsrc_on>;
 	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off
-		    &sdc2_cd_off>;
+		    &sdc2_cd_off &sdc2_dsrc_off>;
 	cd-gpios = <&tlmm 21 GPIO_ACTIVE_LOW>;
 
 	status = "ok";

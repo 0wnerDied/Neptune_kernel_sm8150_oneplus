@@ -233,8 +233,10 @@ int ethqos_phy_power_on(struct qcom_ethqos *ethqos)
 void  ethqos_phy_power_off(struct qcom_ethqos *ethqos)
 {
 	if (ethqos->reg_emac_phy) {
-		regulator_disable(ethqos->reg_emac_phy);
-		ethqos->phy_state = PHY_IS_OFF;
+		if (regulator_is_enabled(ethqos->reg_emac_phy)) {
+			regulator_disable(ethqos->reg_emac_phy);
+			ethqos->phy_state = PHY_IS_OFF;
+		}
 	} else {
 		ETHQOSERR("reg_emac_phy is NULL\n");
 	}

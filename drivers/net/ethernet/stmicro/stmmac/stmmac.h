@@ -37,6 +37,10 @@
 #include <linux/if_ether.h>
 #include <linux/icmp.h>
 
+#define MIN_JUMBO_FRAME_SIZE	2048
+#define MAX_SUPPORTED_JUMBO_MTU	8188
+#define MAX_SUPPORTED_JUMBO_FRAME_SIZE	9022
+
 struct stmmac_resources {
 	void __iomem *addr;
 	const char *mac;
@@ -66,6 +70,7 @@ struct stmmac_tx_queue {
 	dma_addr_t dma_tx_phy;
 	u32 tx_tail_addr;
 	bool skip_sw;
+	u32 dma_tx_desc_sz;
 };
 
 struct stmmac_rx_queue {
@@ -82,7 +87,16 @@ struct stmmac_rx_queue {
 	u32 rx_tail_addr;
 	struct napi_struct napi ____cacheline_aligned_in_smp;
 	bool skip_sw;
+	bool jumbo_en;
+	u32 dma_rx_desc_sz;
 	bool en_fep;
+	bool dis_mod;
+	struct {
+		unsigned int state_saved;
+		unsigned int jumbo_error;
+		unsigned int jumbo_len;
+		struct sk_buff *jumbo_skb;
+	} jumbo_pkt_state;
 };
 
 struct stmmac_priv {
@@ -99,6 +113,7 @@ struct stmmac_priv {
 	bool tso;
 
 	unsigned int dma_buf_sz;
+	unsigned int jumbo_frame_sz;
 	unsigned int rx_copybreak;
 	u32 rx_riwt;
 	int hwts_rx_en;
@@ -203,10 +218,13 @@ int stmmac_dvr_remove(struct device *dev);
 int stmmac_dvr_probe(struct device *device,
 		     struct plat_stmmacenet_data *plat_dat,
 		     struct stmmac_resources *res);
+void stmmac_tx_err(struct stmmac_priv *priv, u32 chan);
+void stmmac_tx_clean(struct stmmac_priv *priv, u32 queue);
 void stmmac_disable_eee_mode(struct stmmac_priv *priv);
 bool stmmac_eee_init(struct stmmac_priv *priv);
 bool qcom_ethqos_ipa_enabled(void);
 u16 icmp_fast_csum(u16 old_csum);
 void swap_ip_port(struct sk_buff *skb, unsigned int eth_type);
 unsigned int dwmac_qcom_get_eth_type(unsigned char *buf);
+void stmmac_mac2mac_adjust_link(int speed, struct stmmac_priv *priv);
 #endif /* __STMMAC_H__ */

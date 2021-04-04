@@ -139,6 +139,9 @@ int stmmac_mdio_reset(struct mii_bus *bus)
 	unsigned int mii_address = priv->hw->mii.addr;
 	struct stmmac_mdio_bus_data *data = priv->plat->mdio_bus_data;
 
+	if (priv->plat->early_eth)
+		return 0;
+
 #ifdef CONFIG_OF
 	if (priv->device->of_node) {
 		if (data->reset_gpio < 0) {
@@ -205,8 +208,11 @@ int stmmac_mdio_register(struct net_device *ndev)
 	struct stmmac_priv *priv = netdev_priv(ndev);
 	struct stmmac_mdio_bus_data *mdio_bus_data = priv->plat->mdio_bus_data;
 	struct device_node *mdio_node = priv->plat->mdio_node;
+	struct device_node *np = priv->device->of_node;
 	struct device *dev = ndev->dev.parent;
-	int addr, found;
+	struct phy_device *phydev;
+	int addr, found, skip_phy_detect = 0;
+	unsigned int phyaddr;
 
 	if (!mdio_bus_data)
 		return 0;
@@ -231,7 +237,22 @@ int stmmac_mdio_register(struct net_device *ndev)
 	snprintf(new_bus->id, MII_BUS_ID_SIZE, "%s-%x",
 		 new_bus->name, priv->plat->bus_id);
 	new_bus->priv = ndev;
-	new_bus->phy_mask = mdio_bus_data->phy_mask;
+
+	err = of_property_read_u32(np, "emac-phy-addr", &phyaddr);
+	if (err) {
+		new_bus->phy_mask = mdio_bus_data->phy_mask;
+	} else {
+		err = new_bus->read(new_bus, phyaddr, MII_BMSR);
+		if (err == -EBUSY || !err || err == 0xffff) {
+			dev_warn(dev, "Invalid PHY address read from dtsi: %d",
+				 phyaddr);
+			new_bus->phy_mask = mdio_bus_data->phy_mask;
+		} else {
+			new_bus->phy_mask = ~(1 << phyaddr);
+			skip_phy_detect = 1;
+		}
+	}
+
 	new_bus->parent = priv->device;
 
 	if (mdio_node)
@@ -243,12 +264,25 @@ int stmmac_mdio_register(struct net_device *ndev)
 		goto bus_register_fail;
 	}
 
+	if (skip_phy_detect) {
+		phydev = mdiobus_get_phy(new_bus, phyaddr);
+		if (!phydev || phydev->phy_id == 0xffff) {
+			dev_err(dev, "Cannot attach phy addr %d from dtsi",
+				phyaddr);
+		} else {
+			priv->plat->phy_addr = phyaddr;
+			priv->phydev = phydev;
+			phy_attached_info(phydev);
+			goto bus_register_done;
+		}
+	}
+
 	if (priv->plat->phy_node || mdio_node)
 		goto bus_register_done;
 
 	found = 0;
 	for (addr = 0; addr < PHY_MAX_ADDR; addr++) {
-		struct phy_device *phydev = mdiobus_get_phy(new_bus, addr);
+		phydev = mdiobus_get_phy(new_bus, addr);
 
 		if (!phydev || phydev->phy_id == 0xffff)
 			continue;

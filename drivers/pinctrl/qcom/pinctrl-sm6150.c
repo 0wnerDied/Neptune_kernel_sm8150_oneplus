@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018-2019, 2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1086,7 +1086,7 @@ static const char * const rgmii_rxd3_groups[] = {
 	"gpio103",
 };
 static const char * const debug_hot_groups[] = {
-	"gpio103",
+	"gpio103", "gpio104",
 };
 static const char * const COPY_PHASE_groups[] = {
 	"gpio103",
@@ -1535,8 +1535,8 @@ static const struct msm_pingroup sm6150_groups[] = {
 			 NA, NA, NA, NA, NA),
 	[103] = PINGROUP(103, WEST, rgmii_rxd3, debug_hot, COPY_PHASE,
 			 qdss_cti, NA, NA, NA, NA, NA),
-	[104] = PINGROUP(104, WEST, usb_phy, NA, qdss_cti, NA, NA, NA, NA, NA,
-			 NA),
+	[104] = PINGROUP(104, WEST, usb_phy, NA, qdss_cti, debug_hot,
+			NA, NA, NA, NA, NA),
 	[105] = PINGROUP(105, SOUTH, NA, NA, NA, NA, NA, NA, NA, NA, NA),
 	[106] = PINGROUP(106, EAST, mss_lte, NA, NA, NA, NA, NA, NA, NA, NA),
 	[107] = PINGROUP(107, EAST, mss_lte, NA, NA, NA, NA, NA, NA, NA, NA),

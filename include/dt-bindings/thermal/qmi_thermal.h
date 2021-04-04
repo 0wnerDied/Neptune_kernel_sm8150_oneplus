@@ -1,4 +1,4 @@
-/* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -44,6 +44,14 @@
 #define QMI_QFE_WTR_PA_1_FR1	28
 #define QMI_QFE_WTR_PA_2_FR1	29
 #define QMI_QFE_WTR_PA_3_FR1	30
+#define QMI_QFE_WTR_PA_4	31
+#define QMI_QFE_WTR_PA_5	32
+#define QMI_QFE_WTR_PA_6	33
+#define QMI_QFE_WTR_PA_4_FR1	34
+#define QMI_QFE_WTR_PA_5_FR1	35
+#define QMI_QFE_WTR_PA_6_FR1	36
+#define QMI_QFE_RET_PA_1	37
+#define QMI_QFE_RET_PA_1_FR1	38
 
 
 #define QMI_MODEM_INST_ID	0x0

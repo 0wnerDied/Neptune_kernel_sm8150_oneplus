@@ -1,4 +1,4 @@
-/* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -53,6 +53,7 @@
 		pinctrl-0 = <&ss5_pwr_ctrl_rst_on>;
 		ssVreset-gpio = <&tlmm 87 1>;
 		ssVonoff-gpio = <&tlmm 18 1>;
+		ssVboot-gpio = <&tlmm 21 1>;
 	};
 
 	hsi2s: qcom,hsi2s {
@@ -287,7 +288,13 @@
 };
 
 &usb0 {
+	interrupts = <0 489 0>, <0 486 0>, <0 488 0>;
+	interrupt-names = "dp_hs_phy_irq",
+			"ss_phy_irq", "dm_hs_phy_irq";
 	qcom,ignore-wakeup-src-in-hostmode;
+	dwc3@a600000 {
+		snps,dis_u3_susphy_quirk;
+	};
 };
 
 &usb1 {

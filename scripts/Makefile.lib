@@ -268,7 +268,10 @@ cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -n -f -9 > $@) || \
 
 # DTC
 # ---------------------------------------------------------------------------
-DTC ?= $(objtree)/scripts/dtc/dtc
+DTC ?= $(objtree)/scripts/dtc-aosp/dtc-aosp
+
+# Silence warnings
+DTC_FLAGS += -q
 
 # Disable noisy checks by default
 ifeq ($(KBUILD_ENABLE_EXTRA_GCC_CHECKS),)
@@ -309,8 +312,6 @@ $(obj)/%.dtb.S: $(obj)/%.dtb
 
 ifneq ($(DTC_EXT),)
 DTC = $(DTC_EXT)
-else
-DTC = $(objtree)/scripts/dtc/dtc
 endif
 
 quiet_cmd_dtc = DTC     $@
@@ -340,7 +341,7 @@ cmd_cat = (cat $(filter-out FORCE,$^) > $@) || (rm -f $@; false)
 size_append = printf $(shell						\
 dec_size=0;								\
 for F in $1; do								\
-	fsize=$$(stat -c "%s" $$F);					\
+	fsize=$$($(CONFIG_SHELL) $(srctree)/scripts/file-size.sh $$F);	\
 	dec_size=$$(expr $$dec_size + $$fsize);				\
 done;									\
 printf "%08x\n" $$dec_size |						\

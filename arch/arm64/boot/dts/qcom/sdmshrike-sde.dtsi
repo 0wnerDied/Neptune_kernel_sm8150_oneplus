@@ -612,6 +612,17 @@
 		compatible = "qcom,dp-mst-sim";
 	};
 
+	qcom_msmhdcp0: qcom,msm_hdcp@0 {
+		compatible = "qcom,msm-hdcp";
+		cell-index = <0>;
+	};
+
+	qcom_msmhdcp1: qcom,msm_hdcp@1 {
+		compatible = "qcom,msm-hdcp";
+		cell-index = <1>;
+	};
+
+
 	sde_dp0: qcom,dp_display@0{
 		cell-index = <0>;
 		compatible = "qcom,dp-display";
@@ -682,6 +693,7 @@
 
 		qcom,mst-enable;
 		qcom,dp-aux-bridge-sim = <&sde_dp_mst_sim>;
+		qcom,msm-hdcp = <&qcom_msmhdcp0>;
 		qcom,dsc-feature-enable;
 		qcom,fec-feature-enable;
 		qcom,widebus-enable;
@@ -795,6 +807,7 @@
 
 		qcom,max-pclk-frequency-khz = <675000>;
 
+		qcom,msm-hdcp = <&qcom_msmhdcp1>;
 		qcom,dsc-feature-enable;
 		qcom,fec-feature-enable;
 		qcom,widebus-enable;
@@ -887,7 +900,7 @@
 			"bond_pixel_parent";
 
 		qcom,phy-version = <0x500>;
-		qcom,phy-mode = "edp";
+		qcom,phy-mode = "dp";
 		qcom,aux-cfg0-settings = [24 00];
 		qcom,aux-cfg1-settings = [28 13];
 		qcom,aux-cfg2-settings = [2c 24];
@@ -896,7 +909,7 @@
 		qcom,aux-cfg5-settings = [38 26];
 		qcom,aux-cfg6-settings = [3c 0a];
 		qcom,aux-cfg7-settings = [40 03];
-		qcom,aux-cfg8-settings = [44 37];
+		qcom,aux-cfg8-settings = [44 b7];
 		qcom,aux-cfg9-settings = [48 03];
 
 		qcom,max-pclk-frequency-khz = <675000>;

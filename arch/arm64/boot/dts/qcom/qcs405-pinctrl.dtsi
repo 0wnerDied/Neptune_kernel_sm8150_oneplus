@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1526,6 +1526,34 @@
 				pins = "gpio21";
 				drive-strength = <2>;
 				bias-pull-up;
+			};
+		};
+
+		sdc2_dsrc_on: sdc2_dsrc_on {
+			mux {
+				pins = "gpio119";
+				function = "gpio";
+			};
+
+			config {
+				pins = "gpio119";
+				drive-strength = <16>;
+				output-high;
+				bias-pull-up;
+			};
+		};
+
+		sdc2_dsrc_off: sdc2_dsrc_off {
+			mux {
+				pins = "gpio119";
+				function = "gpio";
+			};
+
+			config {
+				pins = "gpio119";
+				drive-strength = <2>;
+				output-low;
+				bias-pull-down;
 			};
 		};
 
@@ -3335,6 +3363,19 @@
 					drive-strength = <2>;
 					bias-disable;
 				};
+			};
+		};
+
+		rgptp_gpio_default: rgptp_gpio_default {
+			mux {
+				pins = "gpio46";
+				function = "gpio";
+			};
+
+			config {
+				pins = "gpio46";
+				drive-strength = <2>;
+				bias-pull-down;
 			};
 		};
 	};

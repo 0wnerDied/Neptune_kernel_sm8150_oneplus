@@ -474,7 +474,7 @@ static int dm_blk_ioctl(struct block_device *bdev, fmode_t mode,
 		 * subset of the parent bdev; require extra privileges.
 		 */
 		if (!capable(CAP_SYS_RAWIO)) {
-			DMWARN_LIMIT(
+			DMDEBUG_LIMIT(
 	"%s: sending ioctl %x to DM device without required privilege.",
 				current->comm, cmd);
 			r = -ENOIOCTLCMD;
@@ -2178,7 +2178,8 @@ static int dm_init_inline_encryption(struct mapped_device *md)
 		   BLK_CRYPTO_FEATURE_WRAPPED_KEYS;
 	memset(mode_masks, 0xFF, sizeof(mode_masks));
 
-	md->queue->ksm = keyslot_manager_create_passthrough(&dm_ksm_ll_ops,
+	md->queue->ksm = keyslot_manager_create_passthrough(NULL,
+							    &dm_ksm_ll_ops,
 							    features,
 							    mode_masks, md);
 	if (!md->queue->ksm)

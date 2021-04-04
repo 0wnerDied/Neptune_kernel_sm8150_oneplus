@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -78,6 +78,8 @@ static inline void ethqos_ipa_offload_event_handler(void *data, int ev)
 #define EV_QTI_CHECK_CONN_UPDATE (EV_QTI_GET_CONN_STATUS + 1)
 #define EV_IPA_HANDLE_RX_INTR (EV_QTI_CHECK_CONN_UPDATE + 1)
 #define EV_IPA_HANDLE_TX_INTR (EV_IPA_HANDLE_RX_INTR + 1)
-#define EV_IPA_OFFLOAD_MAX (EV_IPA_HANDLE_TX_INTR + 1)
-
+#define EV_LOOPBACK_DMA_MAP (EV_IPA_HANDLE_TX_INTR + 1)
+#define EV_IPA_SSR_DOWN (EV_LOOPBACK_DMA_MAP + 1)
+#define EV_IPA_SSR_UP (EV_IPA_SSR_DOWN + 1)
+#define EV_IPA_OFFLOAD_MAX (EV_IPA_SSR_UP + 1)
 #endif

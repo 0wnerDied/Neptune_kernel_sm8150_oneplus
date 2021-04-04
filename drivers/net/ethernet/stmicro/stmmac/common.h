@@ -266,6 +266,9 @@ enum rx_frame_status {
 	dma_own = 0x8,
 	rx_not_ls = 0x10,
 	ctxt_desc = 0x20,
+	rx_fs_only = 0x40,
+	rx_ls_only = 0x80,
+	rx_not_fsls = 0x100,
 };
 
 /* Tx status */
@@ -281,6 +284,7 @@ enum dma_irq_status {
 	tx_hard_error_bump_tc = 0x2,
 	handle_rx = 0x4,
 	handle_tx = 0x8,
+	rbu_err = 0x10,
 };
 
 /* EEE and LPI defines */
@@ -405,6 +409,8 @@ struct stmmac_desc_ops {
 	/* Return the reception status looking at the RDES1 */
 	int (*rx_status) (void *data, struct stmmac_extra_stats *x,
 			  struct dma_desc *p);
+	int (*rx_status_err)(void *data, struct stmmac_extra_stats *x,
+			     struct dma_desc *p, int *status);
 	void (*rx_extended_status) (void *data, struct stmmac_extra_stats *x,
 				    struct dma_extended_desc *p);
 	/* Set tx timestamp enable bit */
@@ -438,6 +444,7 @@ struct stmmac_dma_ops {
 	void (*init_tx_chan)(void __iomem *ioaddr,
 			     struct stmmac_dma_cfg *dma_cfg,
 			     u32 dma_tx_phy, u32 chan);
+	void (*set_rx_buff)(void __iomem *ioaddr, u32 buff_size, u32 chan);
 	/* Configure the AXI Bus Mode Register */
 	void (*axi)(void __iomem *ioaddr, struct stmmac_axi *axi);
 	/* Dump DMA registers */
@@ -460,6 +467,10 @@ struct stmmac_dma_ops {
 	void (*stop_tx)(void __iomem *ioaddr, u32 chan);
 	void (*start_rx)(void __iomem *ioaddr, u32 chan);
 	void (*stop_rx)(void __iomem *ioaddr, u32 chan);
+	void (*start_tx_chan)(void __iomem *ioaddr, u32 chan);
+	void (*stop_tx_chan)(void __iomem *ioaddr, u32 chan);
+	void (*start_rx_chan)(void __iomem *ioaddr, u32 chan);
+	void (*stop_rx_chan)(void __iomem *ioaddr, u32 chan);
 	int (*dma_interrupt) (void __iomem *ioaddr,
 			      struct stmmac_extra_stats *x, u32 chan);
 	/* If supported then get the optional core features */
@@ -667,4 +678,18 @@ static inline u32 stmmac_get_synopsys_id(u32 hwid)
 	}
 	return 0;
 }
+
+enum mac_err_type {
+	PHY_RW_ERR = 0,
+	PHY_DET_ERR,
+	CRC_ERR,
+	RECEIVE_ERR,
+	OVERFLOW_ERR,
+	FBE_ERR,
+	RBU_ERR,
+	TDU_ERR,
+	DRIBBLE_ERR,
+	WDT_ERR,
+	MAC_ERR_CNT,
+};
 #endif /* __COMMON_H__ */
