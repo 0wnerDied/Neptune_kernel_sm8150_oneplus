@@ -1935,6 +1935,7 @@ static int stop_rx_sequencer(struct uart_port *uport)
 	bool is_rx_active;
 	unsigned int stale_delay;
 	u32 dma_rx_status, s_irq_status;
+	int usage_count;
 
 	IPC_LOG_MSG(port->ipc_log_misc, "%s\n", __func__);
 	if (port->uart_ssr.is_ssr_down) {
@@ -1992,6 +1993,15 @@ static int stop_rx_sequencer(struct uart_port *uport)
 			IPC_LOG_MSG(port->ipc_log_misc, "%s: Interrupt delay\n",
 					 __func__);
 			handle_rx_dma_xfer(s_irq_status, uport);
+			if (!port->ioctl_count) {
+				usage_count = atomic_read(
+						&uport->dev->power.usage_count);
+				IPC_LOG_MSG(port->ipc_log_misc,
+				"%s: Abort Stop Rx, extend the PM timer, usage_count:%d\n",
+				__func__, usage_count);
+				pm_runtime_mark_last_busy(uport->dev);
+				return -EBUSY;
+			}
 		}
 	}
 
