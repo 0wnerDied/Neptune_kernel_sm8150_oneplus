@@ -3847,6 +3847,9 @@ static int qcom_ethqos_remove(struct platform_device *pdev)
 	stmmac_emb_smmu_exit();
 	ethqos_disable_regulators(ethqos);
 
+	atomic_notifier_chain_unregister(&panic_notifier_list,
+					 &qcom_ethqos_panic_blk);
+
 	return ret;
 }
 
