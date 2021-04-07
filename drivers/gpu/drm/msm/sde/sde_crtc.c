@@ -3566,7 +3566,7 @@ int oneplus_aod_dc = 0;
 	if (dim_status == oneplus_dim_status)
 		return count;
 	oneplus_dim_status = dim_status;
-	pr_err("notify dim %d,aod = %d press= %d aod_hide =%d\n",
+	pr_debug("notify dim %d,aod = %d press= %d aod_hide =%d\n",
 		oneplus_dim_status, dsi_display->panel->aod_status, oneplus_onscreenfp_status, aod_layer_hide);
 	if (oneplus_dim_status == 1 && HBM_flag) {
 		rc = dsi_panel_tx_cmd_set(dsi_display->panel, DSI_CMD_SET_HBM_ON_5);
@@ -5931,7 +5931,7 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 			cstate->fingerprint_mode = false;
 
 		if ((fp_index >= 0 || dim_backlight > 0) && sde_crtc_config_fingerprint_dim_layer(&cstate->base, zpos)) {
-			SDE_ERROR("Failed to config dim layer\n");
+			SDE_DEBUG("Failed to config dim layer\n");
 			return -EINVAL;
 		}
 		if (fppressed_index >= 0)
