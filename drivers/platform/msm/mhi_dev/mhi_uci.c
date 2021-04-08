@@ -1442,8 +1442,8 @@ static ssize_t mhi_uci_client_read(struct file *file, char __user *ubuf,
 	u32 addr_offset = 0;
 
 	if (!file || !ubuf || !file->private_data) {
-		uci_log(UCI_DBG_DBG, uci_handle->client_index,
-			"Invalid access to read\n");
+		uci_log(UCI_DBG_ERROR, MHI_UCI_DEFAULT_LOG_MSK,
+				"Invalid access to read\n");
 		return -EINVAL;
 	}
 
@@ -1704,6 +1704,7 @@ static void uci_event_notifier(struct mhi_dev_client_cb_reason *reason)
 static int mhi_register_client(struct uci_client *mhi_client, int index)
 {
 	char ipc_name[MHI_UCI_NAME_SIZE];
+	char *client_name;
 	init_waitqueue_head(&mhi_client->read_wq);
 	init_waitqueue_head(&mhi_client->write_wq);
 	mhi_client->client_index = index;
@@ -1715,9 +1716,14 @@ static int mhi_register_client(struct uci_client *mhi_client, int index)
 	/* Init the completion event for AT ctrl read */
 	init_completion(&mhi_client->at_ctrl_read_done);
 
-	snprintf(ipc_name, MHI_UCI_NAME_SIZE, "mhi-uci-%s",
-				mhi_uci_get_client_name(index));
+	client_name = mhi_uci_get_client_name(index);
+	if (!client_name) {
+		uci_log(UCI_DBG_WARNING, MHI_UCI_DEFAULT_LOG_MSK,
+			"Failed to get client name:%d\n", index);
+		return -EINVAL;
+	}
 
+	snprintf(ipc_name, MHI_UCI_NAME_SIZE, "mhi-uci-%s", client_name);
 	if (!mhi_uci_clnt_ipc_log[index]) {
 		mhi_uci_clnt_ipc_log[index] = ipc_log_context_create(
 						MHI_UCI_IPC_LOG_PAGES,

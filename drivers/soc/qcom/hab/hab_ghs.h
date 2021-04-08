@@ -1,4 +1,4 @@
-/* Copyright (c) 2018-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018-2019, 2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -16,7 +16,7 @@
 
 #include "hab_ghs_os.h"
 
-#define GIPC_RECV_BUFF_SIZE_BYTES   (32*1024)
+#define GIPC_RECV_BUFF_SIZE_BYTES   (48*1024)
 
 struct ghs_vdev {
 	int be;
