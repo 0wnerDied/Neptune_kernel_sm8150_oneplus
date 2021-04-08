@@ -231,7 +231,7 @@ int asm330_check_acc_gyro_early_buff_enable_flag(
 		struct st_asm330lhh_sensor *sensor)
 {
 	if (sensor->buffer_asm_samples == true)
-		return 1;
+		return 0;
 	else
 		return 0;
 }
@@ -295,7 +295,7 @@ static inline void st_asm330lhh_sync_hw_ts(struct st_asm330lhh_hw *hw, s64 ts)
 static int st_asm330lhh_read_fifo(struct st_asm330lhh_hw *hw)
 {
 	u8 iio_buf[ALIGN(ST_ASM330LHH_SAMPLE_SIZE, sizeof(s64)) + sizeof(s64)];
-	u8 buf[30 * ST_ASM330LHH_FIFO_SAMPLE_SIZE], tag, *ptr;
+	u8 buf[60 * ST_ASM330LHH_FIFO_SAMPLE_SIZE], tag, *ptr;
 	int i, err, word_len, fifo_len, read_len;
 	struct iio_dev *iio_dev;
 	s64 ts_irq, hw_ts_old;
