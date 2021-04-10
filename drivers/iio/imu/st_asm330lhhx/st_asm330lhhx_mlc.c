@@ -241,6 +241,7 @@ static int st_asm330lhhx_mlc_read_event_config(struct iio_dev *iio_dev,
 
 static bool set_mlc_case_name(int id, int request, char *case_name)
 {
+	int i = 0;
 	static char *mlc_case_name[16];
 	//Set mlc use case name for id
 	if (request == 1) {
@@ -255,10 +256,18 @@ static bool set_mlc_case_name(int id, int request, char *case_name)
 	if (request == 0) {
 		if (mlc_case_name[id] != NULL) {
 			strlcpy(case_name, mlc_case_name[id], UCF_STR_LEN);
-			kfree(mlc_case_name[id]);
 			return true;
 		}
 	}
+	//Free all memory
+	if (request == 2) {
+		for (i = 0; i < 16; i++) {
+			if (mlc_case_name[i] != NULL)
+				kfree(mlc_case_name[i]);
+		}
+		return true;
+	}
+
 	return false;
 }
 
@@ -268,7 +277,7 @@ static int st_asm330lhhx_program_mlc(const struct firmware *fw,
 				     u8 *mlc_mask, u16 *fsm_mask)
 {
 	uint8_t mlc_int = 0, mlc_num = 0, fsm_num = 0, skip = 0;
-	int int_pin, reg, val, ret, i = 0, j = 0;
+	int int_pin, reg, val, ret = -1, i = 0, j = 0;
 	uint8_t fsm_int[2] = { 0, 0 };
 	bool stmc_page = false;
 	char str[UCF_STR_LEN];
@@ -279,8 +288,11 @@ static int st_asm330lhhx_program_mlc(const struct firmware *fw,
 	while (i < fw->size) {
 		j = 0;
 		memset(str, 0, UCF_STR_LEN);
-		while (fw->data[i] != '\n')
+		while (fw->data[i] != '\n') {
 			str[j++] = fw->data[i++];
+			if (j >= UCF_STR_LEN)
+				return ret;
+		}
 		i++;
 		if (strnstr(str, "-- USECASE #", UCF_STR_LEN)) {
 			line = strnstr(str, ":", UCF_STR_LEN);
@@ -435,6 +447,7 @@ static void st_asm330lhhx_mlc_update(const struct firmware *fw, void *context)
 	}
 
 release:
+	set_mlc_case_name(0, 2, NULL);
 	release_firmware(fw);
 }
 
