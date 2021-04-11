@@ -262,8 +262,10 @@ static bool set_mlc_case_name(int id, int request, char *case_name)
 	//Free all memory
 	if (request == 2) {
 		for (i = 0; i < 16; i++) {
-			if (mlc_case_name[i] != NULL)
+			if (mlc_case_name[i] != NULL) {
 				kfree(mlc_case_name[i]);
+				mlc_case_name[i] = NULL;
+			}
 		}
 		return true;
 	}
@@ -632,9 +634,11 @@ struct iio_dev *st_asm330lhhx_mlc_alloc_iio_dev(struct st_asm330lhhx_hw *hw,
 		iio_dev->info = &st_asm330lhhx_mlc_x_event_info;
 		if (set_mlc_case_name(id - ST_ASM330LHHX_ID_MLC_0, 0,
 					case_name)) {
+			memset(sensor->name, 0, sizeof(sensor->name));
 			snprintf(sensor->name, sizeof(sensor->name),
 					"asm330lhhx_mlc_%s", case_name);
 		} else {
+			memset(sensor->name, 0, sizeof(sensor->name));
 			scnprintf(sensor->name, sizeof(sensor->name),
 					"asm330lhhx_mlc_%d",
 					id - ST_ASM330LHHX_ID_MLC_0);
