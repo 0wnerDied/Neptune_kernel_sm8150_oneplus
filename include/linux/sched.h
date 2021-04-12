@@ -1387,7 +1387,6 @@ struct task_struct {
 	atomic64_t cpu_dist[8];
 	atomic64_t total_cpu_dist[8];
 
-	struct fuse_package *fpack;
 	/* CPU-specific state of this task: */
 	struct thread_struct		thread;
 
@@ -1397,12 +1396,6 @@ struct task_struct {
 	 *
 	 * Do not put anything below here!
 	 */
-};
-
-struct fuse_package {
-	bool fuse_open_req;
-	struct file *filp;
-	char *iname;
 };
 
 static inline struct pid *task_pid(struct task_struct *task)
