@@ -42,6 +42,7 @@ source "drivers/iio/imu/inv_mpu6050/Kconfig"
 source "drivers/iio/imu/inv_mpu/Kconfig"
 source "drivers/iio/imu/st_lsm6dsx/Kconfig"
 source "drivers/iio/imu/st_asm330lhh/Kconfig"
+source "drivers/iio/imu/st_asm330lhhx/Kconfig"
 
 endmenu
 

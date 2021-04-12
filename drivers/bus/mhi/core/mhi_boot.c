@@ -1,4 +1,4 @@
-/* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -442,6 +442,9 @@ void mhi_free_bhie_table(struct mhi_controller *mhi_cntrl,
 	int i;
 	struct mhi_buf *mhi_buf = image_info->mhi_buf;
 
+	if (!image_info)
+		return;
+
 	for (i = 0; i < image_info->entries; i++, mhi_buf++)
 		mhi_free_coherent(mhi_cntrl, mhi_buf->len, mhi_buf->buf,
 				  mhi_buf->dma_addr);
@@ -569,14 +572,14 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 						     !mhi_cntrl->seg_len))) {
 		MHI_CNTRL_ERR(
 			"No firmware image defined or !sbl_size || !seg_len\n");
-		return;
+		goto fw_load_error;
 	}
 
 	ret = request_firmware(&firmware, fw_name, mhi_cntrl->dev);
 	if (ret) {
 		if (!mhi_cntrl->fw_image_fallback) {
 			MHI_CNTRL_ERR("Error loading fw, ret:%d\n", ret);
-			return;
+			goto fw_load_error;
 		}
 
 		/* re-try with fall back fw image */
@@ -584,7 +587,7 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 				mhi_cntrl->dev);
 		if (ret) {
 			MHI_CNTRL_ERR("Error loading fw_fb, ret:%d\n", ret);
-			return;
+			goto fw_load_error;
 		}
 
 		mhi_cntrl->status_cb(mhi_cntrl, mhi_cntrl->priv_data,
@@ -600,8 +603,7 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 	buf = mhi_alloc_coherent(mhi_cntrl, size, &dma_addr, GFP_KERNEL);
 	if (!buf) {
 		MHI_CNTRL_ERR("Could not allocate memory for image\n");
-		release_firmware(firmware);
-		return;
+		goto fw_load_error_release;
 	}
 
 	/* load sbl image */
@@ -609,9 +611,16 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 	ret = mhi_fw_load_sbl(mhi_cntrl, dma_addr, size);
 	mhi_free_coherent(mhi_cntrl, size, buf, dma_addr);
 
-	/* error or in edl, we're done */
-	if (ret || mhi_cntrl->ee == MHI_EE_EDL)
-		goto release_fw;
+	if (ret) {
+		MHI_CNTRL_ERR("MHI did not load SBL/EDL image, ret:%d\n", ret);
+		goto fw_load_error_release;
+	}
+
+	/* we are done with FW load is EE is EDL */
+	if (mhi_cntrl->ee == MHI_EE_EDL) {
+		release_firmware(firmware);
+		return;
+	}
 
 	write_lock_irq(&mhi_cntrl->pm_lock);
 	mhi_cntrl->dev_state = MHI_STATE_RESET;
@@ -626,7 +635,7 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 					   firmware->size);
 		if (ret) {
 			MHI_CNTRL_ERR("Error alloc size:%zu\n", firmware->size);
-			goto release_fw;
+			goto fw_load_error_ready;
 		}
 
 		MHI_CNTRL_LOG("Copying firmware image into vector table\n");
@@ -634,6 +643,9 @@ void mhi_fw_load_handler(struct mhi_controller *mhi_cntrl)
 		/* load the firmware into BHIE vec table */
 		mhi_firmware_copy(mhi_cntrl, firmware, mhi_cntrl->fbc_image);
 	}
+
+	release_firmware(firmware);
+	firmware = NULL;
 
 fw_load_ee_pthru:
 	/* transitioning into MHI RESET->READY state */
@@ -644,13 +656,14 @@ fw_load_ee_pthru:
 			TO_MHI_STATE_STR(mhi_cntrl->dev_state),
 			TO_MHI_EXEC_STR(mhi_cntrl->ee), ret);
 
-	if (!mhi_cntrl->fbc_download)
-		goto release_fw;
 
 	if (ret) {
 		MHI_CNTRL_ERR("Did not transition to READY state\n");
-		goto error_read;
+		goto fw_load_error_ready;
 	}
+
+	if (!mhi_cntrl->fbc_download || mhi_cntrl->ee == MHI_EE_PTHRU)
+		return;
 
 	/* wait for SBL event */
 	ret = wait_event_timeout(mhi_cntrl->state_event,
@@ -660,7 +673,7 @@ fw_load_ee_pthru:
 
 	if (!ret || MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state)) {
 		MHI_CNTRL_ERR("MHI did not enter BHIE\n");
-		goto error_read;
+		goto fw_load_error_ready;
 	}
 
 	/* start full firmware image download */
@@ -671,16 +684,23 @@ fw_load_ee_pthru:
 
 	MHI_CNTRL_LOG("amss fw_load ret:%d\n", ret);
 
-	release_firmware(firmware);
+	if (ret)
+		goto fw_load_error;
 
 	return;
 
-error_read:
+fw_load_error_ready:
 	mhi_free_bhie_table(mhi_cntrl, mhi_cntrl->fbc_image);
 	mhi_cntrl->fbc_image = NULL;
 
-release_fw:
+fw_load_error_release:
 	release_firmware(firmware);
+
+fw_load_error:
+	write_lock_irq(&mhi_cntrl->pm_lock);
+	mhi_cntrl->pm_state = MHI_PM_FW_DL_ERR;
+	wake_up_all(&mhi_cntrl->state_event);
+	write_unlock_irq(&mhi_cntrl->pm_lock);
 }
 
 void mhi_perform_soc_reset(struct mhi_controller *mhi_cntrl)
