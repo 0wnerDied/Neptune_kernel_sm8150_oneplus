@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -191,10 +191,11 @@ void ethqos_reset_phy_enable_interrupt(struct qcom_ethqos *ethqos)
 	/* reset the phy so that it's ready */
 	if (priv->mii) {
 		ETHQOSERR("do mdio reset\n");
-		stmmac_mdio_reset(priv->mii);
+		if (priv->mii->reset)
+			priv->mii->reset(priv->mii);
 	}
 	/*Enable phy interrupt*/
-	if (phy_intr_en && phydev) {
+	if (priv->plat->phy_intr_en_extn_stm && phydev) {
 		ETHQOSDBG("PHY interrupt Mode enabled\n");
 		phydev->irq = PHY_IGNORE_INTERRUPT;
 		phydev->interrupts =  PHY_INTERRUPT_ENABLED;
@@ -203,12 +204,13 @@ void ethqos_reset_phy_enable_interrupt(struct qcom_ethqos *ethqos)
 		    !phydev->drv->config_intr(phydev)) {
 			ETHQOSERR("config_phy_intr successful after phy on\n");
 		}
-		qcom_ethqos_request_phy_wol(priv->plat);
-	} else if (!phy_intr_en) {
+	priv->plat->request_phy_wol(priv->plat);
+	} else if (!priv->plat->phy_intr_en_extn_stm) {
 		phydev->irq = PHY_POLL;
 		ETHQOSDBG("PHY Polling Mode enabled\n");
 	} else {
-		ETHQOSERR("phydev is null , intr value=%d\n", phy_intr_en);
+		ETHQOSERR("phydev is null , intr value=%d\n",
+			  priv->plat->phy_intr_en_extn_stm);
 	}
 }
 

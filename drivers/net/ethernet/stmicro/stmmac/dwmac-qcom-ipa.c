@@ -1527,7 +1527,7 @@ static void ntn_ipa_notify_cb_be(
 			iph = (struct iphdr *)skb->data;
 		} else {
 			if (pdata->current_loopback > DISABLE_LOOPBACK)
-				swap_ip_port(skb, ETH_P_IP);
+				pdata->plat->swap_ip_port(skb, ETH_P_IP);
 			skb->protocol = eth_type_trans(skb, skb->dev);
 			iph = (struct iphdr *)(skb_mac_header(skb) + ETH_HLEN);
 		}
@@ -1747,9 +1747,9 @@ static ssize_t suspend_resume_ipa_offload(struct file *file,
 
 	if (qcom_ethqos_is_phy_link_up(ethqos)) {
 		if (option == 1)
-			ethqos_ipa_offload_event_handler(priv, EV_USR_SUSPEND);
+			priv->plat->offload_event_handler(priv, EV_USR_SUSPEND);
 		else if (option == 0)
-			ethqos_ipa_offload_event_handler(priv, EV_USR_RESUME);
+			priv->plat->offload_event_handler(priv, EV_USR_RESUME);
 	} else {
 		ETHQOSERR("Operation not permitted, No PHY link");
 	}
@@ -2220,13 +2220,15 @@ static int ethqos_ipa_offload_connect(
 	struct ipa_perf_profile profile;
 	int ret = 0;
 	int i = 0;
-
+	struct stmmac_priv *priv;
 	ETHQOSDBG("begin\n");
 	if (!ethqos) {
 		ETHQOSERR("Null Param\n");
 		ret = -1;
 		return ret;
 	}
+
+	priv = qcom_ethqos_get_priv(ethqos);
 
 	if (type == IPA_QUEUE_CV2X && eth_ipa_ctx.cv2x_queue_enabled)
 		return ret;
@@ -2250,7 +2252,7 @@ static int ethqos_ipa_offload_connect(
 	in.clnt_hndl = eth_ipa->ipa_client_hndl[type];
 
 	/* Uplink Setup */
-	if (stmmac_emb_smmu_ctx.valid)
+	if (priv->plat->stmmac_emb_smmu_ctx.valid)
 		rx_setup_info.smmu_enabled = true;
 	else
 		rx_setup_info.smmu_enabled = false;
@@ -2280,7 +2282,7 @@ static int ethqos_ipa_offload_connect(
 		eth_ipa_queue_type_to_rx_reg_base_ptr_pa(type);
 
 	/* Downlink Setup */
-	if (stmmac_emb_smmu_ctx.valid)
+	if (priv->plat->stmmac_emb_smmu_ctx.valid)
 		tx_setup_info.smmu_enabled = true;
 	else
 		tx_setup_info.smmu_enabled = false;
@@ -2352,7 +2354,7 @@ static int ethqos_ipa_offload_connect(
 			eth_ipa_ctx.tx_queue[type]->ipa_tx_phy_addr[i];
 	}
 
-	if (stmmac_emb_smmu_ctx.valid) {
+	if (priv->plat->stmmac_emb_smmu_ctx.valid) {
 		ret = ethqos_set_ul_dl_smmu_ipa_params(ethqos, &rx_setup_info,
 						       &tx_setup_info, type);
 		if (ret) {
@@ -2428,7 +2430,7 @@ static int ethqos_ipa_offload_connect(
 	kfree(tx_setup_info.data_buff_list);
 	tx_setup_info.data_buff_list = NULL;
 
-	if (stmmac_emb_smmu_ctx.valid) {
+	if (priv->plat->stmmac_emb_smmu_ctx.valid) {
 		if (rx_setup_info.ring_base_sgt) {
 			sg_free_table(rx_setup_info.ring_base_sgt);
 			kfree(rx_setup_info.ring_base_sgt);
@@ -2933,7 +2935,7 @@ static void ethqos_ipa_ready_wq(struct work_struct *work)
 	struct stmmac_priv *priv = netdev_priv(dev);
 
 	ETHQOSDBG("\n");
-	ethqos_ipa_offload_event_handler(priv, EV_IPA_READY);
+	priv->plat->offload_event_handler(priv, EV_IPA_READY);
 }
 
 static void ethqos_ipa_ready_cb(void *user_data)
@@ -2974,7 +2976,7 @@ static void ethqos_ipaucrdy_wq(struct work_struct *work)
 	struct stmmac_priv *priv = netdev_priv(dev);
 
 	ETHQOSDBG("DWC_ETH_QOS_ipa_uc_ready_wq\n");
-	ethqos_ipa_offload_event_handler(priv, EV_IPA_UC_READY);
+	priv->plat->offload_event_handler(priv, EV_IPA_UC_READY);
 }
 
 static void ethqos_ipa_uc_ready_cb(void *user_data)
