@@ -322,6 +322,7 @@ struct st_asm330lhh_sensor {
 	struct input_dev *buf_dev;
 	int report_evt_cnt;
 	struct mutex sensor_buff;
+	bool enable;
 #endif
 };
 
@@ -460,6 +461,8 @@ int st_asm330lhh_reset_hwts(struct st_asm330lhh_hw *hw);
 int st_asm330lhh_update_fifo(struct iio_dev *iio_dev, bool enable);
 int asm330_check_acc_gyro_early_buff_enable_flag(
 		struct st_asm330lhh_sensor *sensor);
+int asm330_check_sensor_enable_flag(
+		struct st_asm330lhh_sensor *sensor, bool enable);
 void st_asm330lhh_set_cpu_idle_state(bool value);
 void st_asm330lhh_hrtimer_reset(struct st_asm330lhh_hw *hw, s64 irq_delta_ts);
 #endif /* ST_ASM330LHH_H */
