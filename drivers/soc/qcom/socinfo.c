@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2009-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -409,6 +409,7 @@ static struct msm_soc_info cpu_of_id[] = {
 	[357] = {SDX_CPU_SDXPRAIRIE, "SDXPRAIRIE"},
 	[368] = {SDX_CPU_SDXPRAIRIE, "SDXPRAIRIE"},
 	[418] = {SDX_CPU_SDXPRAIRIE, "SDXPRAIRIE"},
+	[516] = {SDX_CPU_SDXPRAIRIE, "SDXPRAIRIE"},
 
 	/* sdmmagpie ID */
 	[365] = {MSM_CPU_SDMMAGPIE, "SDMMAGPIE"},
