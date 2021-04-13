@@ -40,6 +40,10 @@ dump_boot;
 # Override DTB
 mv $home/dtb $home/split_img/;
 
+# Move resetprop_static
+cp -rfp $home/resetprop_static /data/local/tmp/resetprop_static;
+chmod 755 /data/local/tmp/resetprop_static;
+
 if mountpoint -q /data; then
   # Optimize F2FS extension list (@arter97)
   for list_path in $(find /sys/fs/f2fs* -name extension_list); do
