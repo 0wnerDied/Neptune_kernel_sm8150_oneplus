@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, The Linux foundation. All rights reserved.
+ * Copyright (c) 2017-2021, The Linux foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1542,18 +1542,19 @@ static void msm_geni_serial_set_manual_flow(bool enable,
 	}
 }
 
-static void stop_rx_sequencer(struct uart_port *uport)
+static int stop_rx_sequencer(struct uart_port *uport)
 {
 	unsigned int geni_status;
 	bool timeout, is_irq_masked;
 	struct msm_geni_serial_port *port = GET_DEV_PORT(uport);
 	unsigned long flags = 0;
+	bool is_rx_active;
 
 	IPC_LOG_MSG(port->ipc_log_misc, "%s\n", __func__);
 	if (port->uart_ssr.is_ssr_down) {
 		IPC_LOG_MSG(port->ipc_log_misc, "%s: SSR Down event set\n",
 			__func__);
-		return;
+		return 0;
 	}
 
 
@@ -1563,7 +1564,7 @@ static void stop_rx_sequencer(struct uart_port *uport)
 		IPC_LOG_MSG(port->ipc_log_misc,
 			"%s: RX is Inactive, geni_sts: 0x%x\n",
 						__func__, geni_status);
-		return;
+		return 0;
 	}
 
 	port->s_cmd_done = false;
@@ -1586,8 +1587,6 @@ static void stop_rx_sequencer(struct uart_port *uport)
 	mb();
 	timeout = geni_wait_for_cmd_done(uport, is_irq_masked);
 	if (timeout) {
-		bool is_rx_active;
-
 		geni_status = geni_read_reg_nolog(uport->membase,
 							SE_GENI_STATUS);
 		/*
@@ -1644,18 +1643,28 @@ exit_rx_seq:
 	geni_status = geni_read_reg_nolog(uport->membase, SE_GENI_STATUS);
 	IPC_LOG_MSG(port->ipc_log_misc, "%s: End 0x%x\n",
 		    __func__, geni_status);
+
+	is_rx_active = geni_status & S_GENI_CMD_ACTIVE;
+	if (is_rx_active)
+		return -EBUSY;
+	else
+		return 0;
 }
 
 static void msm_geni_serial_stop_rx(struct uart_port *uport)
 {
 	struct msm_geni_serial_port *port = GET_DEV_PORT(uport);
+	int ret;
 
 	if (!uart_console(uport) && device_pending_suspend(uport)) {
 		IPC_LOG_MSG(port->ipc_log_misc,
 				"%s.Device is suspended.\n", __func__);
 		return;
 	}
-	stop_rx_sequencer(uport);
+	ret = stop_rx_sequencer(uport);
+	if (ret)
+		IPC_LOG_MSG(port->ipc_log_misc, "%s: stop rx failed %d\n",
+							__func__, ret);
 }
 
 static int handle_rx_hs(struct uart_port *uport,
@@ -1984,6 +1993,7 @@ static void msm_geni_serial_handle_isr(struct uart_port *uport,
 	unsigned int dma_rx_status;
 	unsigned int m_irq_en;
 	unsigned int geni_status;
+	u32 rx_dma_len;
 	struct msm_geni_serial_port *msm_port = GET_DEV_PORT(uport);
 	struct tty_port *tport = &uport->state->port;
 	bool drop_rx = false;
@@ -2122,6 +2132,7 @@ static void msm_geni_serial_handle_isr(struct uart_port *uport,
 				IPC_LOG_MSG(msm_port->ipc_log_misc,
 					"%s.Reset done.  0x%x.\n",
 						__func__, dma_rx_status);
+				s_cmd_done = true;
 				goto exit_geni_serial_isr;
 			}
 
@@ -2145,10 +2156,16 @@ static void msm_geni_serial_handle_isr(struct uart_port *uport,
 					dma_rx_status & RX_DMA_DONE) {
 				msm_geni_serial_handle_dma_rx(uport,
 							drop_rx);
-				if (!(dma_rx_status &
-				RX_GENI_CANCEL_IRQ(msm_port->ver_info))) {
+				rx_dma_len =
+				geni_read_reg_nolog(uport->membase,
+							SE_DMA_RX_LEN_IN);
+				if (rx_dma_len != 0) {
 					geni_se_rx_dma_start(uport->membase,
 					DMA_RX_BUF_SIZE, &msm_port->rx_dma);
+				} else {
+					IPC_LOG_MSG(msm_port->ipc_log_misc,
+						"%s.stop dma Rx 0x%x\n",
+						__func__, dma_rx_status);
 				}
 			}
 
@@ -2164,9 +2181,10 @@ static void msm_geni_serial_handle_isr(struct uart_port *uport,
 								RX_DMA_DONE))
 				s_cmd_done = true;
 
-			if (s_irq_status & (S_CMD_CANCEL_EN | S_CMD_ABORT_EN))
-				s_cmd_done = true;
 		}
+
+		if (s_irq_status & (S_CMD_CANCEL_EN | S_CMD_ABORT_EN))
+			s_cmd_done = true;
 
 		if (dma_tx_status) {
 
@@ -2182,12 +2200,13 @@ static void msm_geni_serial_handle_isr(struct uart_port *uport,
 				TX_GENI_CANCEL_IRQ)) {
 				m_cmd_done = true;
 			}
-			if (m_irq_status & (M_CMD_CANCEL_EN | M_CMD_ABORT_EN))
-				m_cmd_done = true;
 
 			if ((dma_tx_status & TX_DMA_DONE) && !m_cmd_done)
 				msm_geni_serial_handle_dma_tx(uport);
 		}
+
+		if (m_irq_status & (M_CMD_CANCEL_EN | M_CMD_ABORT_EN))
+			m_cmd_done = true;
 	}
 
 exit_geni_serial_isr:
@@ -3604,7 +3623,12 @@ static int msm_geni_serial_runtime_suspend(struct device *dev)
 	 * Disable Interrupt
 	 * Resources off
 	 */
-	stop_rx_sequencer(&port->uport);
+	ret = stop_rx_sequencer(&port->uport);
+	if (ret) {
+		IPC_LOG_MSG(port->ipc_log_pwr, "%s: stop rx failed %d\n",
+							__func__, ret);
+		return -EBUSY;
+	}
 	geni_status = geni_read_reg_nolog(port->uport.membase, SE_GENI_STATUS);
 	if ((geni_status & M_GENI_CMD_ACTIVE))
 		stop_tx_sequencer(&port->uport);

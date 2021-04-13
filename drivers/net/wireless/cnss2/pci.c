@@ -72,8 +72,6 @@ static DEFINE_SPINLOCK(pci_reg_window_lock);
 
 #define MHI_TIMEOUT_OVERWRITE_MS	(plat_priv->ctrl_params.mhi_timeout)
 
-#define QCA6390_PCIE_REMAP_BAR_CTRL_OFFSET	0x310C
-
 #define QCA6390_CE_SRC_RING_REG_BASE		0xA00000
 #define QCA6390_CE_DST_RING_REG_BASE		0xA01000
 #define QCA6390_CE_COMMON_REG_BASE		0xA18000
@@ -128,7 +126,6 @@ static DEFINE_SPINLOCK(pci_reg_window_lock);
 #define QDSS_APB_DEC_CSR_PRESERVEETR1_OFFSET	0x78
 
 #define MAX_UNWINDOWED_ADDRESS			0x80000
-#define WINDOW_ENABLE_BIT			0x40000000
 #define WINDOW_SHIFT				19
 #define WINDOW_VALUE_MASK			0x3F
 #define WINDOW_START				MAX_UNWINDOWED_ADDRESS
@@ -230,14 +227,18 @@ static int cnss_pci_check_link_status(struct cnss_pci_data *pci_priv)
 static void cnss_pci_select_window(struct cnss_pci_data *pci_priv, u32 offset)
 {
 	u32 window = (offset >> WINDOW_SHIFT) & WINDOW_VALUE_MASK;
+	u32 enable = WINDOW_ENABLE_BIT;
+
+	if (pci_priv->device_id == QCN7605_DEVICE_ID)
+		enable = QCN7605_WINDOW_ENABLE_BIT;
 
 	if (window != pci_priv->remap_window) {
-		writel_relaxed(WINDOW_ENABLE_BIT | window,
-			       QCA6390_PCIE_REMAP_BAR_CTRL_OFFSET +
+		writel_relaxed(enable | window,
+			       PCIE_REMAP_BAR_CTRL_OFFSET +
 			       pci_priv->bar);
 		pci_priv->remap_window = window;
 		cnss_pr_dbg("Config PCIe remap window register to 0x%x\n",
-			    WINDOW_ENABLE_BIT | window);
+			    enable | window);
 	}
 }
 
@@ -264,6 +265,29 @@ static int cnss_pci_reg_read(struct cnss_pci_data *pci_priv,
 	spin_unlock_bh(&pci_reg_window_lock);
 
 	return 0;
+}
+
+static void cnss_pci_get_jtag_id(struct cnss_pci_data *pci_priv)
+{
+	u32 jtag_id, reg;
+
+	switch (pci_priv->device_id) {
+	case QCA6390_DEVICE_ID:
+		reg = QCA6390_PCIE_JTAG_ID_REG;
+		break;
+	case QCN7605_DEVICE_ID:
+		reg = QCN7605_PCIE_JTAG_ID_REG;
+		break;
+	default:
+		cnss_pr_dbg("device 0x%x not support JTAG ID\n",
+			    pci_priv->device_id);
+		return;
+	}
+
+	if (cnss_pci_reg_read(pci_priv, reg, &jtag_id))
+		cnss_pr_err("Failed to get device JTAG ID");
+	else
+		cnss_pr_dbg("Get device JTAG ID 0x%x", jtag_id);
 }
 
 static int cnss_pci_reg_write(struct cnss_pci_data *pci_priv, u32 offset,
@@ -3657,10 +3681,10 @@ int cnss_pci_start_mhi(struct cnss_pci_data *pci_priv)
 		}
 	}
 	ret = cnss_pci_set_mhi_state(pci_priv, CNSS_MHI_POWER_ON);
-	if (ret)
-		goto out;
-
-	return 0;
+	if (ret == -ETIMEDOUT) {
+		mhi_debug_reg_dump(pci_priv->mhi_ctrl);
+		cnss_pci_dump_bl_sram_mem(pci_priv);
+	}
 
 out:
 	return ret;
@@ -3941,6 +3965,8 @@ static int cnss_pci_probe(struct pci_dev *pci_dev,
 		}
 		/* Update fw name according to different chip subtype */
 		cnss_pci_update_fw_name(pci_priv);
+
+		cnss_pci_get_jtag_id(pci_priv);
 
 		if (EMULATION_HW)
 			break;

@@ -2162,6 +2162,143 @@ static void tfa98xx_container_loaded(const struct firmware *cont,
 	tfa98xx_interrupt_enable(tfa98xx, true);
 }
 
+static void tfa98xx_resume_container_loaded(const struct firmware *cont,
+						void *context)
+{
+	nxpTfaContainer_t *container;
+	struct tfa98xx *tfa98xx = context;
+	enum tfa_error tfa_err;
+	int container_size;
+	int ret;
+
+	tfa98xx->dsp_fw_state = TFA98XX_DSP_FW_FAIL;
+
+	if (!cont) {
+		pr_err("Failed to read %s\n", fw_name);
+		return;
+	}
+
+	pr_debug("loaded %s - size: %zu\n", fw_name, cont->size);
+
+	mutex_lock(&tfa98xx_mutex);
+	if (tfa98xx_container == NULL) {
+		container = kzalloc(cont->size, GFP_KERNEL);
+		if (container == NULL) {
+			mutex_unlock(&tfa98xx_mutex);
+			release_firmware(cont);
+			pr_err("Error allocating memory\n");
+			return;
+		}
+
+		container_size = cont->size;
+		memcpy(container, cont->data, container_size);
+		release_firmware(cont);
+
+		pr_debug("%.2s%.2s\n",
+			container->version, container->subversion);
+		pr_debug("%.8s\n", container->customer);
+		pr_debug("%.8s\n", container->application);
+		pr_debug("%.8s\n", container->type);
+		pr_debug("%d ndev\n", container->ndev);
+		pr_debug("%d nprof\n", container->nprof);
+
+		tfa_err = tfa_load_cnt(container, container_size);
+		if (tfa_err != tfa_error_ok) {
+			mutex_unlock(&tfa98xx_mutex);
+			kfree(container);
+			dev_err(tfa98xx->dev, "Cannot load container file, aborting\n");
+			return;
+		}
+
+		tfa98xx_container = container;
+	} else {
+		pr_debug("container file already loaded...\n");
+		container = tfa98xx_container;
+		release_firmware(cont);
+	}
+	mutex_unlock(&tfa98xx_mutex);
+
+	tfa98xx->tfa->cnt = container;
+
+	// i2c transaction limited to 64k
+	// (Documentation/i2c/writing-clients)
+
+	tfa98xx->tfa->buffer_size = 65536;
+
+	// DSP messages via i2c
+	tfa98xx->tfa->has_msg = 0;
+
+	if (tfa_dev_probe(tfa98xx->i2c->addr, tfa98xx->tfa) != 0) {
+		dev_err(tfa98xx->dev, "Failed to probe TFA98xx @ 0x%.2x\n",
+						tfa98xx->i2c->addr);
+		return;
+	}
+
+	tfa98xx->tfa->dev_idx = tfa_cont_get_idx(tfa98xx->tfa);
+	if (tfa98xx->tfa->dev_idx < 0) {
+		dev_err(tfa98xx->dev, "Failed to find TFA98xx @ 0x%.2x in container file\n",
+						tfa98xx->i2c->addr);
+		return;
+	}
+
+	/* Enable debug traces */
+	tfa98xx->tfa->verbose = trace_level & 1;
+
+	/* prefix is the application name from the cnt */
+	tfa_cnt_get_app_name(tfa98xx->tfa, tfa98xx->fw.name);
+
+	/* set default profile/vstep */
+	tfa98xx->profile = 0;
+	tfa98xx->vstep = 0;
+
+	/* Override default profile if requested */
+	if (strcmp(dflt_prof_name, "")) {
+		unsigned int i;
+		int nprof = tfa_cnt_get_dev_nprof(tfa98xx->tfa);
+
+		for (i = 0; i < nprof; i++) {
+			if (strcmp(tfa_cont_profile_name(tfa98xx, i),
+				dflt_prof_name) == 0) {
+				tfa98xx->profile = i;
+				dev_info(tfa98xx->dev,
+					"changing default profile to %s (%d)\n",
+					dflt_prof_name, tfa98xx->profile);
+				break;
+			}
+		}
+		if (i >= nprof)
+			dev_info(tfa98xx->dev,
+				"Default profile override failed (%s profile not found)\n",
+				dflt_prof_name);
+	}
+
+	tfa98xx->dsp_fw_state = TFA98XX_DSP_FW_OK;
+	pr_debug("Firmware init complete\n");
+
+	if (no_start != 0)
+		return;
+
+	tfa98xx_inputdev_check_register(tfa98xx);
+
+	if (tfa_is_cold(tfa98xx->tfa) == 0) {
+		pr_debug("Warning: device 0x%.2x is still warm\n",
+				tfa98xx->i2c->addr);
+		tfa_reset(tfa98xx->tfa);
+	}
+
+	/* Preload settings using internal clock on TFA2 */
+	if (tfa98xx->tfa->tfa_family == 2) {
+		mutex_lock(&tfa98xx->dsp_lock);
+		ret = tfa98xx_tfa_start(tfa98xx, tfa98xx->profile,
+					tfa98xx->vstep);
+		if (ret == Tfa98xx_Error_Not_Supported)
+			tfa98xx->dsp_fw_state = TFA98XX_DSP_FW_FAIL;
+		mutex_unlock(&tfa98xx->dsp_lock);
+	}
+
+	tfa98xx_interrupt_enable(tfa98xx, true);
+}
+
 static int tfa98xx_load_container(struct tfa98xx *tfa98xx)
 {
 	tfa98xx->dsp_fw_state = TFA98XX_DSP_FW_PENDING;
@@ -2169,6 +2306,15 @@ static int tfa98xx_load_container(struct tfa98xx *tfa98xx)
 	return request_firmware_nowait(THIS_MODULE, FW_ACTION_HOTPLUG,
 		fw_name, tfa98xx->dev, GFP_KERNEL,
 		tfa98xx, tfa98xx_container_loaded);
+}
+
+static int tfa98xx_resume_load_container(struct tfa98xx *tfa98xx)
+{
+	tfa98xx->dsp_fw_state = TFA98XX_DSP_FW_PENDING;
+
+	return request_firmware_nowait(THIS_MODULE, FW_ACTION_HOTPLUG,
+		fw_name, tfa98xx->dev, GFP_KERNEL,
+		tfa98xx, tfa98xx_resume_container_loaded);
 }
 
 
@@ -2726,6 +2872,42 @@ static int tfa98xx_remove(struct snd_soc_codec *codec)
 	return 0;
 }
 
+static int tfa98xx_resume(struct snd_soc_codec *codec)
+{
+	int ret = 0;
+	struct tfa98xx *tfa98xx = snd_soc_codec_get_drvdata(codec);
+
+	dev_dbg(codec->dev, "%s:enter", __func__);
+
+	if (tfa98xx->vdd) {
+		dev_dbg(codec->dev, "%s: enable tfa98xx vdd", __func__);
+		ret = regulator_enable(tfa98xx->vdd);
+		ret = tfa98xx_resume_load_container(tfa98xx);
+	}
+
+	if (ret < 0)
+		dev_err(codec->dev, "%s: fail to enable regulator, err:%d\n",
+					__func__, ret);
+	return 0;
+}
+
+static int tfa98xx_suspend(struct snd_soc_codec *codec)
+{
+	int ret = 0;
+	struct tfa98xx *tfa98xx = snd_soc_codec_get_drvdata(codec);
+
+	dev_dbg(codec->dev, "%s:enter", __func__);
+
+	if (tfa98xx->vdd)
+		ret = regulator_disable(tfa98xx->vdd);
+
+	if (ret < 0)
+		dev_err(codec->dev, "%s: fail to disable regulator, err:%d\n",
+							__func__, ret);
+
+	return 0;
+}
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 static struct regmap *tfa98xx_get_regmap(struct device *dev)
 {
@@ -2737,6 +2919,8 @@ static struct regmap *tfa98xx_get_regmap(struct device *dev)
 static struct snd_soc_codec_driver soc_codec_dev_tfa98xx = {
 	.probe = tfa98xx_probe,
 	.remove = tfa98xx_remove,
+	.suspend = tfa98xx_suspend,
+	.resume = tfa98xx_resume,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 	.get_regmap = tfa98xx_get_regmap,
 #endif

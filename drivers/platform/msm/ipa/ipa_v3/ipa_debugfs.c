@@ -1177,6 +1177,7 @@ static ssize_t ipa3_read_stats(struct file *file, char __user *ubuf,
 		"flow_enable=%u\n"
 		"flow_disable=%u\n",
 		"rx_page_drop_cnt=%u\n",
+		"rx_drop_pkts=%u\n",
 		ipa3_ctx->stats.tx_sw_pkts,
 		ipa3_ctx->stats.tx_hw_pkts,
 		ipa3_ctx->stats.tx_non_linear,
@@ -1193,7 +1194,8 @@ static ssize_t ipa3_read_stats(struct file *file, char __user *ubuf,
 		ipa3_ctx->stats.lan_repl_rx_empty,
 		ipa3_ctx->stats.flow_enable,
 		ipa3_ctx->stats.flow_disable,
-		ipa3_ctx->stats.rx_page_drop_cnt);
+		ipa3_ctx->stats.rx_page_drop_cnt,
+		ipa3_ctx->stats.rx_drop_pkts);
 	cnt += nbytes;
 
 	for (i = 0; i < IPAHAL_PKT_STATUS_EXCEPTION_MAX; i++) {
