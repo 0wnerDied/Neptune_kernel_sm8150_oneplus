@@ -41,7 +41,7 @@
 #include "stmmac_ptp.h"
 
 #define NTN_IPA_DBG_MAX_MSG_LEN 3000
-static char buf[3000];
+#define IPA_SYSFS_DEV_ATTR_PERMS 0644
 static struct ethqos_prv_ipa_data eth_ipa_ctx;
 static void __ipa_eth_free_msg(void *buff, u32 len, u32 type) {}
 
@@ -1685,30 +1685,42 @@ static int ethqos_ipa_offload_cleanup(
 	return ret;
 }
 
-static ssize_t read_ipa_offload_status(struct file *file,
-				       char __user *user_buf, size_t count,
-				       loff_t *ppos)
+static ssize_t read_ipa_offload_status(struct device *dev,
+				       struct device_attribute *attr,
+				       char *user_buf)
 {
-	unsigned int len = 0, buf_len = NTN_IPA_DBG_MAX_MSG_LEN;
-	struct qcom_ethqos *ethqos = file->private_data;
+	int BUFF_SZ = 256;
+	struct net_device *netdev = to_net_dev(dev);
+	struct stmmac_priv *priv;
+	struct qcom_ethqos *ethqos;
+
+	if (!netdev) {
+		ETHQOSERR("netdev is NULL\n");
+		return -EINVAL;
+	}
+
+	priv = netdev_priv(netdev);
+	ethqos = priv->plat->bsp_priv;
+
+	if (!ethqos) {
+		ETHQOSERR("ethqos is NULL\n");
+		return -EINVAL;
+	}
 
 	if (qcom_ethqos_is_phy_link_up(ethqos)) {
 		if (eth_ipa_ctx.ipa_offload_susp)
-			len += scnprintf(buf + len, buf_len - len,
-					 "IPA Offload suspended\n");
+			return snprintf(user_buf, BUFF_SZ,
+					"IPA Offload suspended");
 		else
-			len += scnprintf(buf + len, buf_len - len,
-					 "IPA Offload enabled\n");
-	} else {
-		len += scnprintf(buf + len, buf_len - len,
-				 "Cannot read status, No PHY link\n");
+			return snprintf(user_buf, BUFF_SZ,
+					"IPA Offload enabled");
 	}
-
-	if (len > buf_len)
-		len = buf_len;
-
-	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
+	return snprintf(user_buf, BUFF_SZ,
+			"Cannot read status, No PHY link");
 }
+
+#define SUSPEND_ETH_IPA_OFFLOAD 1
+#define RESUME_ETH_IPA_OFFLOAD 0
 
 /* Generic Bit descirption; reset = 0, set = 1*/
 static char * const bit_status_string[] = {
@@ -1722,34 +1734,37 @@ static char * const bit_mask_string[] = {
 	"Enable",
 };
 
-static ssize_t suspend_resume_ipa_offload(struct file *file,
-					  const char __user *user_buf,
-					  size_t count, loff_t *ppos)
+static ssize_t suspend_resume_ipa_offload(struct device *dev,
+					  struct device_attribute *attr,
+					  const char *user_buf,
+					  size_t count)
 {
-	s8 option = 0;
-	char in_buf[2];
-	unsigned long ret;
-	struct qcom_ethqos *ethqos = file->private_data;
-	struct platform_device *pdev = ethqos->pdev;
-	struct net_device *dev = platform_get_drvdata(pdev);
-	struct stmmac_priv *priv = netdev_priv(dev);
+	s8 input = 0;
+	struct net_device *netdev = to_net_dev(dev);
+	struct stmmac_priv *priv;
+	struct qcom_ethqos *ethqos;
 
-	if (sizeof(in_buf) < 2)
-		return -EFAULT;
+	if (!netdev) {
+		ETHQOSERR("netdev is NULL\n");
+		return -EINVAL;
+	}
 
-	ret = copy_from_user(in_buf, user_buf, 1);
-	if (ret)
-		return -EFAULT;
+	priv = netdev_priv(netdev);
+	ethqos = priv->plat->bsp_priv;
 
-	in_buf[1] = '\0';
-	if (kstrtos8(in_buf, 0, &option))
+	if (!ethqos) {
+		ETHQOSERR("ethqos is NULL\n");
+		return -EINVAL;
+	}
+
+	if (kstrtos8(user_buf, 0, &input))
 		return -EFAULT;
 
 	if (qcom_ethqos_is_phy_link_up(ethqos)) {
-		if (option == 1)
-			priv->plat->offload_event_handler(priv, EV_USR_SUSPEND);
-		else if (option == 0)
-			priv->plat->offload_event_handler(priv, EV_USR_RESUME);
+		if (input == SUSPEND_ETH_IPA_OFFLOAD)
+			ethqos_ipa_offload_event_handler(priv, EV_USR_SUSPEND);
+		else if (input == RESUME_ETH_IPA_OFFLOAD)
+			ethqos_ipa_offload_event_handler(priv, EV_USR_RESUME);
 	} else {
 		ETHQOSERR("Operation not permitted, No PHY link");
 	}
@@ -2126,17 +2141,29 @@ static const struct file_operations fops_ntn_dma_stats = {
 	.llseek = default_llseek,
 };
 
-static const struct file_operations fops_ntn_ipa_offload_en = {
-	.read = read_ipa_offload_status,
-	.write = suspend_resume_ipa_offload,
-	.open = simple_open,
-	.owner = THIS_MODULE,
-	.llseek = default_llseek,
-};
+static DEVICE_ATTR(suspend_ipa_offload, IPA_SYSFS_DEV_ATTR_PERMS,
+		   read_ipa_offload_status,
+		   suspend_resume_ipa_offload);
 
 static int ethqos_ipa_cleanup_debugfs(struct qcom_ethqos *ethqos)
 {
 	struct ethqos_prv_ipa_data *eth_ipa = &eth_ipa_ctx;
+	struct net_device *netdev;
+
+	if (!ethqos) {
+		ETHQOSERR("ethqos is NULL\n");
+		return -EINVAL;
+	}
+
+	netdev = platform_get_drvdata(ethqos->pdev);
+
+	if (!netdev) {
+		ETHQOSERR("netdev is NULL\n");
+		return -EINVAL;
+	}
+
+	sysfs_remove_file(&netdev->dev.kobj,
+			  &dev_attr_suspend_ipa_offload.attr);
 
 	if (!ethqos || !eth_ipa) {
 		ETHQOSERR("Null Param\n");
@@ -2149,9 +2176,6 @@ static int ethqos_ipa_cleanup_debugfs(struct qcom_ethqos *ethqos)
 
 		debugfs_remove(eth_ipa->debugfs_dma_stats);
 		eth_ipa->debugfs_dma_stats = NULL;
-
-		debugfs_remove(eth_ipa->debugfs_suspend_ipa_offload);
-		eth_ipa->debugfs_suspend_ipa_offload = NULL;
 	}
 
 	ETHQOSERR("IPA debugfs Deleted Successfully\n");
@@ -2168,15 +2192,25 @@ static int ethqos_ipa_cleanup_debugfs(struct qcom_ethqos *ethqos)
 static int ethqos_ipa_create_debugfs(struct qcom_ethqos *ethqos)
 {
 	struct ethqos_prv_ipa_data *eth_ipa = &eth_ipa_ctx;
+	int ret;
+	struct net_device *netdev;
 
-	eth_ipa->debugfs_suspend_ipa_offload =
-		debugfs_create_file("suspend_ipa_offload", 0600,
-				    ethqos->debugfs_dir, ethqos,
-				    &fops_ntn_ipa_offload_en);
-	if (!eth_ipa->debugfs_suspend_ipa_offload ||
-	    IS_ERR(eth_ipa->debugfs_suspend_ipa_offload)) {
-		ETHQOSERR("Cannot create debugfs ipa_offload_en %d\n",
-			  (int)eth_ipa->debugfs_suspend_ipa_offload);
+	if (!ethqos) {
+		ETHQOSERR("ethqos is NULL\n");
+		return -EINVAL;
+	}
+
+	netdev = platform_get_drvdata(ethqos->pdev);
+
+	if (!netdev) {
+		ETHQOSERR("netdev is NULL\n");
+		return -EINVAL;
+	}
+
+	ret = sysfs_create_file(&netdev->dev.kobj,
+				&dev_attr_suspend_ipa_offload.attr);
+	if (ret) {
+		ETHQOSERR("unable to create suspend_ipa_offload sysfs node\n");
 		goto fail;
 	}
 
