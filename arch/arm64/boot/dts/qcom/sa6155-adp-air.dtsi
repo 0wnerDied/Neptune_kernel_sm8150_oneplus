@@ -52,7 +52,7 @@
 		compatible = "gnss_sirf";
 		pinctrl-0 = <&ss5_pwr_ctrl_rst_on>;
 		ssVreset-gpio = <&tlmm 87 1>;
-		ssVonoff-gpio = <&tlmm 18 1>;
+		ssVonoff-gpio = <&tlmm 20 1>;
 		ssVboot-gpio = <&tlmm 21 1>;
 	};
 
