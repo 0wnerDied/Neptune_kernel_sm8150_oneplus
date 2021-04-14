@@ -131,6 +131,23 @@ static void common_optimize(void)
 	linux_write("vendor.camera.aux.packagelist", "com.google.android.GoogleCamera,org.codeaurora.snapcam,com.oneplus.camera", true);
 }
 
+static void adj_ulmkd(void)
+{
+	linux_write("sys.lmk.minfree_levels", "1536:0,2048:108,4096:217,5120:511,15360:956,23040:1000", true);
+	linux_write("ro.lmk.use_minfree_levels", "true", true);
+	linux_write("ro.lmk.use_psi", "false", true);
+	linux_write("ro.lmk.config_low_ram", "false", true);
+	linux_write("ro.lmk.debug", "false", true);
+	linux_write("ro.lmk.kill_timeout_ms", "0", true);
+	linux_write("ro.lmk.low", "1001", true);
+	linux_write("ro.lmk.medium", "900", true);
+	linux_write("ro.lmk.critical", "0", true);
+	linux_write("ro.lmk.critical_upgrade", "false", true);
+	linux_write("ro.lmk.upgrade_pressure", "100", true);
+	linux_write("ro.lmk.downgrade_pressure", "100", true);
+	linux_write("ro.lmk.kill_heaviest_task", "true", true);
+}
+
 static void userland_worker(struct work_struct *work)
 {
 	bool is_enforcing;
@@ -150,6 +167,9 @@ static void userland_worker(struct work_struct *work)
 	vbswap_help();
 
 	common_optimize();
+
+	if (IS_ENABLED(CONFIG_MEMCG))
+		adj_ulmkd();
 
 	if (is_enforcing) {
 		pr_info("Going enforcing");
