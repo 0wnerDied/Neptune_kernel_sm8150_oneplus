@@ -311,6 +311,7 @@ struct st_asm330lhhx_sensor {
 	struct input_dev *buf_dev;
 	int report_evt_cnt;
 	struct mutex sensor_buff;
+	bool enable;
 #endif
 		};
 	struct {
@@ -443,6 +444,8 @@ int st_asm330lhhx_of_get_pin(struct st_asm330lhhx_hw *hw, int *pin);
 int st_asm330lhhx_update_fifo(struct iio_dev *iio_dev, bool enable);
 int asm330lhhx_check_acc_gyro_early_buff_enable_flag(
 		struct st_asm330lhhx_sensor *sensor);
+int asm330lhhx_check_sensor_enable_flag(
+		struct st_asm330lhhx_sensor *sensor, bool enable);
 void st_asm330lhhx_set_cpu_idle_state(bool value);
 void st_asm330lhhx_hrtimer_reset(struct st_asm330lhhx_hw *hw, s64 irq_delta_ts);
 #ifdef CONFIG_IIO_ST_ASM330LHHX_MLC
