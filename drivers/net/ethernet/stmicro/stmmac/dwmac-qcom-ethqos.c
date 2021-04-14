@@ -2375,6 +2375,15 @@ fail:
 	return -ENOMEM;
 }
 
+static int ethqos_cleanup_debugfs(struct qcom_ethqos *ethqos)
+{
+	debugfs_remove_recursive(ethqos->debugfs_dir);
+	ethqos->debugfs_dir = NULL;
+
+	ETHQOSDBG("debugfs Deleted Successfully\n");
+	return 0;
+}
+
 static void ethqos_emac_mem_base(struct qcom_ethqos *ethqos)
 {
 	struct resource *resource = NULL;
@@ -3119,6 +3128,22 @@ alloc_chrdev1_region_fail:
 		return ret;
 }
 
+static void ethqos_remove_emac_device_node(struct qcom_ethqos *ethqos)
+{
+	device_destroy(ethqos->emac_class, ethqos->emac_dev_t);
+	class_destroy(ethqos->emac_class);
+	cdev_del(ethqos->emac_cdev);
+	unregister_chrdev_region(ethqos->emac_dev_t, 1);
+}
+
+static void ethqos_remove_emac_rec_device_node(struct qcom_ethqos *ethqos)
+{
+	device_destroy(ethqos->emac_rec_class, ethqos->emac_rec_dev_t);
+	class_destroy(ethqos->emac_rec_class);
+	cdev_del(ethqos->emac_rec_cdev);
+	unregister_chrdev_region(ethqos->emac_rec_dev_t, 1);
+}
+
 static unsigned int ethqos_poll_rec_dev_emac(struct file *file,
 					     poll_table *wait)
 {
@@ -3272,7 +3297,6 @@ static int ethqos_create_emac_rec_device_node(dev_t *emac_dev_t,
 		goto fail_create_device;
 	}
 
-	ETHQOSERR(" mac recovery node opened");
 	return 0;
 
 fail_create_device:
@@ -3895,8 +3919,11 @@ err_mem:
 static int qcom_ethqos_remove(struct platform_device *pdev)
 {
 	struct qcom_ethqos *ethqos;
-	int ret;
+	int ret = 0;
 	struct stmmac_priv *priv;
+
+	if (!pdev)
+		return -ENODEV;
 
 	if (of_device_is_compatible(pdev->dev.of_node,
 				    "qcom,emac-smmu-embedded")) {
@@ -3922,6 +3949,20 @@ static int qcom_ethqos_remove(struct platform_device *pdev)
 
 	if (priv->plat->phy_intr_en_extn_stm)
 		cancel_work_sync(&ethqos->emac_phy_work);
+
+	if (ethqos->emac_ver == EMAC_HW_v2_3_2)
+		ethqos_remove_pps_dev(ethqos);
+
+	ret = ethqos_cleanup_debugfs(ethqos);
+	if (ret)
+		ETHQOSERR("debugsfs cleanup failed");
+
+	ethqos_remove_emac_rec_device_node(ethqos);
+
+	if (ethqos->qoe_mode || ethqos->cv2x_mode)
+		ethqos_remove_emac_device_node(ethqos);
+
+	ethqos_free_gpios(ethqos);
 
 	stmmac_emb_smmu_exit();
 	ethqos_disable_regulators(ethqos);
