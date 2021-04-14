@@ -133,6 +133,9 @@ static void common_optimize(void)
 
 static void adj_ulmkd(void)
 {
+	/* Avoid OOS overwrite minfree_level. */
+	msleep(LONG_DELAY * 2);
+	
 	linux_write("sys.lmk.minfree_levels", "1536:0,2048:108,4096:217,5120:511,15360:956,23040:1000", true);
 	linux_write("ro.lmk.use_minfree_levels", "true", true);
 	linux_write("ro.lmk.use_psi", "false", true);
