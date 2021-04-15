@@ -299,7 +299,7 @@
 		inven,read_only_slave_type = "none";
 	};
 
-	asm330@6b {
+	asm330lhh@6b {
 		compatible = "st,asm330lhh";
 		reg = <0x6b>;
 		pinctrl-names = "default";
@@ -312,7 +312,7 @@
 		qcom,asm330_hrtimer;
 	};
 
-	asm330@6b {
+	asm330lhhx@6b {
 		compatible = "st,asm330lhhx";
 		reg = <0x6b>;
 		pinctrl-names = "default";
