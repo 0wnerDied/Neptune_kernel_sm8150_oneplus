@@ -239,34 +239,41 @@ static int st_asm330lhhx_mlc_read_event_config(struct iio_dev *iio_dev,
 	return !!(hw->enable_mask & BIT(sensor->id));
 }
 
-static bool set_mlc_case_name(int id, int request, char *case_name)
+static bool set_mlc_case_name(int request, char *case_name)
 {
+	static char *mlc_case_name[24];
+	static int read_id;
+	static int write_id;
 	int i = 0;
-	static char *mlc_case_name[16];
 	//Set mlc use case name for id
-	if (request == 1) {
+	if (request == 0) {
 		if (case_name != NULL) {
-			mlc_case_name[id] = kmalloc(strlen(case_name),
+			mlc_case_name[write_id] = kmalloc(strlen(case_name),
 					GFP_KERNEL);
-			strlcpy(mlc_case_name[id], case_name, UCF_STR_LEN);
+			strlcpy(mlc_case_name[write_id], case_name,
+					UCF_STR_LEN);
+			write_id++;
 			return true;
 		}
 	}
 	//Read mlc case name of id
-	if (request == 0) {
-		if (mlc_case_name[id] != NULL) {
-			strlcpy(case_name, mlc_case_name[id], UCF_STR_LEN);
+	if (request == 1) {
+		if (mlc_case_name[read_id] != NULL) {
+			strlcpy(case_name, mlc_case_name[read_id], UCF_STR_LEN);
+			read_id++;
 			return true;
 		}
 	}
 	//Free all memory
 	if (request == 2) {
-		for (i = 0; i < 16; i++) {
+		for (i = 0; i < 24; i++) {
 			if (mlc_case_name[i] != NULL) {
 				kfree(mlc_case_name[i]);
 				mlc_case_name[i] = NULL;
 			}
 		}
+		read_id = 0;
+		write_id = 0;
 		return true;
 	}
 
@@ -285,7 +292,6 @@ static int st_asm330lhhx_program_mlc(const struct firmware *fw,
 	char str[UCF_STR_LEN];
 	char *line;
 	unsigned char buff[2];
-	int id = 0;
 
 	while (i < fw->size) {
 		j = 0;
@@ -299,7 +305,7 @@ static int st_asm330lhhx_program_mlc(const struct firmware *fw,
 		if (strnstr(str, "-- USECASE #", UCF_STR_LEN)) {
 			line = strnstr(str, ":", UCF_STR_LEN);
 			strlcpy(str, &line[1], UCF_STR_LEN);
-			set_mlc_case_name(id++, 1, str);
+			set_mlc_case_name(0, str);
 			continue;
 		}
 		ret = sscanf(str, "Ac %x %x", &buff[0], &buff[1]);
@@ -449,7 +455,7 @@ static void st_asm330lhhx_mlc_update(const struct firmware *fw, void *context)
 	}
 
 release:
-	set_mlc_case_name(0, 2, NULL);
+	set_mlc_case_name(2, NULL);
 	release_firmware(fw);
 }
 
@@ -632,8 +638,7 @@ struct iio_dev *st_asm330lhhx_mlc_alloc_iio_dev(struct st_asm330lhhx_hw *hw,
 		iio_dev->channels = channels;
 		iio_dev->num_channels = ARRAY_SIZE(st_asm330lhhx_mlc_x_ch);
 		iio_dev->info = &st_asm330lhhx_mlc_x_event_info;
-		if (set_mlc_case_name(id - ST_ASM330LHHX_ID_MLC_0, 0,
-					case_name)) {
+		if (set_mlc_case_name(1, case_name)) {
 			memset(sensor->name, 0, sizeof(sensor->name));
 			snprintf(sensor->name, sizeof(sensor->name),
 					"asm330lhhx_mlc_%s", case_name);
@@ -680,8 +685,16 @@ struct iio_dev *st_asm330lhhx_mlc_alloc_iio_dev(struct st_asm330lhhx_hw *hw,
 		iio_dev->channels = channels;
 		iio_dev->num_channels = ARRAY_SIZE(st_asm330lhhx_fsm_x_ch);
 		iio_dev->info = &st_asm330lhhx_mlc_x_event_info;
-		scnprintf(sensor->name, sizeof(sensor->name),
-			  "asm330lhhx_fsm_%d", id - ST_ASM330LHHX_ID_FSM_0);
+		if (set_mlc_case_name(1, case_name)) {
+			memset(sensor->name, 0, sizeof(sensor->name));
+			snprintf(sensor->name, sizeof(sensor->name),
+					"asm330lhhx_fsm_%s", case_name);
+		} else {
+			memset(sensor->name, 0, sizeof(sensor->name));
+			scnprintf(sensor->name, sizeof(sensor->name),
+					"asm330lhhx_fsm_%d",
+					id - ST_ASM330LHHX_ID_FSM_0);
+		}
 		sensor->outreg_addr = ST_ASM330LHHX_FSM_OUTS1_ADDR +
 				id - ST_ASM330LHHX_ID_FSM_0;
 		sensor->status = ST_ASM330LHHX_FSM_ENABLED;
