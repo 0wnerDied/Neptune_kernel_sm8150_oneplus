@@ -217,6 +217,15 @@ enum migrate_types {
 	RQ_TO_GROUP,
 };
 
+#ifdef CONFIG_SCHED_TUNE
+int set_prefer_high_cap(char *st_name, bool prefer_high_cap_status);
+#else
+static inline int set_prefer_high_cap(char *st_name, bool prefer_high_cap_status)
+{
+	return 0;
+}
+#endif
+
 extern cpumask_var_t			cpu_isolated_map;
 
 #ifdef CONFIG_HOTPLUG_CPU
