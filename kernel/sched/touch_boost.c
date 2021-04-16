@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2020 atndko <z1281552865@gmail.com>
+ * Copyright (C) 2020-2021 atndko <z1281552865@gmail.com>
  */
 
 #define pr_fmt(fmt) "touch_boost: " fmt
@@ -23,12 +23,15 @@ module_param(lpm_boost_duration, short, 0644);
 
 static void clkgate_unboost_worker(struct work_struct *work);
 static void lpm_unboost_worker(struct work_struct *work);
+static void phc_unboost_worker(struct work_struct *work);
 
 static struct boost_drv boost_drv_g __read_mostly = {
 	.clkgate_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.clkgate_unboost,
 						  clkgate_unboost_worker, 0),
 	.lpm_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.lpm_unboost,
 						  lpm_unboost_worker, 0),
+	.phc_unboost = __DELAYED_WORK_INITIALIZER(boost_drv_g.phc_unboost,
+						  phc_unboost_worker, 0),
 	.boost_waitq = __WAIT_QUEUE_HEAD_INITIALIZER(boost_drv_g.boost_waitq)
 };
 
@@ -96,6 +99,35 @@ static void lpm_unboost_worker(struct work_struct *work)
 	wake_up(&boost->boost_waitq);
 }
 
+static void __touch_boost_kick_phc(struct boost_drv *boost)
+{
+	if (!test_bit(SCREEN_ON, &boost->state))
+		return;
+
+	set_bit(TOUCH_PHC, &boost->state);
+
+	if (!mod_delayed_work(system_unbound_wq, &boost->phc_unboost,
+			      msecs_to_jiffies(80)))
+		wake_up(&boost->boost_waitq);
+}
+
+static void touch_boost_phc_event(struct boost_drv *boost)
+{
+	if (!test_bit(TOUCH_PHC, &boost->state))
+		set_prefer_high_cap("top-app", false);
+	else
+		set_prefer_high_cap("top-app", true);
+}
+
+static void phc_unboost_worker(struct work_struct *work)
+{
+	struct boost_drv *boost = container_of(to_delayed_work(work),
+					   typeof(*boost), phc_unboost);
+
+	clear_bit(TOUCH_PHC, &boost->state);
+	wake_up(&boost->boost_waitq);
+}
+
 static int touch_boost_thread(void *data)
 {
 	static const struct sched_param sched_max_rt_prio = {
@@ -120,6 +152,7 @@ static int touch_boost_thread(void *data)
 		state_bef = state_nex;
 		touch_boost_clkgate_event(boost);
 		touch_boost_lpm_event(boost);
+		touch_boost_phc_event(boost);
 	}
 
 	return 0;
@@ -153,6 +186,7 @@ static void touch_boost_input_event(struct input_handle *handle,
 
 	__touch_boost_kick_clkgate(boost);
 	__touch_boost_kick_lpm(boost);
+	__touch_boost_kick_phc(boost);
 }
 
 static int touch_boost_input_connect(struct input_handler *handler,

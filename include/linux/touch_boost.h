@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (C) 2020 atndko <z1281552865@gmail.com>
+ * Copyright (C) 2020-2021 atndko <z1281552865@gmail.com>
  */
 
 #include <linux/input.h>
@@ -8,6 +8,7 @@
 #include <linux/moduleparam.h>
 #include <linux/msm_drm_notify.h>
 #include <linux/pm_qos.h>
+#include <linux/sched.h>
 #include <linux/slab.h>
 #include <uapi/linux/sched/types.h>
 
@@ -17,12 +18,14 @@
 enum {
 	SCREEN_ON,
 	TOUCH_CLKGATE,
-	TOUCH_LPM
+	TOUCH_LPM,
+	TOUCH_PHC
 };
 
 struct boost_drv {
 	struct delayed_work clkgate_unboost;
 	struct delayed_work lpm_unboost;
+	struct delayed_work phc_unboost;
 	struct notifier_block msm_drm_notif;
 	wait_queue_head_t boost_waitq;
 	unsigned long state;
