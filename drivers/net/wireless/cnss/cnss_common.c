@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2019, 2021 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -259,10 +259,16 @@ EXPORT_SYMBOL(cnss_set_cpus_allowed_ptr);
  * function directly, so to invoke this function it
  * call wcnss_dump_stack function
  */
+#ifndef CNSS_SDIO_DLKM
 void cnss_dump_stack(struct task_struct *task)
 {
 	show_stack(task, NULL);
 }
+#else
+void cnss_dump_stack(struct task_struct *task)
+{
+}
+#endif
 EXPORT_SYMBOL(cnss_dump_stack);
 
 struct cnss_dev_platform_ops *cnss_get_platform_ops(struct device *dev)
