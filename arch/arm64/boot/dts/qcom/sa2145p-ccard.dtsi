@@ -40,6 +40,10 @@
 	size = <0 0x400000>;
 };
 
+&qcom_seecom {
+	/delete-property/ qcom,appsbl-qseecom-support;
+};
+
 &soc {
 	/delete-node/ qcom,wlan_dsp@7000000;
 	/delete-node/ qcom,icnss@18800000;
