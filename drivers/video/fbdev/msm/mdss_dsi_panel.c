@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -613,12 +613,14 @@ static int mdss_dsi_roi_merge(struct mdss_dsi_ctrl_pdata *ctrl,
 	return ans;
 }
 
+static char pageset[] = {0xfe, 0x00};	/* DTYPE_DCS_WRITE1 */
 static char caset[] = {0x2a, 0x00, 0x00, 0x03, 0x00};	/* DTYPE_DCS_LWRITE */
 static char paset[] = {0x2b, 0x00, 0x00, 0x05, 0x00};	/* DTYPE_DCS_LWRITE */
 
 /*
  * Some panels can support multiple ROIs as part of the below commands
  */
+static char pageset_dual[] = {0xfe, 0x00};   /* DTYPE_DCS_WRITE1 */
 static char caset_dual[] = {0x2a, 0x00, 0x00, 0x03, 0x00, 0x03,
 				0x00, 0x00, 0x00, 0x00};/* DTYPE_DCS_LWRITE */
 static char paset_dual[] = {0x2b, 0x00, 0x00, 0x05, 0x00, 0x03,
@@ -626,12 +628,14 @@ static char paset_dual[] = {0x2b, 0x00, 0x00, 0x05, 0x00, 0x03,
 
 /* pack into one frame before sent */
 static struct dsi_cmd_desc set_col_page_addr_cmd[] = {
+	{{DTYPE_DCS_WRITE1, 1, 0, 0, 0, sizeof(pageset)}, pageset},
 	{{DTYPE_DCS_LWRITE, 0, 0, 0, 1, sizeof(caset)}, caset},	/* packed */
 	{{DTYPE_DCS_LWRITE, 1, 0, 0, 1, sizeof(paset)}, paset},
 };
 
 /* pack into one frame before sent */
 static struct dsi_cmd_desc set_dual_col_page_addr_cmd[] = {	/*packed*/
+	{{DTYPE_DCS_WRITE1, 1, 0, 0, 0, sizeof(pageset_dual)}, pageset_dual},
 	{{DTYPE_DCS_LWRITE, 0, 0, 0, 1, sizeof(caset_dual)}, caset_dual},
 	{{DTYPE_DCS_LWRITE, 1, 0, 0, 1, sizeof(paset_dual)}, paset_dual},
 };
@@ -642,6 +646,8 @@ static void __mdss_dsi_send_col_page_addr(struct mdss_dsi_ctrl_pdata *ctrl,
 {
 	if (dual_roi) {
 		struct mdss_rect *first, *second;
+
+		set_dual_col_page_addr_cmd[0].payload = pageset_dual;
 
 		first = &ctrl->panel_data.panel_info.dual_roi.first_roi;
 		second = &ctrl->panel_data.panel_info.dual_roi.second_roi;
@@ -655,7 +661,7 @@ static void __mdss_dsi_send_col_page_addr(struct mdss_dsi_ctrl_pdata *ctrl,
 		caset_dual[7] = (((second->x) & 0xFF));
 		caset_dual[8] = (((second->x - 1 + second->w) & 0xFF00) >> 8);
 		caset_dual[9] = (((second->x - 1 + second->w) & 0xFF));
-		set_dual_col_page_addr_cmd[0].payload = caset_dual;
+		set_dual_col_page_addr_cmd[1].payload = caset_dual;
 
 		paset_dual[1] = (((first->y) & 0xFF00) >> 8);
 		paset_dual[2] = (((first->y) & 0xFF));
@@ -666,19 +672,21 @@ static void __mdss_dsi_send_col_page_addr(struct mdss_dsi_ctrl_pdata *ctrl,
 		paset_dual[7] = (((second->y) & 0xFF));
 		paset_dual[8] = (((second->y - 1 + second->h) & 0xFF00) >> 8);
 		paset_dual[9] = (((second->y - 1 + second->h) & 0xFF));
-		set_dual_col_page_addr_cmd[1].payload = paset_dual;
+		set_dual_col_page_addr_cmd[2].payload = paset_dual;
 	} else {
+		set_col_page_addr_cmd[0].payload = pageset;
+
 		caset[1] = (((roi->x) & 0xFF00) >> 8);
 		caset[2] = (((roi->x) & 0xFF));
 		caset[3] = (((roi->x - 1 + roi->w) & 0xFF00) >> 8);
 		caset[4] = (((roi->x - 1 + roi->w) & 0xFF));
-		set_col_page_addr_cmd[0].payload = caset;
+		set_col_page_addr_cmd[1].payload = caset;
 
 		paset[1] = (((roi->y) & 0xFF00) >> 8);
 		paset[2] = (((roi->y) & 0xFF));
 		paset[3] = (((roi->y - 1 + roi->h) & 0xFF00) >> 8);
 		paset[4] = (((roi->y - 1 + roi->h) & 0xFF));
-		set_col_page_addr_cmd[1].payload = paset;
+		set_col_page_addr_cmd[2].payload = paset;
 	}
 	pr_debug("%s Sending 2A 2B cmnd with dual_roi=%d\n", __func__,
 			dual_roi);
@@ -694,7 +702,7 @@ static void mdss_dsi_send_col_page_addr(struct mdss_dsi_ctrl_pdata *ctrl,
 	__mdss_dsi_send_col_page_addr(ctrl, roi, dual_roi);
 
 	memset(&cmdreq, 0, sizeof(cmdreq));
-	cmdreq.cmds_cnt = 2;
+	cmdreq.cmds_cnt = 3;
 	cmdreq.flags = CMD_REQ_COMMIT | CMD_CLK_CTRL;
 	if (unicast)
 		cmdreq.flags |= CMD_REQ_UNICAST;
