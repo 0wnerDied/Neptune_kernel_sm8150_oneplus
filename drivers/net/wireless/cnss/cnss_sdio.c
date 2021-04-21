@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2019, 2021 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1604,4 +1604,8 @@ module_init(cnss_sdio_init);
 module_exit(cnss_sdio_exit);
 
 MODULE_LICENSE("GPL v2");
+#ifndef CNSS_SDIO_DLKM
 MODULE_DESCRIPTION(DEVICE "CNSS SDIO Driver");
+#else
+MODULE_DESCRIPTION("CNSS SDIO DLKM Driver");
+#endif
