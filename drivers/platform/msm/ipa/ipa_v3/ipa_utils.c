@@ -2578,6 +2578,12 @@ static const struct ipa_ep_configuration ipa3_ep_mapping
 			QMB_MASTER_SELECT_DDR,
 			{ 31, 31, 8, 8, IPA_EE_AP } },
 
+	[IPA_4_5][IPA_CLIENT_TPUT_CONS]         = {
+			true, IPA_v4_5_GROUP_UL_DL,
+			false,
+			IPA_DPS_HPS_SEQ_TYPE_INVALID,
+			QMB_MASTER_SELECT_DDR,
+			{ 25, 16, 9, 9, IPA_EE_AP, GSI_SMART_PRE_FETCH, 4 } },
 	/* IPA_4_5_MHI */
 	[IPA_4_5_MHI][IPA_CLIENT_APPS_CMD_PROD]		= {
 			true, IPA_v4_5_MHI_GROUP_DDR,
