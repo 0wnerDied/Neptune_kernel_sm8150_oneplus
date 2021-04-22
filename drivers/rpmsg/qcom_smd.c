@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015, Sony Mobile Communications AB.
- * Copyright (c) 2012-2013, 2019-2020 The Linux Foundation. All rights
+ * Copyright (c) 2012-2013, 2019-2021 The Linux Foundation. All rights
  * reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -846,6 +846,9 @@ static int qcom_smd_write_fifo(struct qcom_smd_channel *channel,
 				 count - len,
 				 word_aligned);
 	}
+
+	/* Ensure ordering of channel info updates */
+	wmb();
 
 	head += count;
 	head &= (channel->fifo_size - 1);

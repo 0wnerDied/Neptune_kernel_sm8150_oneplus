@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2019, 2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -139,6 +139,9 @@ static int dp_power_pinctrl_set(struct dp_power_private *power, bool active)
 			}
 		}
 	}
+
+	if (parser->no_aux_switch)
+		return 0;
 
 	pin_state = active ? parser->pinctrl.state_active
 				: parser->pinctrl.state_suspend;

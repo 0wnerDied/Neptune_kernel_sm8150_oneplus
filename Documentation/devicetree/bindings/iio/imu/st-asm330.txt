@@ -5,7 +5,7 @@ To enable driver probing, add the asm330lhh node to the platform device tree as 
 
 Required properties:
 
-- compatible: "st,asm330lhh"
+- compatible: "st,asm330lhh", "st,asm330lhhx"
 - reg: the I2C address or SPI chip select the device will respond to
 - vio-supply: 1.8V regulator supply
 - vdd-supply: 3V regulator supply
