@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2018, 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2018, 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -2660,11 +2660,12 @@ int mdss_dsi_post_clkon_cb(void *priv,
 		/* enable split link for cmn clk cfg1 */
 		mdss_dsi_split_link_clk_cfg(ctrl, 1);
 
-		/* Enable HS TX driver in DSI PHY if applicable */
-		if ((clk & MDSS_DSI_LINK_CLK) &&
-				(l_type == MDSS_DSI_LINK_HS_CLK))
-			mdss_dsi_phy_hstx_drv_ctrl(ctrl, true);
 	}
+
+	/* Enable HS TX driver in DSI PHY if applicable */
+	if ((clk & MDSS_DSI_LINK_CLK) &&
+			(l_type == MDSS_DSI_LINK_HS_CLK))
+		mdss_dsi_phy_hstx_drv_ctrl(ctrl, true);
 
 
 error:
