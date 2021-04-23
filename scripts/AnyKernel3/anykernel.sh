@@ -34,11 +34,32 @@ ramdisk_compression=auto;
 # import patching functions/variables - see for reference
 . tools/ak3-core.sh;
 
+# Detect device and system
+if [ -e /system/etc/buildinfo/oem_build.prop ]; then
+  os="stock";
+  os_string="OxygenOS/HydrogenOS";
+else
+  os="custom";
+  os_string="a custom ROM";
+fi
+ui_print " " "You are on $os_string!";
+
+if [ $os == "custom" ]; then
+  if [ -f $home/Image.gz ]; then
+    mv $home/Image.gz $home/Image.gz-dtb;
+  fi;
+  if [ -f $home/dtb ]; then
+    cat $home/dtb >> $home/Image.gz-dtb;
+  fi;
+fi;
+
 ## AnyKernel install
 dump_boot;
 
 # Override DTB
-mv $home/dtb $home/split_img/;
+if [ $os == "stock" ]; then
+  mv $home/dtb $home/split_img/;
+fi
 
 # Move resetprop_static
 cp -rfp $home/resetprop_static /data/local/tmp/resetprop_static;
