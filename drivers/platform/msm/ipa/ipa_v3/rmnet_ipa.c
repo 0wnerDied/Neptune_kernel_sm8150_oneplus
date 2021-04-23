@@ -3167,6 +3167,9 @@ static int ipa3_lcl_mdm_ssr_notifier_cb(struct notifier_block *this,
 		}
 		/* hold a proxy vote for the modem. */
 		ipa3_proxy_clk_vote();
+		if (ipa3_ctx->ipa_config_is_mhi)
+			ipa3_set_reset_client_cons_pipe_sus_holb(false,
+					IPA_CLIENT_MHI_CONS);
 		ipa3_reset_freeze_vote();
 		IPAWANINFO("IPA BEFORE_POWERUP handling is complete\n");
 		break;
@@ -4773,7 +4776,7 @@ int rmnet_ipa3_query_per_client_stats(
 int rmnet_ipa3_query_per_client_stats_v2(
 		struct wan_ioctl_query_per_client_stats *data)
 {
-	int lan_clnt_idx, i, j, result = 1;
+	int lan_clnt_idx, i, j, result = 1, stats_idx = 0;
 	struct ipa_lan_client *lan_client = NULL;
 	struct ipa_lan_client_cntr_index
 		*lan_client_index = NULL;
@@ -4825,18 +4828,6 @@ int rmnet_ipa3_query_per_client_stats_v2(
 			return -EINVAL;
 		}
 
-		teth_ptr = &rmnet_ipa3_ctx->tether_device[data->device_type];
-		lan_client = &teth_ptr->lan_client[lan_clnt_idx];
-		/*
-		 * Check if disconnect flag is set and
-		 * and client is inited or not.
-		 * if inited ignore resetting stats and return.
-		 */
-		if (data->disconnect_clnt && lan_client->inited) {
-			IPAWANERR("Client not inited.\n");
-			mutex_unlock(&rmnet_ipa3_ctx->per_client_stats_guard);
-			return -EAGAIN;
-		}
 	} else {
 		/* Max number of clients. */
 		/* Check if disconnect flag is set and
@@ -4892,19 +4883,23 @@ int rmnet_ipa3_query_per_client_stats_v2(
 		}
 		fnr_stats = &((struct ipa_flt_rt_stats *)
 				query->stats)[0];
-		data->client_info[i].ipv4_tx_bytes =
+		if (data->num_clients == 1)
+			stats_idx = 0;
+		else
+			stats_idx = i;
+		data->client_info[stats_idx].ipv4_tx_bytes =
 			fnr_stats->num_bytes;
 		fnr_stats = &((struct ipa_flt_rt_stats *)
 				query->stats)[1];
-		data->client_info[i].ipv4_rx_bytes =
+		data->client_info[stats_idx].ipv4_rx_bytes =
 			fnr_stats->num_bytes;
-		memcpy(data->client_info[i].mac,
+		memcpy(data->client_info[stats_idx].mac,
 				lan_client[i].mac,
 				IPA_MAC_ADDR_SIZE);
 
 		IPAWANDBG("Client ipv4_tx_bytes = %llu, ipv4_rx_bytes = %llu\n",
-				data->client_info[i].ipv4_tx_bytes,
-				data->client_info[i].ipv4_rx_bytes);
+				data->client_info[stats_idx].ipv4_tx_bytes,
+				data->client_info[stats_idx].ipv4_rx_bytes);
 
 		kfree((void *)query->stats);
 		ret = result;
