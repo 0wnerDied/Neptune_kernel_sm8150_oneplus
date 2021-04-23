@@ -24,6 +24,7 @@
 
 #define ST_ASM330LHHX_MLC_LOADER_VERSION		"0.2"
 
+#define UCF_STR_LEN                                     256
 #define ST_ASM330LHHX_REG_FUNC_CFG_ACCESS_ADDR		0x01
 #define ST_ASM330LHHX_REG_FUNC_CFG_MASK			BIT(7)
 
@@ -238,19 +239,75 @@ static int st_asm330lhhx_mlc_read_event_config(struct iio_dev *iio_dev,
 	return !!(hw->enable_mask & BIT(sensor->id));
 }
 
+static bool set_mlc_case_name(int id, int request, char *case_name)
+{
+	int i = 0;
+	static char *mlc_case_name[16];
+	//Set mlc use case name for id
+	if (request == 1) {
+		if (case_name != NULL) {
+			mlc_case_name[id] = kmalloc(strlen(case_name),
+					GFP_KERNEL);
+			strlcpy(mlc_case_name[id], case_name, UCF_STR_LEN);
+			return true;
+		}
+	}
+	//Read mlc case name of id
+	if (request == 0) {
+		if (mlc_case_name[id] != NULL) {
+			strlcpy(case_name, mlc_case_name[id], UCF_STR_LEN);
+			return true;
+		}
+	}
+	//Free all memory
+	if (request == 2) {
+		for (i = 0; i < 16; i++) {
+			if (mlc_case_name[i] != NULL) {
+				kfree(mlc_case_name[i]);
+				mlc_case_name[i] = NULL;
+			}
+		}
+		return true;
+	}
+
+	return false;
+}
+
 /* parse and program mlc fragments */
 static int st_asm330lhhx_program_mlc(const struct firmware *fw,
 				     struct st_asm330lhhx_hw *hw,
 				     u8 *mlc_mask, u16 *fsm_mask)
 {
 	uint8_t mlc_int = 0, mlc_num = 0, fsm_num = 0, skip = 0;
-	int int_pin, reg, val, ret, i = 0;
+	int int_pin, reg, val, ret = -1, i = 0, j = 0;
 	uint8_t fsm_int[2] = { 0, 0 };
 	bool stmc_page = false;
+	char str[UCF_STR_LEN];
+	char *line;
+	unsigned char buff[2];
+	int id = 0;
 
 	while (i < fw->size) {
-		reg = fw->data[i++];
-		val = fw->data[i++];
+		j = 0;
+		memset(str, 0, UCF_STR_LEN);
+		while (fw->data[i] != '\n') {
+			str[j++] = fw->data[i++];
+			if (j >= UCF_STR_LEN)
+				return ret;
+		}
+		i++;
+		if (strnstr(str, "-- USECASE #", UCF_STR_LEN)) {
+			line = strnstr(str, ":", UCF_STR_LEN);
+			strlcpy(str, &line[1], UCF_STR_LEN);
+			set_mlc_case_name(id++, 1, str);
+			continue;
+		}
+		ret = sscanf(str, "Ac %x %x", &buff[0], &buff[1]);
+		if (ret != 2)
+			continue;
+
+		reg = buff[0];
+		val = buff[1];
 
 		if (reg == 0x01 && val == 0x80) {
 			stmc_page = true;
@@ -392,6 +449,7 @@ static void st_asm330lhhx_mlc_update(const struct firmware *fw, void *context)
 	}
 
 release:
+	set_mlc_case_name(0, 2, NULL);
 	release_firmware(fw);
 }
 
@@ -509,6 +567,7 @@ struct iio_dev *st_asm330lhhx_mlc_alloc_iio_dev(struct st_asm330lhhx_hw *hw,
 	struct st_asm330lhhx_sensor *sensor;
 	struct iio_chan_spec *channels;
 	struct iio_dev *iio_dev;
+	char case_name[32];
 
 	/* devm mamagement only for ST_ASM330LHHX_ID_MLC */
 	if (id == ST_ASM330LHHX_ID_MLC)
@@ -573,8 +632,17 @@ struct iio_dev *st_asm330lhhx_mlc_alloc_iio_dev(struct st_asm330lhhx_hw *hw,
 		iio_dev->channels = channels;
 		iio_dev->num_channels = ARRAY_SIZE(st_asm330lhhx_mlc_x_ch);
 		iio_dev->info = &st_asm330lhhx_mlc_x_event_info;
-		scnprintf(sensor->name, sizeof(sensor->name),
-			  "asm330lhhx_mlc_%d", id - ST_ASM330LHHX_ID_MLC_0);
+		if (set_mlc_case_name(id - ST_ASM330LHHX_ID_MLC_0, 0,
+					case_name)) {
+			memset(sensor->name, 0, sizeof(sensor->name));
+			snprintf(sensor->name, sizeof(sensor->name),
+					"asm330lhhx_mlc_%s", case_name);
+		} else {
+			memset(sensor->name, 0, sizeof(sensor->name));
+			scnprintf(sensor->name, sizeof(sensor->name),
+					"asm330lhhx_mlc_%d",
+					id - ST_ASM330LHHX_ID_MLC_0);
+		}
 		sensor->outreg_addr = ST_ASM330LHHX_REG_MLC0_SRC_ADDR +
 				id - ST_ASM330LHHX_ID_MLC_0;
 		sensor->status = ST_ASM330LHHX_MLC_ENABLED;
