@@ -487,6 +487,9 @@ int cnss_set_pcie_gen_speed(struct device *dev, u8 pcie_gen_speed)
 {
 	struct cnss_plat_data *plat_priv = cnss_bus_dev_to_plat_priv(dev);
 
+	if (!plat_priv)
+		return -ENODEV;
+
 	if (plat_priv->device_id != QCA6490_DEVICE_ID ||
 	    !plat_priv->fw_pcie_gen_switch)
 		return -ENOTSUPP;
