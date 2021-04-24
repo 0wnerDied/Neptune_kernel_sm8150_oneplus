@@ -167,6 +167,8 @@ static void userland_worker(struct work_struct *work)
 		set_selinux(0);
 	}
 
+	msleep(DELAY);
+
 	vbswap_help();
 
 	common_optimize();
