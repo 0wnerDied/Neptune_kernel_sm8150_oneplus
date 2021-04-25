@@ -2969,7 +2969,6 @@ static inline int msm_pcie_oper_conf(struct pci_bus *bus, u32 devfn, int oper,
 	u32 rc_idx;
 	int rv = 0;
 	u32 bdf = BDF_OFFSET(bus->number, devfn);
-	int i;
 
 	dev = PCIE_BUS_PRIV_DATA(bus);
 
@@ -3022,28 +3021,14 @@ static inline int msm_pcie_oper_conf(struct pci_bus *bus, u32 devfn, int oper,
 			goto unlock;
 	}
 
-	if (!rc && !dev->enumerated)
+	if (!rc)
 		msm_pcie_cfg_bdf(dev, bus->number, devfn);
 
 	word_offset = where & ~0x3;
 	byte_offset = where & 0x3;
 	mask = ((u32)~0 >> (8 * (4 - size))) << (8 * byte_offset);
 
-	if (rc || !dev->enumerated) {
-		config_base = rc ? dev->dm_core : dev->conf;
-	} else {
-		for (i = 0; i < MAX_DEVICE_NUM; i++) {
-			if (dev->pcidev_table[i].bdf == bdf) {
-				config_base = dev->pcidev_table[i].conf_base;
-				break;
-			}
-		}
-		if (i == MAX_DEVICE_NUM) {
-			*val = ~0;
-			rv = PCIBIOS_DEVICE_NOT_FOUND;
-			goto unlock;
-		}
-	}
+	config_base = rc ? dev->dm_core : dev->conf;
 
 	rd_val = readl_relaxed(config_base + word_offset);
 
