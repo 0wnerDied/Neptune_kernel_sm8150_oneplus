@@ -119,8 +119,6 @@ static void common_optimize(void)
 {
 	linux_sh("/system/bin/echo 2000 > /dev/blkio/blkio.group_idle");
 
-	linux_sh("/system/bin/echo 3000 > /sys/fs/f2fs/dm-0/cp_interval");
-
 	linux_sh("/system/bin/echo 262144 > /proc/sys/net/core/rmem_max");
 	linux_sh("/system/bin/echo 262144 > /proc/sys/net/core/wmem_max");
 
