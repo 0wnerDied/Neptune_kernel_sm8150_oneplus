@@ -125,7 +125,7 @@ static int8_t smi230_spi_read(uint8_t dev_addr,
 }
 
 /* ACC driver */
-static int smi230_acc_probe(struct spi_device *device)
+static int smi230_acc_spi_probe(struct spi_device *device)
 {
 	int err;
 
@@ -156,12 +156,12 @@ static int smi230_acc_probe(struct spi_device *device)
 		return 0;
 	}
 	else
-		return smi230_probe(&device->dev, &smi230_spi_dev);
+		return smi230_acc_probe(&device->dev, &smi230_spi_dev);
 }
 
-static int smi230_acc_remove(struct spi_device *device)
+static int smi230_acc_spi_remove(struct spi_device *device)
 {
-	return smi230_remove(&device->dev);
+	return smi230_acc_remove(&device->dev);
 }
 
 static const struct spi_device_id smi230_acc_id[] = {
@@ -183,12 +183,12 @@ static struct spi_driver smi230_acc_driver = {
 		.of_match_table = smi230_acc_of_match,
 	},
 	.id_table = smi230_acc_id,
-	.probe    = smi230_acc_probe,
-	.remove	= smi230_acc_remove,
+	.probe    = smi230_acc_spi_probe,
+	.remove	= smi230_acc_spi_remove,
 };
 
 /* GYRO driver */
-static int smi230_gyro_probe(struct spi_device *device)
+static int smi230_gyro_spi_probe(struct spi_device *device)
 {
 	int err;
 
@@ -212,7 +212,13 @@ static int smi230_gyro_probe(struct spi_device *device)
 		PERR("Bosch Sensor Device %s initialization failed, error %d",
 			       SENSOR_GYRO_NAME, err);
 	}
-	return err;
+
+	return smi230_gyro_probe(&device->dev, &smi230_spi_dev);
+}
+
+static int smi230_gyro_spi_remove(struct spi_device *device)
+{
+	return smi230_gyro_remove(&device->dev);
 }
 
 static const struct spi_device_id smi230_gyro_id[] = {
@@ -234,7 +240,8 @@ static struct spi_driver smi230_gyro_driver = {
 		.of_match_table = smi230_gyro_of_match,
 	},
 	.id_table = smi230_gyro_id,
-	.probe    = smi230_gyro_probe,
+	.probe    = smi230_gyro_spi_probe,
+	.remove	= smi230_gyro_spi_remove,
 };
 
 static int __init smi230_module_init(void)

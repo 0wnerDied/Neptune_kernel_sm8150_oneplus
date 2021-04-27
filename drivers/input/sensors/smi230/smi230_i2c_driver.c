@@ -133,7 +133,7 @@ static int8_t smi230_i2c_write(uint8_t dev_addr,
 }
 
 /* ACC driver */
-static int smi230_acc_probe(struct i2c_client *client,
+static int smi230_acc_i2c_probe(struct i2c_client *client,
 	const struct i2c_device_id *id)
 {
 	int err = 0;
@@ -164,12 +164,12 @@ static int smi230_acc_probe(struct i2c_client *client,
 				SENSOR_ACC_NAME, err);
 	}
 
-	return smi230_probe(&client->dev, &smi230_i2c_dev);
+	return smi230_acc_probe(&client->dev, &smi230_i2c_dev);
 }
 
-static int smi230_acc_remove(struct i2c_client *client)
+static int smi230_acc_i2c_remove(struct i2c_client *client)
 {
-	return smi230_remove(&client->dev);
+	return smi230_acc_remove(&client->dev);
 }
 
 static const struct i2c_device_id smi230_acc_id[] = {
@@ -192,13 +192,13 @@ struct i2c_driver smi230_acc_driver = {
 	},
 	.class = I2C_CLASS_HWMON,
 	.id_table = smi230_acc_id,
-	.probe = smi230_acc_probe,
-	.remove = smi230_acc_remove,
+	.probe = smi230_acc_i2c_probe,
+	.remove = smi230_acc_i2c_remove,
 };
 
 
 /* GYRO driver */
-static int smi230_gyro_probe(struct i2c_client *client,
+static int smi230_gyro_i2c_probe(struct i2c_client *client,
 	const struct i2c_device_id *id)
 {
 	int err = 0;
@@ -229,7 +229,12 @@ static int smi230_gyro_probe(struct i2c_client *client,
 				SENSOR_GYRO_NAME, err);
 	}
 
-	return err;
+	return smi230_gyro_probe(&client->dev, &smi230_i2c_dev);
+}
+
+static int smi230_gyro_i2c_remove(struct i2c_client *client)
+{
+	return smi230_gyro_remove(&client->dev);
 }
 
 static const struct i2c_device_id smi230_gyro_id[] = {
@@ -251,7 +256,8 @@ static struct i2c_driver smi230_gyro_driver = {
 		.of_match_table = smi230_gyro_of_match,
 	},
 	.id_table = smi230_gyro_id,
-	.probe    = smi230_gyro_probe,
+	.probe    = smi230_gyro_i2c_probe,
+	.remove    = smi230_gyro_i2c_remove,
 };
 
 static int __init smi230_module_init(void)

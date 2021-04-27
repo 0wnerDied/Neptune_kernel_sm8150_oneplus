@@ -1,5 +1,5 @@
 menuconfig INPUT_SMI230
-	bool "Bosch Sensor SMI230"
+	tristate "Bosch Sensor SMI230"
 	help
 	  if you choose this option, a list of SMI230 features will be displayed.
 
@@ -22,37 +22,57 @@ endchoice
 
 if INPUT_SMI230
 
-config SMI230_DRIVER
-	tristate "SMI230 all in one driver"
+config SMI230_ACC_DRIVER
+	bool "SMI230 ACC driver"
 	depends on (I2C || SPI_MASTER) && SYSFS
 	help
-	 This driver combines acc and gyro together
+	 smi230 ACC linux driver
+
+config SMI230_GYRO_DRIVER
+	bool "SMI230 GYRO driver"
+	depends on (I2C || SPI_MASTER) && SYSFS
+	help
+	 smi230 gyroscope linux driver
 
 choice
 	prompt "Select features"
-	depends on SMI230_DRIVER
 	help
 	  Note: these are exclusive features which cannot be enabled at the same time.
 
+    config SMI230_RAW_DATA
+	bool "SMI230 raw data"
+	depends on SMI230_ACC_DRIVER || SMI230_GYRO_DRIVER
+	help
+	 This is default option for SMI230 driver which provides interrupt driving raw data sampling for both ACC and GYRO.
+
     config SMI230_DATA_SYNC
 	bool "SMI230 Data sync"
+	depends on SMI230_ACC_DRIVER && SMI230_GYRO_DRIVER
 	help
 	 SMI230 data sync between accel and gyroscope, this feature can only be exclusively enabled in one compile, while it needs its dedicated config file loaded and interupt pins specially configured
 
-    config SMI230_ACC_FIFO
+    config SMI230_FIFO
+	bool "SMI230 FIFO"
+	depends on SMI230_ACC_DRIVER || SMI230_GYRO_DRIVER
+	help
+	 enable SMI230 FIFO feature for ACC and GYRO
+
+endchoice
+
+config SMI230_ACC_FIFO
 	bool "SMI230 ACC FIFO enable"
+	depends on SMI230_FIFO && SMI230_ACC_DRIVER
 	help
 	 enable ACC FIFO feature.
 
-    config SMI230_GYRO_FIFO
+config SMI230_GYRO_FIFO
 	bool "SMI230 gyroscope FIFO enable"
+	depends on SMI230_FIFO && SMI230_GYRO_DRIVER
 	help
 	 enable GYRO FIFO feature.
-endchoice
-
 
 config BOSCH_DRIVER_LOG_FUNC
-	tristate "Smart log function support"
+	bool "Smart log function support"
 	depends on (I2C || SPI_MASTER) && SYSFS
 	help
 	 If you say yes here, you get support for smart log function in Bosch sensor driver.
@@ -63,4 +83,8 @@ config SMI230_MAX_BUFFER_LEN
 	help
 	  Considering using FIFO, 1024 bytes are big enough for most cases. Do not change this value if not sure.
 
+config SMI230_DEBUG
+	bool "debug option in developing phase"
+	help
+	 Enable this option for the convinience of debuging
 endif

@@ -48,7 +48,6 @@
 #include <linux/interrupt.h>
 #include <linux/input.h>
 #include <linux/workqueue.h>
-#include <linux/delay.h>
 #include <linux/firmware.h>
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
@@ -61,19 +60,8 @@
 #include "smi230_log.h"
 #include "smi230.h"
 
-/* #define SMI230_DEBUG */
-
-#define SMI230_ACC_ENABLE_INT2 1
 #define SMI230_MIN_VALUE      -32768
 #define SMI230_MAX_VALUE      32767
-
-#ifdef CONFIG_SMI230_ACC_FIFO
-#define SMI230_MAX_ACC_FIFO_BYTES 1024
-/*1024 bytes fifo host max 147 data frames*/
-#define SMI230_MAX_ACC_FIFO_FRAME 147
-
-static uint8_t fifo_buf[SMI230_MAX_ACC_FIFO_BYTES];
-#endif
 
 #ifdef CONFIG_SMI230_GYRO_FIFO
 #define SMI230_MAX_GYRO_FIFO_FRAME 100
@@ -92,25 +80,19 @@ struct smi230_client_data {
 
 static struct smi230_dev *p_smi230_dev;
 
-static ssize_t smi230_acc_reg_dump(struct device *dev,
+static ssize_t smi230_gyro_show_chip_id(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
-	uint8_t data = 0;
+	uint8_t chip_id[2] = {0};
 	int err = 0;
-	int i;
 
-	for (i = 0; i <= 0x7e; i++) {
-		err = smi230_acc_get_regs(i, &data, 1, p_smi230_dev);
-		if (err) {
-			PERR("falied");
-			return err;
-		}
-		printk("0x%x = 0x%x", i, data);
-		if ( i % 15 == 0 )
-			printk("\n");
+	err = smi230_gyro_get_regs(SMI230_GYRO_CHIP_ID_REG, chip_id, 2, p_smi230_dev);
+	if (err) {
+		PERR("falied");
+		return err;
 	}
-
-	return 0;
+	return snprintf(buf, PAGE_SIZE, "chip_id=0x%x rev_id=0x%x\n",
+		chip_id[0], chip_id[1]);
 }
 
 static ssize_t smi230_gyro_reg_dump(struct device *dev,
@@ -132,21 +114,6 @@ static ssize_t smi230_gyro_reg_dump(struct device *dev,
 	}
 
 	return 0;
-}
-
-static ssize_t smi230_acc_show_chip_id(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	uint8_t chip_id[2] = {0};
-	int err = 0;
-
-	err = smi230_acc_get_regs(SMI230_ACCEL_CHIP_ID_REG, chip_id, 2, p_smi230_dev);
-	if (err) {
-		PERR("falied");
-		return err;
-	}
-	return snprintf(buf, PAGE_SIZE, "chip_id=0x%x rev_id=0x%x\n",
-		chip_id[0], chip_id[1]);
 }
 
 static ssize_t smi230_gyro_show_fifo_wm(struct device *dev,
@@ -183,145 +150,7 @@ static ssize_t smi230_gyro_store_fifo_wm(struct device *dev,
 	return count;
 }
 
-static ssize_t smi230_acc_show_fifo_wm(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	int err;
-	uint16_t fifo_wm;
-
-	err = smi230_acc_get_fifo_wm(&fifo_wm, p_smi230_dev);
-	if (err) {
-		PERR("read failed");
-		return err;
-	}
-	return snprintf(buf, PAGE_SIZE, "fifo water mark is %ud\n", fifo_wm);
-}
-
-static ssize_t smi230_acc_store_fifo_wm(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
-{
-	int err = 0;
-	uint16_t fifo_wm;
-
-	err = kstrtou16(buf, 10, &fifo_wm);
-	err |= smi230_acc_set_fifo_wm(fifo_wm, p_smi230_dev);
-
-	if (err != SMI230_OK)
-	{
-		PERR("set fifo wm faild");
-		return err;
-	}
-
-	PDEBUG("set fifo wm to %d", fifo_wm);
-
-	return count;
-}
-
-static ssize_t smi230_acc_show_acc_pw_cfg(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	int err;
-
-	err = smi230_acc_get_power_mode(p_smi230_dev);
-	if (err) {
-		PERR("read failed");
-		return err;
-	}
-	return snprintf(buf, PAGE_SIZE, "%x (0:active 3:suspend)\n", p_smi230_dev->accel_cfg.power);
-}
-
-static ssize_t smi230_acc_store_acc_pw_cfg(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
-{
-	int err = 0;
-	unsigned long pw_cfg;
-
-	err = kstrtoul(buf, 10, &pw_cfg);
-	if (err)
-		return err;
-	if (pw_cfg == 3) {
-		p_smi230_dev->accel_cfg.power = SMI230_ACCEL_PM_SUSPEND;
-		err = smi230_acc_set_power_mode(p_smi230_dev);
-	}
-	else if (pw_cfg == 0) {
-		p_smi230_dev->accel_cfg.power = SMI230_ACCEL_PM_ACTIVE;
-		err = smi230_acc_set_power_mode(p_smi230_dev);
-	}
-
-	PDEBUG("set power cfg to %ld, err %d", pw_cfg, err);
-
-	if (err) {
-		PERR("failed");
-		return err;
-	}
-	return count;
-}
-
-static ssize_t smi230_acc_show_acc_value(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	int err;
-	struct smi230_sensor_data data = {0};
-
-	err = smi230_acc_get_data(&data, p_smi230_dev);
-	if (err < 0)
-		return err;
-	return snprintf(buf, PAGE_SIZE, "%hd %hd %hd\n",
-			data.x, data.y, data.z);
-}
-
-static ssize_t smi230_acc_show_gyro_value(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	int err;
-	struct smi230_sensor_data data = {0};
-
-	err = smi230_gyro_get_data(&data, p_smi230_dev);
-	if (err < 0)
-		return err;
-	return snprintf(buf, PAGE_SIZE, "%hd %hd %hd\n",
-			data.x, data.y, data.z);
-}
-
-static ssize_t smi230_acc_show_driver_version(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE,
-		"Driver version: %s\n", DRIVER_VERSION);
-}
-
-static ssize_t smi230_acc_show_sync_data(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	int err;
-
-	struct smi230_sensor_data accel_data;
-	struct smi230_sensor_data gyro_data;
-
-	err = smi230_get_synchronized_data(&accel_data, &gyro_data, p_smi230_dev);
-	if (err != SMI230_OK)
-		return err;
-
-	return snprintf(buf, PAGE_SIZE, "acc: %hd %hd %hd gyro: %hd %hd %hd\n",
-			accel_data.x, accel_data.y, accel_data.z,
-			gyro_data.x, gyro_data.y, gyro_data.z
-			);
-}
-
-static ssize_t smi230_show_gyro_pw_cfg(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	int err;
-
-	err = smi230_gyro_get_power_mode(p_smi230_dev);
-	if (err) {
-		PERR("read failed");
-		return err;
-	}
-	return snprintf(buf, PAGE_SIZE, "%x (0:active non-zero:suspend)\n", p_smi230_dev->gyro_cfg.power);
-}
-
-static ssize_t smi230_store_gyro_pw_cfg(struct device *dev,
+static ssize_t smi230_gyro_store_pw_cfg(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
 	int err = 0;
@@ -348,39 +177,57 @@ static ssize_t smi230_store_gyro_pw_cfg(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(data_sync, S_IRUGO,
-	smi230_acc_show_sync_data, NULL);
-static DEVICE_ATTR(acc_regs_dump, S_IRUGO,
-	smi230_acc_reg_dump, NULL);
+static ssize_t smi230_gyro_show_pw_cfg(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int err;
+
+	err = smi230_gyro_get_power_mode(p_smi230_dev);
+	if (err) {
+		PERR("read failed");
+		return err;
+	}
+	return snprintf(buf, PAGE_SIZE, "%x (0:active non-zero:suspend)\n", p_smi230_dev->gyro_cfg.power);
+}
+
+static ssize_t smi230_gyro_show_value(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	int err;
+	struct smi230_sensor_data data = {0};
+
+	err = smi230_gyro_get_data(&data, p_smi230_dev);
+	if (err < 0)
+		return err;
+	return snprintf(buf, PAGE_SIZE, "%hd %hd %hd\n",
+			data.x, data.y, data.z);
+}
+
+static ssize_t smi230_gyro_show_driver_version(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE,
+		"Driver version: %s\n", DRIVER_VERSION);
+}
+
+static DEVICE_ATTR(chip_id, S_IRUGO,
+	smi230_gyro_show_chip_id, NULL);
 static DEVICE_ATTR(gyro_regs_dump, S_IRUGO,
 	smi230_gyro_reg_dump, NULL);
-static DEVICE_ATTR(chip_id, S_IRUGO,
-	smi230_acc_show_chip_id, NULL);
 static DEVICE_ATTR(gyro_fifo_wm, S_IRUGO|S_IWUSR|S_IWGRP,
 	smi230_gyro_show_fifo_wm, smi230_gyro_store_fifo_wm);
-static DEVICE_ATTR(acc_fifo_wm, S_IRUGO|S_IWUSR|S_IWGRP,
-	smi230_acc_show_fifo_wm, smi230_acc_store_fifo_wm);
-static DEVICE_ATTR(acc_pw_cfg, S_IRUGO|S_IWUSR|S_IWGRP,
-	smi230_acc_show_acc_pw_cfg, smi230_acc_store_acc_pw_cfg);
-static DEVICE_ATTR(acc_value, S_IRUGO,
-	smi230_acc_show_acc_value, NULL);
-static DEVICE_ATTR(gyro_value, S_IRUGO,
-	smi230_acc_show_gyro_value, NULL);
 static DEVICE_ATTR(gyro_pw_cfg, S_IRUGO|S_IWUSR|S_IWGRP,
-	smi230_show_gyro_pw_cfg, smi230_store_gyro_pw_cfg);
+	smi230_gyro_show_pw_cfg, smi230_gyro_store_pw_cfg);
+static DEVICE_ATTR(gyro_value, S_IRUGO,
+	smi230_gyro_show_value, NULL);
 static DEVICE_ATTR(driver_version, S_IRUGO,
-	smi230_acc_show_driver_version, NULL);
+	smi230_gyro_show_driver_version, NULL);
 
 static struct attribute *smi230_attributes[] = {
-	&dev_attr_data_sync.attr,
-	&dev_attr_acc_regs_dump.attr,
-	&dev_attr_gyro_regs_dump.attr,
 	&dev_attr_chip_id.attr,
+	&dev_attr_gyro_regs_dump.attr,
 	&dev_attr_gyro_fifo_wm.attr,
-	&dev_attr_acc_fifo_wm.attr,
-	&dev_attr_acc_pw_cfg.attr,
 	&dev_attr_gyro_pw_cfg.attr,
-	&dev_attr_acc_value.attr,
 	&dev_attr_gyro_value.attr,
 	&dev_attr_driver_version.attr,
 	NULL
@@ -399,7 +246,8 @@ static int smi230_input_init(struct smi230_client_data *client_data)
 		return -ENOMEM;
 
 	dev->id.bustype = BUS_I2C;
-	dev->name = SENSOR_ACC_NAME;
+	dev->name = SENSOR_GYRO_NAME;
+	dev_set_name(&dev->dev, SENSOR_GYRO_NAME);
 	input_set_drvdata(dev, client_data);
 	client_data->input = dev;
 
@@ -415,81 +263,22 @@ static int smi230_input_init(struct smi230_client_data *client_data)
 	return err;
 }
 
-#ifdef CONFIG_SMI230_DATA_SYNC
-static void smi230_data_sync_ready_handle(
+#ifdef CONFIG_SMI230_RAW_DATA
+static void smi230_gyro_raw_data_ready_handle(
 	struct smi230_client_data *client_data)
 {
-	struct smi230_sensor_data accel_data;
 	struct smi230_sensor_data gyro_data;
-	struct smi230_sensor_data accel_sync;
 	int err = 0;
 
-	err = smi230_acc_get_data(&accel_data, p_smi230_dev);
-	if (err != SMI230_OK)
-		return;
-	err = smi230_get_synchronized_data(&accel_sync, &gyro_data, p_smi230_dev);
+	err = smi230_gyro_get_data(&gyro_data, p_smi230_dev);
 	if (err != SMI230_OK)
 		return;
 
-	input_event(client_data->input, EV_MSC, MSC_GESTURE, (int)accel_sync.x);
-	input_event(client_data->input, EV_MSC, MSC_GESTURE, (int)accel_sync.y);
-	input_event(client_data->input, EV_MSC, MSC_GESTURE, (int)accel_sync.z);
 	input_event(client_data->input, EV_MSC, MSC_GESTURE, (int)gyro_data.x);
 	input_event(client_data->input, EV_MSC, MSC_GESTURE, (int)gyro_data.y);
 	input_event(client_data->input, EV_MSC, MSC_GESTURE, (int)gyro_data.z);
-	input_event(client_data->input, EV_MSC, MSC_GESTURE, (int)accel_data.x);
-	input_event(client_data->input, EV_MSC, MSC_GESTURE, (int)accel_data.y);
-	input_event(client_data->input, EV_MSC, MSC_GESTURE, (int)accel_data.z);
 
 	input_sync(client_data->input);
-}
-#endif
-
-#ifdef CONFIG_SMI230_ACC_FIFO
-static struct smi230_sensor_data fifo_accel_data[SMI230_MAX_ACC_FIFO_FRAME];
-
-static void smi230_acc_fifo_handle(
-	struct smi230_client_data *client_data)
-{
-	struct smi230_fifo_frame fifo;
-	int err = 0, i;
-	uint16_t fifo_length;
-
-	PINFO("ACC FIFO dump!");
-
-	err = smi230_acc_get_fifo_length(&fifo.length, p_smi230_dev);
-	if (err != SMI230_OK) {
-		PERR("FIFO get length error!");
-		return;
-	}
-
-	fifo.data = fifo_buf;
-	err = smi230_acc_read_fifo_data(&fifo, p_smi230_dev);
-	if (err != SMI230_OK) {
-		PERR("FIFO read data error!");
-		return;
-	}
-
-	/* this event here is to indicate IRQ timing*/
-	input_event(client_data->input, EV_MSC, MSC_RAW, (int)fifo.length);
-	input_sync(client_data->input);
-
-	/* make sure all frames are read out,
-	 * the actual frame numbers will be returned
-	 * through fifo_length itself*/
-	fifo_length = SMI230_MAX_ACC_FIFO_FRAME;
-	err = smi230_acc_extract_accel(fifo_accel_data,
-                            &fifo_length,
-                            &fifo,
-                            p_smi230_dev);
-
-	for (i = 0; i < fifo_length; i++) {
-		input_event(client_data->input, EV_ABS, ABS_X, (int)fifo_accel_data[i].x);
-		input_event(client_data->input, EV_ABS, ABS_Y, (int)fifo_accel_data[i].y);
-		input_event(client_data->input, EV_ABS, ABS_Z, (int)fifo_accel_data[i].z);
-
-		input_sync(client_data->input);
-	}
 }
 #endif
 
@@ -540,14 +329,11 @@ static void smi230_irq_work_func(struct work_struct *work)
 		container_of(work, struct smi230_client_data, irq_work);
 
 	/* int status reg is not available to tell the interupt source */
-#ifdef CONFIG_SMI230_ACC_FIFO
-	smi230_acc_fifo_handle(client_data);
+#ifdef CONFIG_SMI230_RAW_DATA
+	smi230_gyro_raw_data_ready_handle(client_data);
 #endif
 #ifdef CONFIG_SMI230_GYRO_FIFO
 	smi230_gyro_fifo_handle(client_data);
-#endif
-#ifdef CONFIG_SMI230_DATA_SYNC
-	smi230_data_sync_ready_handle(client_data);
 #endif
 }
 
@@ -579,9 +365,9 @@ static int smi230_request_irq(struct smi230_client_data *client_data)
 	client_data->gpio_pin = of_get_named_gpio_flags(
 		client_data->dev->of_node,
 		"gpio_irq", 0, NULL);
-	PINFO("SMI230_ACC gpio number:%d\n", client_data->gpio_pin);
+	PINFO("SMI230_GYRO gpio number:%d\n", client_data->gpio_pin);
 	err = gpio_request_one(client_data->gpio_pin,
-				GPIOF_IN, "smi230_acc_interrupt");
+				GPIOF_IN, "smi230_gyro_interrupt");
 	if (err < 0) {
 		PDEBUG("gpio_request_one\n");
 		return err;
@@ -594,7 +380,7 @@ static int smi230_request_irq(struct smi230_client_data *client_data)
 	client_data->IRQ = gpio_to_irq(client_data->gpio_pin);
 	err = request_irq(client_data->IRQ, smi230_irq_handle,
 			IRQF_TRIGGER_RISING,
-			SENSOR_ACC_NAME, client_data);
+			SENSOR_GYRO_NAME, client_data);
 	if (err < 0) {
 		PDEBUG("request_irq\n");
 		return err;
@@ -611,7 +397,7 @@ static void smi230_input_destroy(struct smi230_client_data *client_data)
 		input_free_device(dev);
 }
 
-int smi230_remove(struct device *dev)
+int smi230_gyro_remove(struct device *dev)
 {
 	int err = 0;
 	struct smi230_client_data *client_data = dev_get_drvdata(dev);
@@ -626,16 +412,10 @@ int smi230_remove(struct device *dev)
 	return err;
 }
 
-int smi230_probe(struct device *dev, struct smi230_dev *smi230_dev)
+int smi230_gyro_probe(struct device *dev, struct smi230_dev *smi230_dev)
 {
 	int err = 0;
 	struct smi230_client_data *client_data = NULL;
-#ifdef CONFIG_SMI230_DATA_SYNC
-	struct smi230_data_sync_cfg sync_cfg;
-#endif
-#ifdef CONFIG_SMI230_ACC_FIFO
-	struct accel_fifo_config fifo_config;
-#endif
 #ifdef CONFIG_SMI230_GYRO_FIFO
 	struct gyro_fifo_config fifo_config;
 #endif
@@ -656,65 +436,36 @@ int smi230_probe(struct device *dev, struct smi230_dev *smi230_dev)
 
 	client_data->dev = dev;
 
-	/* Reset the accelerometer and wait for 1 ms - delay taken care inside the function */
-	err |= smi230_acc_soft_reset(p_smi230_dev);
-
-	/*! Max read/write length (maximum supported length is 32).
-	 To be set by the user */
-	/*set accel power mode */
-	p_smi230_dev->accel_cfg.power = SMI230_ACCEL_PM_ACTIVE;
-	err |= smi230_acc_set_power_mode(p_smi230_dev);
-
 	/* gyro driver should be initialized before acc */
 	p_smi230_dev->gyro_cfg.power = SMI230_GYRO_PM_NORMAL;
 	err |= smi230_gyro_set_power_mode(p_smi230_dev);
 
-#ifdef CONFIG_SMI230_ACC_FIFO
-	PINFO("ACC FIFO is enabled");
-
-	p_smi230_dev->accel_cfg.odr = SMI230_ACCEL_ODR_100_HZ;
-	p_smi230_dev->accel_cfg.bw = SMI230_ACCEL_BW_NORMAL;
-        err |= smi230_acc_set_meas_conf(p_smi230_dev);
+#ifdef CONFIG_SMI230_RAW_DATA
+	PINFO("GYRO raw data is enabled");
+	p_smi230_dev->gyro_cfg.odr = SMI230_GYRO_BW_32_ODR_100_HZ;
+	p_smi230_dev->gyro_cfg.range = SMI230_GYRO_RANGE_125_DPS;
+        err |= smi230_gyro_set_meas_conf(p_smi230_dev);
 
 	smi230_delay(100);
 
-	/*disable acc int1*/
-	int_config.accel_int_config_1.int_channel = SMI230_INT_CHANNEL_1;
-	int_config.accel_int_config_1.int_type = SMI230_ACCEL_SYNC_INPUT;
-	int_config.accel_int_config_1.int_pin_cfg.output_mode = SMI230_INT_MODE_PUSH_PULL;
-	int_config.accel_int_config_1.int_pin_cfg.lvl = SMI230_INT_ACTIVE_HIGH;
-	int_config.accel_int_config_1.int_pin_cfg.enable_int_pin = SMI230_DISABLE;
-
-	/*configure int2 as accel FIFO interrupt pin */
-	int_config.accel_int_config_2.int_channel = SMI230_INT_CHANNEL_2;
-	int_config.accel_int_config_2.int_type = SMI230_FIFO_WM_INT;
-	int_config.accel_int_config_2.int_pin_cfg.output_mode = SMI230_INT_MODE_PUSH_PULL;
-	int_config.accel_int_config_2.int_pin_cfg.lvl = SMI230_INT_ACTIVE_HIGH;
-	int_config.accel_int_config_2.int_pin_cfg.enable_int_pin = SMI230_ENABLE;
-
-	/*disable gyro interrupt pins*/
+	/*disable gyro int on channel 3 */
 	int_config.gyro_int_config_1.int_channel = SMI230_INT_CHANNEL_3;
 	int_config.gyro_int_config_1.int_type = SMI230_GYRO_DATA_RDY_INT;
 	int_config.gyro_int_config_1.int_pin_cfg.enable_int_pin = SMI230_DISABLE;
 	int_config.gyro_int_config_1.int_pin_cfg.lvl = SMI230_INT_ACTIVE_HIGH;
 	int_config.gyro_int_config_1.int_pin_cfg.output_mode = SMI230_INT_MODE_PUSH_PULL;
 
+	/*enable gyro fifo int on channel 4 */
 	int_config.gyro_int_config_2.int_channel = SMI230_INT_CHANNEL_4;
 	int_config.gyro_int_config_2.int_type = SMI230_GYRO_DATA_RDY_INT;
-	int_config.gyro_int_config_2.int_pin_cfg.enable_int_pin = SMI230_DISABLE;
+	int_config.gyro_int_config_2.int_pin_cfg.enable_int_pin = SMI230_ENABLE;
 	int_config.gyro_int_config_2.int_pin_cfg.lvl = SMI230_INT_ACTIVE_HIGH;
 	int_config.gyro_int_config_2.int_pin_cfg.output_mode = SMI230_INT_MODE_PUSH_PULL;
 
-	err |= smi230_acc_set_int_config(&int_config.accel_int_config_1, p_smi230_dev);
-	err |= smi230_acc_set_int_config(&int_config.accel_int_config_2, p_smi230_dev);
+	PINFO("GYRO FIFO set int3 config");
 	err |= smi230_gyro_set_int_config(&int_config.gyro_int_config_1, p_smi230_dev);
+	PINFO("GYRO FIFO set int4 config");
 	err |= smi230_gyro_set_int_config(&int_config.gyro_int_config_2, p_smi230_dev);
-
-	err |= smi230_acc_set_fifo_wm(700, p_smi230_dev);
-
-	fifo_config.mode = SMI230_ACC_FIFO_MODE;
-	fifo_config.accel_en = 1;
-	err |= smi230_acc_set_fifo_config(&fifo_config, p_smi230_dev);
 
 	if (err != SMI230_OK)
 	{
@@ -724,6 +475,7 @@ int smi230_probe(struct device *dev, struct smi230_dev *smi230_dev)
 
 	smi230_delay(100);
 #endif
+
 #ifdef CONFIG_SMI230_GYRO_FIFO
 	PINFO("GYRO FIFO is enabled");
 
@@ -733,19 +485,6 @@ int smi230_probe(struct device *dev, struct smi230_dev *smi230_dev)
         err |= smi230_gyro_set_meas_conf(p_smi230_dev);
 
 	smi230_delay(100);
-
-	/*disable acc int*/
-	int_config.accel_int_config_1.int_channel = SMI230_INT_CHANNEL_1;
-	int_config.accel_int_config_1.int_type = SMI230_ACCEL_SYNC_INPUT;
-	int_config.accel_int_config_1.int_pin_cfg.output_mode = SMI230_INT_MODE_PUSH_PULL;
-	int_config.accel_int_config_1.int_pin_cfg.lvl = SMI230_INT_ACTIVE_HIGH;
-	int_config.accel_int_config_1.int_pin_cfg.enable_int_pin = SMI230_DISABLE;
-
-	int_config.accel_int_config_2.int_channel = SMI230_INT_CHANNEL_2;
-	int_config.accel_int_config_2.int_type = SMI230_FIFO_WM_INT;
-	int_config.accel_int_config_2.int_pin_cfg.output_mode = SMI230_INT_MODE_PUSH_PULL;
-	int_config.accel_int_config_2.int_pin_cfg.lvl = SMI230_INT_ACTIVE_HIGH;
-	int_config.accel_int_config_2.int_pin_cfg.enable_int_pin = SMI230_DISABLE;
 
 	/*disable gyro int on channel 3 */
 	int_config.gyro_int_config_1.int_channel = SMI230_INT_CHANNEL_3;
@@ -761,8 +500,6 @@ int smi230_probe(struct device *dev, struct smi230_dev *smi230_dev)
 	int_config.gyro_int_config_2.int_pin_cfg.lvl = SMI230_INT_ACTIVE_HIGH;
 	int_config.gyro_int_config_2.int_pin_cfg.output_mode = SMI230_INT_MODE_PUSH_PULL;
 
-	err |= smi230_acc_set_int_config(&int_config.accel_int_config_1, p_smi230_dev);
-	err |= smi230_acc_set_int_config(&int_config.accel_int_config_2, p_smi230_dev);
 	PINFO("GYRO FIFO set int3 config");
 	err |= smi230_gyro_set_int_config(&int_config.gyro_int_config_1, p_smi230_dev);
 	PINFO("GYRO FIFO set int4 config");
@@ -788,68 +525,8 @@ int smi230_probe(struct device *dev, struct smi230_dev *smi230_dev)
 	smi230_delay(100);
 #endif
 
-#ifdef CONFIG_SMI230_DATA_SYNC
-	PINFO("DATA sync is enabled");
-	/* API uploads the smi230 config file onto the device and wait for 150ms 
-	   to enable the data synchronization - delay taken care inside the function */
-	err |= smi230_apply_config_file(p_smi230_dev);
-        if (err == SMI230_OK)
-		PINFO("Configuration file transfer succeed!");
-
-	else {
-		PERR("Configuration file transfer error!");
-		goto exit_free_client_data;
-	}
-
-	/*assign accel range setting*/
-	p_smi230_dev->accel_cfg.range = SMI230_ACCEL_RANGE_4G;
-	/*assign gyro range setting*/
-	p_smi230_dev->gyro_cfg.range = SMI230_GYRO_RANGE_2000_DPS;
-	/*! Mode (0 = off, 1 = 400Hz, 2 = 1kHz, 3 = 2kHz) */
-	sync_cfg.mode = SMI230_ACCEL_DATA_SYNC_MODE_2000HZ;
-	err |= smi230_configure_data_synchronization(sync_cfg, p_smi230_dev);
-
-
-	/*set accel interrupt pin configuration*/
-	/*configure host data ready interrupt */
-	int_config.accel_int_config_1.int_channel = SMI230_INT_CHANNEL_1;
-	int_config.accel_int_config_1.int_type = SMI230_ACCEL_SYNC_INPUT;
-	int_config.accel_int_config_1.int_pin_cfg.output_mode = SMI230_INT_MODE_PUSH_PULL;
-	int_config.accel_int_config_1.int_pin_cfg.lvl = SMI230_INT_ACTIVE_HIGH;
-	int_config.accel_int_config_1.int_pin_cfg.enable_int_pin = SMI230_ENABLE;
-
-	/*configure Accel syncronization input interrupt pin */
-	int_config.accel_int_config_2.int_channel = SMI230_INT_CHANNEL_2;
-	int_config.accel_int_config_2.int_type = SMI230_ACCEL_SYNC_DATA_RDY_INT;
-	int_config.accel_int_config_2.int_pin_cfg.output_mode = SMI230_INT_MODE_PUSH_PULL;
-	int_config.accel_int_config_2.int_pin_cfg.lvl = SMI230_INT_ACTIVE_HIGH;
-	int_config.accel_int_config_2.int_pin_cfg.enable_int_pin = SMI230_ENABLE;
-
-	/*set gyro interrupt pin configuration*/
-	int_config.gyro_int_config_1.int_channel = SMI230_INT_CHANNEL_3;
-	int_config.gyro_int_config_1.int_type = SMI230_GYRO_DATA_RDY_INT;
-	int_config.gyro_int_config_1.int_pin_cfg.enable_int_pin = SMI230_ENABLE;
-	int_config.gyro_int_config_1.int_pin_cfg.lvl = SMI230_INT_ACTIVE_HIGH;
-	int_config.gyro_int_config_1.int_pin_cfg.output_mode = SMI230_INT_MODE_PUSH_PULL;
-
-	int_config.gyro_int_config_2.int_channel = SMI230_INT_CHANNEL_4;
-	int_config.gyro_int_config_2.int_type = SMI230_GYRO_DATA_RDY_INT;
-	int_config.gyro_int_config_2.int_pin_cfg.enable_int_pin = SMI230_DISABLE;
-	int_config.gyro_int_config_2.int_pin_cfg.lvl = SMI230_INT_ACTIVE_HIGH;
-	int_config.gyro_int_config_2.int_pin_cfg.output_mode = SMI230_INT_MODE_PUSH_PULL;
-
-	/* Enable synchronization interrupt pin */
-	err |= smi230_set_data_sync_int_config(&int_config, p_smi230_dev);
-	if (err != SMI230_OK) {
-		PERR("Data sync HW init failed");
-		goto exit_free_client_data;
-	}
-#endif
-
-#ifndef SMI230_DEBUG 
+#ifndef CONFIG_SMI230_DEBUG 
 	/*if not for the convenience of debuging, sensors should be disabled at startup*/
-	p_smi230_dev->accel_cfg.power = SMI230_ACCEL_PM_SUSPEND;
-	err |= smi230_acc_set_power_mode(p_smi230_dev);
 	p_smi230_dev->gyro_cfg.power = SMI230_GYRO_PM_SUSPEND;
 	err |= smi230_gyro_set_power_mode(p_smi230_dev);
 	if (err != SMI230_OK) {
@@ -858,7 +535,7 @@ int smi230_probe(struct device *dev, struct smi230_dev *smi230_dev)
 	}
 #endif
 
-	/*acc input device init */
+	/*input device init */
 	err = smi230_input_init(client_data);
 	if (err < 0) {
 		PERR("input init failed");
@@ -880,7 +557,7 @@ int smi230_probe(struct device *dev, struct smi230_dev *smi230_dev)
 		goto exit_cleanup_sysfs;
 	}
 
-	PINFO("Sensor %s was probed successfully", SENSOR_ACC_NAME);
+	PINFO("Sensor %s was probed successfully", SENSOR_GYRO_NAME);
 
 	return 0;
 exit_cleanup_sysfs:
@@ -893,15 +570,4 @@ exit_free_client_data:
 		kfree(client_data);
 exit_directly:
 	return err;
-}
-
-void smi230_delay(uint32_t msec)
-{
-	unsigned long mseond = msec;
-	unsigned long min = mseond * (1000);
-	/* if the time less than 20ms */
-	if (msec <= 20)
-		usleep_range(min, (min + 1000));
-	else
-		msleep(msec);
 }

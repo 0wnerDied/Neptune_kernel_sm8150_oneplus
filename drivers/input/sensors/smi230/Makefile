@@ -7,8 +7,16 @@ ifneq ($(CONFIG_BOSCH_DRIVER_LOG_FUNC),n)
 endif
 
 
-obj-$(CONFIG_SMI230_DRIVER)    += smi230.o
-smi230-objs := smi230_driver.o smi230_log.o smi230_data_sync.o smi230_acc.o smi230_gyro.o
+obj-$(CONFIG_INPUT_SMI230)    += smi230.o
+smi230-objs := smi230_log.o smi230_data_sync.o smi230_acc.o smi230_gyro.o
+
+ifeq ($(CONFIG_SMI230_ACC_DRIVER),y)
+	smi230-objs += smi230_acc_driver.o
+endif
+
+ifeq ($(CONFIG_SMI230_GYRO_DRIVER),y)
+	smi230-objs += smi230_gyro_driver.o
+endif
 
 ifeq ($(CONFIG_SMI230_I2C),y)
 	smi230-objs += smi230_i2c_driver.o

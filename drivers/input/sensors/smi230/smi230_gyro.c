@@ -732,9 +732,6 @@ static int8_t set_gyro_data_ready_int(const struct smi230_gyro_int_channel_cfg *
     /* read interrupt map register */
     rslt = get_regs(SMI230_GYRO_INT3_INT4_IO_MAP_REG, &data[0], 1, dev);
 
-    PINFO("get regs %hx = %hx", SMI230_GYRO_INT3_INT4_IO_MAP_REG, data[0]);
-
-
     if (rslt == SMI230_OK)
     {
         conf = int_config->int_pin_cfg.enable_int_pin;

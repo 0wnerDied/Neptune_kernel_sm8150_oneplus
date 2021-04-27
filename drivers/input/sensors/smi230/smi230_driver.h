@@ -48,6 +48,7 @@
 #define _SMI230_DRIVER_H
 
 #include <linux/device.h>
+#include <linux/delay.h>
 #include "smi230_defs.h"
 
 #define DRIVER_VERSION "0.3.0"
@@ -55,8 +56,21 @@
 #define SENSOR_ACC_NAME "SMI230ACC"
 #define SENSOR_GYRO_NAME "SMI230GYRO"
 
-int smi230_remove(struct device *dev);
-int smi230_probe(struct device *dev, struct smi230_dev *smi230_dev);
-void smi230_delay(uint32_t msec);
+int smi230_acc_remove(struct device *dev);
+int smi230_acc_probe(struct device *dev, struct smi230_dev *smi230_dev);
+
+int smi230_gyro_remove(struct device *dev);
+int smi230_gyro_probe(struct device *dev, struct smi230_dev *smi230_dev);
+
+static inline void smi230_delay(uint32_t msec)
+{
+	unsigned long mseond = msec;
+	unsigned long min = mseond * (1000);
+	/* if the time less than 20ms */
+	if (msec <= 20)
+		usleep_range(min, (min + 1000));
+	else
+		msleep(msec);
+}
 
 #endif /* _SMI230_DRIVER_H */
