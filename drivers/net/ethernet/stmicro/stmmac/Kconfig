@@ -109,7 +109,7 @@ config DWMAC_QCOM_ETHQOS
 
 config ETHQOS_IPA_OFFLOAD
 	bool "IPA ETHQOS offload support"
-	depends on DWMAC_QCOM_ETHQOS && IPA3
+	depends on IPA3
 	default n
 	help
 	  Support for the Qualcomm Technologies, Inc. ETH IPA offload support.

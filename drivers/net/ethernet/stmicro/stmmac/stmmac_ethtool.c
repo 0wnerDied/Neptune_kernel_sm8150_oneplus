@@ -676,7 +676,7 @@ static int stmmac_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 	}
 
 	if (ethqos->phy_state == PHY_IS_OFF) {
-		ETHQOSINFO("Phy is in off state Wol set not possible\n");
+		pr_info("Phy is in off state Wol set not possible\n");
 		return -EOPNOTSUPP;
 	}
 	/* By default almost all GMAC devices support the WoL via
@@ -712,7 +712,8 @@ static int stmmac_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 	}
 
 	if (ethqos->phy_wol_wolopts != wol->wolopts) {
-		if (phy_intr_en && ethqos->phy_wol_supported) {
+		if (priv->plat->phy_intr_en_extn_stm &&
+		    ethqos->phy_wol_supported) {
 			ethqos->phy_wol_wolopts = 0;
 
 			ret = phy_ethtool_set_wol(priv->phydev, wol);
