@@ -3809,16 +3809,6 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		memcpy(priv->dev->dev_addr, dev_addr, ETH_ALEN);
 	}
 
-	if (ethqos->early_eth_enabled) {
-		/* Initialize work*/
-		INIT_WORK(&ethqos->early_eth,
-			  qcom_ethqos_bringup_iface);
-		/* Queue the work*/
-		queue_work(system_wq, &ethqos->early_eth);
-		/*Set early eth parameters*/
-		ethqos_set_early_eth_param(priv, ethqos);
-	}
-
 	for (i = 0; i < plat_dat->tx_queues_to_use; i++) {
 		if (of_property_read_u32(np, "dma-tx-desc-cnt",
 					 &priv->tx_queue[i].dma_tx_desc_sz))
@@ -3856,6 +3846,16 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 					       &ethqos->emac_cdev,
 					       &ethqos->emac_class,
 					       "emac");
+	}
+
+	if (ethqos->early_eth_enabled) {
+		/* Initialize work*/
+		INIT_WORK(&ethqos->early_eth,
+			  qcom_ethqos_bringup_iface);
+		/* Queue the work*/
+		queue_work(system_wq, &ethqos->early_eth);
+		/*Set early eth parameters*/
+		ethqos_set_early_eth_param(priv, ethqos);
 	}
 
 	if (priv->plat->mac2mac_en)
