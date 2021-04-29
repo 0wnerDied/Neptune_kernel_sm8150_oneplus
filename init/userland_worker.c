@@ -122,8 +122,6 @@ static void common_optimize(void)
 	linux_sh("/system/bin/echo 262144 > /proc/sys/net/core/rmem_max");
 	linux_sh("/system/bin/echo 262144 > /proc/sys/net/core/wmem_max");
 
-	linux_sh("/system/bin/echo 3000 > /proc/sys/vm/dirty_expire_centisecs");
-
 	linux_write("ro.surface_flinger.supports_background_blur", "1", false);
 
 	linux_write("vendor.camera.aux.packagelist", "com.google.android.GoogleCamera,org.codeaurora.snapcam,com.oneplus.camera", true);
