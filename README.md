@@ -14,7 +14,7 @@ Due to system-in-package approach of SMI230 (two sensors in single package), the
 However, synchronization between accelerometer and gyroscope can be achieved:
 The software modules in this repository are provided as reference for SMI230 users and shall demonstrate exemplarily the usage of the following features
 - data synchronization.
-- data collection from FIFO.
+- data collection from FIFO (not supported in v0.4.0).
 
 _Note: The sensor driver utilizes sensor api, which is following BMI08x sensor api available on [github](https://github.com/BoschSensortec/BMI08x-Sensor-API/releases/tag/bmi08x_v1.4.4)._
 
