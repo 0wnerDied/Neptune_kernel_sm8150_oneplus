@@ -31,7 +31,7 @@
 #include <linux/err.h>
 #include <linux/idr.h>
 #include <linux/sysfs.h>
-#include <linux/debugfs.h>
+#include <linux/proc_fs.h>
 #include <linux/cpuhotplug.h>
 #include <linux/msm_drm_notify.h>
 #include <linux/input.h>
@@ -788,16 +788,16 @@ static void free_block_bdev(struct zram *zram, unsigned long blk_idx) {};
 
 #ifdef CONFIG_ZRAM_MEMORY_TRACKING
 
-static struct dentry *zram_debugfs_root;
+static struct proc_dir_entry *zram_procfs_root = NULL;
 
-static void zram_debugfs_create(void)
+static void zram_procfs_create(void)
 {
-	zram_debugfs_root = debugfs_create_dir("zram", NULL);
+	zram_procfs_root = proc_mkdir("zram", NULL);
 }
 
-static void zram_debugfs_destroy(void)
+static void zram_procfs_destroy(void)
 {
-	debugfs_remove_recursive(zram_debugfs_root);
+	proc_remove(zram_procfs_root);
 }
 
 static void zram_accessed(struct zram *zram, u32 index)
@@ -811,9 +811,12 @@ static ssize_t read_block_state(struct file *file, char __user *buf,
 {
 	char *kbuf;
 	ssize_t index, written = 0;
-	struct zram *zram = file->private_data;
+	struct zram *zram = PDE_DATA(file_inode(file));
 	unsigned long nr_pages = zram->disksize >> PAGE_SHIFT;
 	unsigned long long *clock;
+
+	pr_info("%s: private_data file name %s\n", __func__, file->f_path.dentry->d_name.name);
+	pr_info("%s: data address: %p, data: %d\n", __func__, zram, *zram);
 
 	kbuf = kvmalloc(count, GFP_KERNEL);
 	if (!kbuf)
@@ -869,30 +872,30 @@ static const struct file_operations proc_zram_block_state_op = {
 	.llseek = default_llseek,
 };
 
-static void zram_debugfs_register(struct zram *zram)
+static void zram_procfs_register(struct zram *zram)
 {
-	if (!zram_debugfs_root)
+	if (!zram_procfs_root)
 		return;
 
-	zram->debugfs_dir = debugfs_create_dir(zram->disk->disk_name,
-						zram_debugfs_root);
-	debugfs_create_file("block_state", 0400, zram->debugfs_dir,
-				zram, &proc_zram_block_state_op);
+	zram->proc_dir = proc_mkdir(zram->disk->disk_name,
+						zram_procfs_root);
+	proc_create_data("block_state", 0400, zram->proc_dir,
+				&proc_zram_block_state_op, zram);
 }
 
-static void zram_debugfs_unregister(struct zram *zram)
+static void zram_procfs_unregister(struct zram *zram)
 {
-	debugfs_remove_recursive(zram->debugfs_dir);
+	proc_remove(zram->proc_dir);
 }
 #else
-static void zram_debugfs_create(void) {};
-static void zram_debugfs_destroy(void) {};
+static void zram_procfs_create(void) {};
+static void zram_procfs_destroy(void) {};
 static void zram_accessed(struct zram *zram, u32 index)
 {
 	zram_clear_flag(zram, index, ZRAM_IDLE);
 };
-static void zram_debugfs_register(struct zram *zram) {};
-static void zram_debugfs_unregister(struct zram *zram) {};
+static void zram_procfs_register(struct zram *zram) {};
+static void zram_procfs_unregister(struct zram *zram) {};
 #endif
 
 /*
@@ -2180,7 +2183,7 @@ static int zram_add(void)
 
 	strlcpy(zram->compressor, default_compressor, sizeof(zram->compressor));
 
-	zram_debugfs_register(zram);
+	zram_procfs_register(zram);
 	pr_info("Added device: %s\n", zram->disk->disk_name);
 	return device_id;
 
@@ -2211,7 +2214,7 @@ static int zram_remove(struct zram *zram)
 	zram->claim = true;
 	mutex_unlock(&bdev->bd_mutex);
 
-	zram_debugfs_unregister(zram);
+	zram_procfs_unregister(zram);
 
 	/* Make sure all the pending I/O are finished */
 	fsync_bdev(bdev);
@@ -2306,7 +2309,7 @@ static void destroy_devices(void)
 {
 	class_unregister(&zram_control_class);
 	idr_for_each(&zram_index_idr, &zram_remove_cb, NULL);
-	zram_debugfs_destroy();
+	zram_procfs_destroy();
 	idr_destroy(&zram_index_idr);
 	unregister_blkdev(zram_major, "zram");
 	cpuhp_remove_multi_state(CPUHP_ZCOMP_PREPARE);
@@ -2328,7 +2331,7 @@ static int __init zram_init(void)
 		return ret;
 	}
 
-	zram_debugfs_create();
+	zram_procfs_create();
 	zram_major = register_blkdev(0, "zram");
 	if (zram_major <= 0) {
 		pr_err("Unable to get major number\n");
