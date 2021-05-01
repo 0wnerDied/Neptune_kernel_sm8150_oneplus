@@ -171,7 +171,8 @@ static void userland_worker(struct work_struct *work)
 
 	msleep(DELAY);
 
-	vbswap_help();
+	if (IS_ENABLED(CONFIG_VBSWAP))
+		vbswap_help();
 
 	common_optimize();
 
