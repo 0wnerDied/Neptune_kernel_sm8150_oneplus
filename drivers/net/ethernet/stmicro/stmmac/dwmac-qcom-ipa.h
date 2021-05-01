@@ -703,6 +703,9 @@ struct ethqos_prv_ipa_data {
 	/* network device addr */
 	u8 netdev_addr[IPA_QUEUE_MAX][ETH_ALEN];
 
+	/* DMA stats for IPA offload path */
+	bool dma_stats_type[IPA_QUEUE_MAX];
+
 	/* IPA state variables */
 	/* State of EMAC HW initialization */
 	bool emac_dev_ready;
@@ -723,7 +726,7 @@ struct ethqos_prv_ipa_data {
 	/* State of debugfs creation */
 	bool ipa_debugfs_exists;
 	/* State of IPA offload suspended by user */
-	bool ipa_offload_susp;
+	bool ipa_offload_susp[IPA_QUEUE_MAX];
 	/* State of IPA offload enablement from PHY link event*/
 	bool ipa_offload_link_down;
 
