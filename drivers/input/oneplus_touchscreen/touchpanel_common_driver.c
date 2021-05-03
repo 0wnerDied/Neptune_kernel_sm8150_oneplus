@@ -435,11 +435,11 @@ static void tp_gesture_handle(struct touchpanel_data *ts)
 			break;
 		case LeftVee:
 			enabled = LeftVee_enable;
-			key = KEY_GESTURE_LEFT_ARROW;
+			key = KEY_GESTURE_RIGHT_ARROW;
 			break;
 		case RightVee:
 			enabled = RightVee_enable;
-			key = KEY_GESTURE_RIGHT_ARROW;
+			key = KEY_GESTURE_LEFT_ARROW;
 			break;
 		case Circle:
 			enabled = Circle_enable;
@@ -2072,8 +2072,8 @@ static DEVICE_ATTR(tp_fw_update, 0644, sec_update_fw_show, sec_update_fw_store);
 GESTURE_ATTR(single_tap, SingleTap_enable);
 GESTURE_ATTR(double_tap, DouTap_enable);
 GESTURE_ATTR(down_arrow, UpVee_enable);
-GESTURE_ATTR(left_arrow, LeftVee_enable);
-GESTURE_ATTR(right_arrow, RightVee_enable);
+GESTURE_ATTR(left_arrow, RightVee_enable);
+GESTURE_ATTR(right_arrow, LeftVee_enable);
 GESTURE_ATTR(double_swipe, DouSwip_enable);
 GESTURE_ATTR(letter_o, Circle_enable);
 GESTURE_ATTR(letter_w, Wgestrue_enable);
