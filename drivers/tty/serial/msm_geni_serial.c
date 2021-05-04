@@ -3574,6 +3574,14 @@ static int msm_geni_serial_probe(struct platform_device *pdev)
 	if (ret)
 		goto exit_geni_serial_probe;
 
+	/*
+	 * In abrupt kill scenarios, previous state of the uart causing runtime
+	 * resume, lead to spinlock bug in stop_rx_sequencer, so initializing it
+	 * before
+	 */
+	if (!is_console)
+		spin_lock_init(&dev_port->rx_lock);
+
 	ret = uart_add_one_port(drv, uport);
 	if (ret)
 		goto exit_geni_serial_probe;
