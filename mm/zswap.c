@@ -475,7 +475,7 @@ static struct zswap_pool *zswap_pool_create(char *type, char *compressor)
 	zswap_pool = pool->zpool;
 	pr_debug("using %s zpool\n", zpool_get_type(pool->zpool));
 
-	strlcpy(pool->tfm_name, compressor, sizeof(pool->tfm_name));
+	strscpy(pool->tfm_name, compressor, sizeof(pool->tfm_name));
 	pool->tfm = alloc_percpu(struct crypto_comp *);
 	if (!pool->tfm) {
 		pr_err("percpu alloc failed\n");
