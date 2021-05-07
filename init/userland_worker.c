@@ -108,6 +108,12 @@ static inline int linux_sh(const char* command)
 	return ret;
 }
 
+static void proximity_fix(void)
+{
+	// linux_sh("/system/bin/chmod 666 /dev/input/event*");
+	linux_sh("/system/bin/chmod 666 /dev/input/event4");
+}
+
 static void vbswap_help(void)
 {
 	linux_sh("/system/bin/echo 4294967296 > /sys/devices/virtual/block/vbswap0/disksize");
@@ -170,6 +176,8 @@ static void userland_worker(struct work_struct *work)
 	}
 
 	msleep(DELAY);
+
+	proximity_fix();
 
 	if (IS_ENABLED(CONFIG_VBSWAP))
 		vbswap_help();
