@@ -110,7 +110,9 @@ static inline int linux_sh(const char* command)
 
 static void common_optimize(void)
 {
-	linux_sh("/system/bin/chmod 666 /dev/input/event4");
+	if (strstr(saved_command_line, "project_name=18857")
+		|| strstr(saved_command_line, "project_name=18865"))
+		linux_sh("/system/bin/chmod 666 /dev/input/event4");
 
 	if (IS_ENABLED(CONFIG_VBSWAP)) {
 		linux_sh("/system/bin/echo 4294967296 > /sys/devices/virtual/block/vbswap0/disksize");
