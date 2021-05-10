@@ -10,6 +10,7 @@
  * GNU General Public License for more details.
  *
  */
+#include <linux/of_device.h>
 #include "hab.h"
 
 unsigned int get_refcnt(struct kref ref)
@@ -338,8 +339,23 @@ static int __init hab_init(void)
 			result = -ENOMEM;
 			hab_hypervisor_unregister();
 			goto err;
-		} else
-			set_dma_ops(hab_driver.dev, &hab_dma_ops);
+		} else {
+			/* First, try to configure system dma_ops */
+			hab_driver.dev->bus = &platform_bus_type;
+			result = of_dma_configure(hab_driver.dev, NULL);
+			if (!result)
+				result = dma_set_mask_and_coherent(
+						hab_driver.dev,
+						DMA_BIT_MASK(64));
+
+			/* System dma_ops failed, fallback to dma_ops of hab */
+			if (result) {
+				pr_warn("config system dma_ops failed %d, fallback to hab\n",
+						result);
+				hab_driver.dev->bus = NULL;
+				set_dma_ops(hab_driver.dev, &hab_dma_ops);
+			}
+		}
 	}
 	hab_stat_init(&hab_driver);
 	return result;

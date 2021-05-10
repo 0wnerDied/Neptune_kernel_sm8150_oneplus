@@ -45,8 +45,6 @@
 #define QRTR_STATE_MULTI	-2
 #define QRTR_STATE_INIT	-1
 
-#define AID_VENDOR_QRTR	KGIDT_INIT(2906)
-
 /**
  * struct qrtr_hdr_v1 - (I|R)PCrouter packet header version 1
  * @version: protocol version
@@ -681,7 +679,7 @@ static void qrtr_node_assign(struct qrtr_node *node, unsigned int nid)
 	 * From other nodes sensor service stream samples
 	 * cause APPS suspend problems and power drain issue.
 	 */
-	if (!node->ws && nid == 0)
+	if (!node->ws && nid != 9)
 		node->ws = wakeup_source_register(NULL, name);
 }
 

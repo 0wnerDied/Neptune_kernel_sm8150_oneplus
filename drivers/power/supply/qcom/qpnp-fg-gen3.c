@@ -1,4 +1,4 @@
-/* Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -5322,7 +5322,6 @@ static int fg_gen3_probe(struct platform_device *pdev)
 	if (rc < 0) {
 		dev_err(fg->dev, "Error in creating debugfs entries, rc:%d\n",
 			rc);
-		goto exit;
 	}
 
 	rc = fg_get_battery_voltage(fg, &volt_uv);

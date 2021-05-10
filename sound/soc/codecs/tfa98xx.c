@@ -49,6 +49,7 @@
 			SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32_LE)
 
 #define TF98XX_MAX_DSP_START_TRY_COUNT	10
+#define MAX_PROP_SIZE 80
 
 /* data accessible by all instances */
 /* Memory pool used for DSP messages */
@@ -2879,15 +2880,26 @@ static int tfa98xx_resume(struct snd_soc_codec *codec)
 
 	dev_dbg(codec->dev, "%s:enter", __func__);
 
-	if (tfa98xx->vdd) {
-		dev_dbg(codec->dev, "%s: enable tfa98xx vdd", __func__);
-		ret = regulator_enable(tfa98xx->vdd);
-		ret = tfa98xx_resume_load_container(tfa98xx);
+	if (tfa98xx->supply.dvdd) {
+		ret = regulator_set_voltage(tfa98xx->supply.dvdd,
+				tfa98xx->supply.min_uv, tfa98xx->supply.max_uv);
+
+	if (ret)
+		dev_err(codec->dev, "%s: set voltage failed, err:%d\n",
+				__func__, ret);
+
+	ret = regulator_set_load(tfa98xx->supply.dvdd, tfa98xx->supply.ua);
+	if (ret < 0)
+		dev_err(codec->dev, "%s: set current %d failed, err:%d\n",
+				__func__, tfa98xx->supply.ua, ret);
+
+	ret = regulator_enable(tfa98xx->supply.dvdd);
+	ret = tfa98xx_resume_load_container(tfa98xx);
+	if (ret)
+		dev_err(codec->dev, "%s: fail to enable regulator, err:%d\n",
+				__func__, ret);
 	}
 
-	if (ret < 0)
-		dev_err(codec->dev, "%s: fail to enable regulator, err:%d\n",
-					__func__, ret);
 	return 0;
 }
 
@@ -2898,12 +2910,23 @@ static int tfa98xx_suspend(struct snd_soc_codec *codec)
 
 	dev_dbg(codec->dev, "%s:enter", __func__);
 
-	if (tfa98xx->vdd)
-		ret = regulator_disable(tfa98xx->vdd);
+	if (tfa98xx->supply.dvdd) {
+		ret = regulator_set_voltage(tfa98xx->supply.dvdd,
+				0, tfa98xx->supply.max_uv);
+		if (ret)
+			dev_err(codec->dev, "%s: set voltage failed, err:%d\n",
+					__func__, ret);
 
-	if (ret < 0)
-		dev_err(codec->dev, "%s: fail to disable regulator, err:%d\n",
-							__func__, ret);
+		ret = regulator_set_load(tfa98xx->supply.dvdd, 0);
+		if (ret < 0)
+			dev_err(codec->dev, "%s: set current %d failed, err:%d\n",
+					__func__, tfa98xx->supply.ua, ret);
+
+		ret = regulator_disable(tfa98xx->supply.dvdd);
+		if (ret)
+			dev_err(codec->dev, "%s: fail to disable regulator, err:%d\n",
+					__func__, ret);
+	}
 
 	return 0;
 }
@@ -2996,6 +3019,11 @@ static int tfa98xx_parse_dt(struct device *dev, struct tfa98xx *tfa98xx,
 	struct device_node *np) {
 	u32 value;
 	int ret;
+	int len = 0;
+	const __be32 *prop = NULL;
+	struct device_node *regnode = NULL;
+	char *dvdd_supply = "dvdd";
+	char prop_name[MAX_PROP_SIZE] = {0};
 
 	tfa98xx->reset_gpio = of_get_named_gpio(np, "reset-gpio", 0);
 	if (tfa98xx->reset_gpio < 0)
@@ -3011,7 +3039,47 @@ static int tfa98xx_parse_dt(struct device *dev, struct tfa98xx *tfa98xx,
 		tfa98xx->reset_polarity = (value == 0) ? LOW : HIGH;
 
 	dev_dbg(dev, "reset-polarity:%d\n", tfa98xx->reset_polarity);
+
+	snprintf(prop_name, MAX_PROP_SIZE, "%s-supply", dvdd_supply);
+	regnode = of_parse_phandle(np, prop_name, 0);
+	if (!regnode) {
+		dev_err(dev, "%s: no %s provided\n", __func__, prop_name);
+		goto err_get_regulator;
+	}
+
+	tfa98xx->supply.dvdd = devm_regulator_get(dev, dvdd_supply);
+	if (IS_ERR(tfa98xx->supply.dvdd)) {
+		dev_err(dev, "%s: failed to get supply for %s\n", __func__,
+			dvdd_supply);
+		goto err_get_regulator;
+	}
+
+	snprintf(prop_name, MAX_PROP_SIZE, "%s-voltage", dvdd_supply);
+	prop = of_get_property(np, prop_name, &len);
+	if (!prop || (len != (2 * sizeof(__be32)))) {
+		dev_err(dev, "%s: no %s provided or format invalid\n",
+			__func__, prop_name);
+		goto err_get_voltage;
+	}
+	tfa98xx->supply.min_uv = be32_to_cpup(&prop[0]);
+	tfa98xx->supply.max_uv = be32_to_cpup(&prop[1]);
+
+	snprintf(prop_name, MAX_PROP_SIZE, "%s-current", dvdd_supply);
+	ret = of_property_read_u32(np, prop_name, &value);
+	if (ret) {
+		dev_err(dev, "%s: no %s provided\n", __func__, prop_name);
+		goto err_get_current;
+	}
+	tfa98xx->supply.ua = value;
+
 	return 0;
+
+err_get_current:
+err_get_voltage:
+	devm_regulator_put(tfa98xx->supply.dvdd);
+	tfa98xx->supply.dvdd = NULL;
+err_get_regulator:
+	return -EINVAL;
 }
 
 static ssize_t tfa98xx_reg_write(struct file *filp, struct kobject *kobj,
@@ -3193,13 +3261,29 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 			return ret;
 	}
 
-	if (of_property_read_bool(np, "dvdd-supply")) {
-		tfa98xx->vdd = devm_regulator_get(&i2c->dev, "dvdd");
-		if (IS_ERR(tfa98xx->vdd))
-			return PTR_ERR(tfa98xx->vdd);
-		ret = regulator_enable(tfa98xx->vdd);
-		if (ret)
+	if (tfa98xx->supply.dvdd) {
+		ret = regulator_set_voltage(tfa98xx->supply.dvdd,
+				tfa98xx->supply.min_uv, tfa98xx->supply.max_uv);
+		if (ret) {
+			dev_err(&i2c->dev, "%s: set voltage failed, err:%d\n",
+					__func__, ret);
 			return ret;
+		}
+
+		ret = regulator_set_load(tfa98xx->supply.dvdd,
+						tfa98xx->supply.ua);
+		if (ret < 0) {
+			dev_err(&i2c->dev, "%s: set current %d failed, err:%d\n\n",
+					__func__, tfa98xx->supply.ua, ret);
+			return ret;
+		}
+
+		ret = regulator_enable(tfa98xx->supply.dvdd);
+		if (ret) {
+			dev_err(&i2c->dev, "%s: enable %d failed, err:%d\n",
+					__func__, ret);
+			return ret;
+		}
 	}
 
 	/* Power up! */
@@ -3393,8 +3477,8 @@ static int tfa98xx_i2c_remove(struct i2c_client *i2c)
 	}
 	mutex_unlock(&tfa98xx_mutex);
 
-	if (tfa98xx->vdd)
-		regulator_disable(tfa98xx->vdd);
+	if (tfa98xx->supply.dvdd)
+		regulator_disable(tfa98xx->supply.dvdd);
 
 	return 0;
 }
