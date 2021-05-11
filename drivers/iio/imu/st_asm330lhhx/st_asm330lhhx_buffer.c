@@ -615,7 +615,7 @@ int st_asm330lhhx_buffers_setup(struct st_asm330lhhx_hw *hw)
 	int i, err;
 
 	irq_type = irqd_get_trigger_type(irq_get_irq_data(hw->irq));
-	if (irq_type == IRQF_TRIGGER_NONE)
+	if (irq_type == IRQF_TRIGGER_NONE || irq_type == IRQF_TRIGGER_RISING)
 		irq_type = IRQF_TRIGGER_HIGH;
 
 	switch (irq_type) {
