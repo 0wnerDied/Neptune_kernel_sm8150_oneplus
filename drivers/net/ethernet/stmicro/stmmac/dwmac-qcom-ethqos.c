@@ -2528,13 +2528,15 @@ smmu_probe_done:
 	return result;
 }
 
-static int ethqos_update_rgmii_tx_drv_strength(struct qcom_ethqos *ethqos)
+static int ethqos_update_rgmii_tx_drv_strength(struct qcom_ethqos *ethqos,
+					       struct device_node *np)
 {
 	int ret = 0;
 	struct resource *resource = NULL;
 	unsigned long tlmm_central_base = 0;
 	unsigned long tlmm_central_size = 0;
 	unsigned long reg_rgmii_io_pads_voltage = 0;
+	u32 tx_drv_str[3];
 
 	resource =
 	 platform_get_resource_byname(
@@ -2567,6 +2569,111 @@ static int ethqos_update_rgmii_tx_drv_strength(struct qcom_ethqos *ethqos)
 
 	ETHQOSINFO("IOMACRO pads voltage: %u uV\n", reg_rgmii_io_pads_voltage);
 
+	if (np && !of_property_read_u32(np, "rgmii-tx-drv-str-clk",
+					&tx_drv_str[0])) {
+		switch (tx_drv_str[0]) {
+		case 2:
+			tx_drv_str[0] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_2MA;
+			break;
+		case 4:
+			tx_drv_str[0] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_4MA;
+			break;
+		case 6:
+			tx_drv_str[0] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_6MA;
+			break;
+		case 8:
+			tx_drv_str[0] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_8MA;
+			break;
+		case 10:
+			tx_drv_str[0] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_10MA;
+			break;
+		case 12:
+			tx_drv_str[0] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_12MA;
+			break;
+		case 14:
+			tx_drv_str[0] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_14MA;
+			break;
+		case 16:
+			tx_drv_str[0] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA;
+			break;
+		default:
+			tx_drv_str[0] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA;
+			break;
+		}
+	} else {
+		tx_drv_str[0] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA;
+	}
+
+	if (np && !of_property_read_u32(np, "rgmii-tx-drv-str-data",
+					&tx_drv_str[1])) {
+		switch (tx_drv_str[1]) {
+		case 2:
+			tx_drv_str[1] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_2MA;
+			break;
+		case 4:
+			tx_drv_str[1] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_4MA;
+			break;
+		case 6:
+			tx_drv_str[1] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_6MA;
+			break;
+		case 8:
+			tx_drv_str[1] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_8MA;
+			break;
+		case 10:
+			tx_drv_str[1] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_10MA;
+			break;
+		case 12:
+			tx_drv_str[1] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_12MA;
+			break;
+		case 14:
+			tx_drv_str[1] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_14MA;
+			break;
+		case 16:
+			tx_drv_str[1] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA;
+			break;
+		default:
+			tx_drv_str[1] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA;
+			break;
+		}
+	} else {
+		tx_drv_str[1] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA;
+	}
+
+	if (np && !of_property_read_u32(np, "rgmii-tx-drv-str-ctl",
+					&tx_drv_str[2])) {
+		switch (tx_drv_str[2]) {
+		case 2:
+			tx_drv_str[2] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_2MA;
+			break;
+		case 4:
+			tx_drv_str[2] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_4MA;
+			break;
+		case 6:
+			tx_drv_str[2] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_6MA;
+			break;
+		case 8:
+			tx_drv_str[2] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_8MA;
+			break;
+		case 10:
+			tx_drv_str[2] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_10MA;
+			break;
+		case 12:
+			tx_drv_str[2] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_12MA;
+			break;
+		case 14:
+			tx_drv_str[2] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_14MA;
+			break;
+		case 16:
+			tx_drv_str[2] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA;
+			break;
+		default:
+			tx_drv_str[2] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA;
+			break;
+		}
+	} else {
+		tx_drv_str[2] = TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA;
+	}
+
 	switch (reg_rgmii_io_pads_voltage) {
 	case 1500000:
 	case 1800000: {
@@ -2575,9 +2682,9 @@ static int ethqos_update_rgmii_tx_drv_strength(struct qcom_ethqos *ethqos)
 		case EMAC_HW_v2_2_0:
 		case EMAC_HW_v2_3_2: {
 				TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_WR(
-				   TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA,
-				   TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA,
-				   TLMM_RGMII_HDRV_PULL_CTL1_TX_HDRV_16MA);
+				   tx_drv_str[0],
+				   tx_drv_str[1],
+				   tx_drv_str[2]);
 				TLMM_RGMII_RX_HV_MODE_CTL_RGWR(0x0);
 		}
 		break;
@@ -3789,8 +3896,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	}
 
 	ethqos->ioaddr = (&stmmac_res)->addr;
-	ethqos_update_rgmii_tx_drv_strength(ethqos);
-
+	ethqos_update_rgmii_tx_drv_strength(ethqos, np);
 	ethqos_mac_rec_init(ethqos);
 
 	plat_dat->stmmac_emb_smmu_ctx = stmmac_emb_smmu_ctx;
