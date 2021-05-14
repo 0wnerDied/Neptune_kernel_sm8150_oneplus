@@ -37,7 +37,7 @@
 };
 
 &qseecom_mem {
-	size = <0 0x400000>;
+	size = <0 0x800000>;
 };
 
 &qcom_seecom {
