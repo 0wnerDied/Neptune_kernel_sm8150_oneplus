@@ -29,29 +29,32 @@ static struct project_info *project_info_desc;
 extern void *panic_info;
 
 static struct kobject *component_info;
-static ssize_t project_info_get(struct device *dev,
-    struct device_attribute *attr, char *buf);
-static ssize_t component_info_get(struct device *dev,
-    struct device_attribute *attr, char *buf);
+static ssize_t project_info_get(struct kobject *kobj,
+    struct kobj_attribute *attr, char *buf);
+static ssize_t component_info_get(struct kobject *kobj,
+    struct kobj_attribute *attr, char *buf);
 static int op_aboard_read_gpio(void);
 
-static DEVICE_ATTR(project_name, 0444, project_info_get, NULL);
-static DEVICE_ATTR(hw_id, 0444, project_info_get, NULL);
-static DEVICE_ATTR(rf_id_v1, 0444, project_info_get, NULL);
-static DEVICE_ATTR(rf_id_v2, 0444, project_info_get, NULL);
-static DEVICE_ATTR(rf_id_v3, 0444, project_info_get, NULL);
-static DEVICE_ATTR(modem, 0444, project_info_get, NULL);
-static DEVICE_ATTR(operator_no, 0444, project_info_get, NULL);
-static DEVICE_ATTR(ddr_manufacture_info, 0444, project_info_get, NULL);
-static DEVICE_ATTR(ddr_row, 0444, project_info_get, NULL);
-static DEVICE_ATTR(ddr_column, 0444, project_info_get, NULL);
-static DEVICE_ATTR(ddr_fw_version, 0444, project_info_get, NULL);
-static DEVICE_ATTR(ddr_reserve_info, 0444, project_info_get, NULL);
-static DEVICE_ATTR(secboot_status, 0444, project_info_get, NULL);
-static DEVICE_ATTR(platform_id, 0444, project_info_get, NULL);
-static DEVICE_ATTR(serialno, 0444, project_info_get, NULL);
-static DEVICE_ATTR(feature_id, 0444, project_info_get, NULL);
-static DEVICE_ATTR(aboard_id, 0444, project_info_get, NULL);
+#define OP_ATTR(_name, _mode, _show, _store) \
+    struct kobj_attribute op_attr_##_name = __ATTR(_name, _mode, _show, _store)
+
+static OP_ATTR(project_name, 0444, project_info_get, NULL);
+static OP_ATTR(hw_id, 0444, project_info_get, NULL);
+static OP_ATTR(rf_id_v1, 0444, project_info_get, NULL);
+static OP_ATTR(rf_id_v2, 0444, project_info_get, NULL);
+static OP_ATTR(rf_id_v3, 0444, project_info_get, NULL);
+static OP_ATTR(modem, 0444, project_info_get, NULL);
+static OP_ATTR(operator_no, 0444, project_info_get, NULL);
+static OP_ATTR(ddr_manufacture_info, 0444, project_info_get, NULL);
+static OP_ATTR(ddr_row, 0444, project_info_get, NULL);
+static OP_ATTR(ddr_column, 0444, project_info_get, NULL);
+static OP_ATTR(ddr_fw_version, 0444, project_info_get, NULL);
+static OP_ATTR(ddr_reserve_info, 0444, project_info_get, NULL);
+static OP_ATTR(secboot_status, 0444, project_info_get, NULL);
+static OP_ATTR(platform_id, 0444, project_info_get, NULL);
+static OP_ATTR(serialno, 0444, project_info_get, NULL);
+static OP_ATTR(feature_id, 0444, project_info_get, NULL);
+static OP_ATTR(aboard_id, 0444, project_info_get, NULL);
 
 char *parse_regs_pc(unsigned long address, int *length)
 {
@@ -78,63 +81,63 @@ uint8 get_secureboot_fuse_status(void)
     return secure_oem_config;
 }
 
-static ssize_t project_info_get(struct device *dev,
-                struct device_attribute *attr,
+static ssize_t project_info_get(struct kobject *kobj,
+                struct kobj_attribute *attr,
                 char *buf)
 {
     if (project_info_desc) {
-        if (attr == &dev_attr_project_name)
+        if (attr == &op_attr_project_name)
             return snprintf(buf, BUF_SIZE, "%s\n",
             project_info_desc->project_name);
-        if (attr == &dev_attr_hw_id)
+        if (attr == &op_attr_hw_id)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->hw_version);
-        if (attr == &dev_attr_rf_id_v1)
+        if (attr == &op_attr_rf_id_v1)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->rf_v1);
-        if (attr == &dev_attr_rf_id_v2)
+        if (attr == &op_attr_rf_id_v2)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->rf_v2);
-        if (attr == &dev_attr_rf_id_v3)
+        if (attr == &op_attr_rf_id_v3)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->rf_v3);
-        if (attr == &dev_attr_modem)
+        if (attr == &op_attr_modem)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->modem);
-        if (attr == &dev_attr_operator_no)
+        if (attr == &op_attr_operator_no)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->operator);
-        if (attr == &dev_attr_ddr_manufacture_info)
+        if (attr == &op_attr_ddr_manufacture_info)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->ddr_manufacture_info);
-        if (attr == &dev_attr_ddr_row)
+        if (attr == &op_attr_ddr_row)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->ddr_row);
-        if (attr == &dev_attr_ddr_column)
+        if (attr == &op_attr_ddr_column)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->ddr_column);
-        if (attr == &dev_attr_ddr_fw_version)
+        if (attr == &op_attr_ddr_fw_version)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->ddr_fw_version);
-        if (attr == &dev_attr_ddr_reserve_info)
+        if (attr == &op_attr_ddr_reserve_info)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->ddr_reserve_info);
-        if (attr == &dev_attr_secboot_status)
+        if (attr == &op_attr_secboot_status)
             return snprintf(buf, BUF_SIZE, "%d\n",
             get_secureboot_fuse_status());
-        if (attr == &dev_attr_platform_id)
+        if (attr == &op_attr_platform_id)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->platform_id);
 
-        if (attr == &dev_attr_serialno)
+        if (attr == &op_attr_serialno)
             return snprintf(buf, BUF_SIZE, "0x%x\n",
             socinfo_get_serial_number());
 
-        if (attr == &dev_attr_feature_id)
+        if (attr == &op_attr_feature_id)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->feature_id);
 
-        if (attr == &dev_attr_aboard_id)
+        if (attr == &op_attr_aboard_id)
             return snprintf(buf, BUF_SIZE, "%d\n",
             project_info_desc->a_board_version);
     }
@@ -143,23 +146,23 @@ static ssize_t project_info_get(struct device *dev,
 }
 
 static struct attribute *project_info_sysfs_entries[] = {
-    &dev_attr_project_name.attr,
-    &dev_attr_hw_id.attr,
-    &dev_attr_rf_id_v1.attr,
-    &dev_attr_rf_id_v2.attr,
-    &dev_attr_rf_id_v3.attr,
-    &dev_attr_modem.attr,
-    &dev_attr_operator_no.attr,
-    &dev_attr_ddr_manufacture_info.attr,
-    &dev_attr_ddr_row.attr,
-    &dev_attr_ddr_column.attr,
-    &dev_attr_ddr_fw_version.attr,
-    &dev_attr_ddr_reserve_info.attr,
-    &dev_attr_secboot_status.attr,
-    &dev_attr_platform_id.attr,
-    &dev_attr_serialno.attr,
-    &dev_attr_feature_id.attr,
-    &dev_attr_aboard_id.attr,
+    &op_attr_project_name.attr,
+    &op_attr_hw_id.attr,
+    &op_attr_rf_id_v1.attr,
+    &op_attr_rf_id_v2.attr,
+    &op_attr_rf_id_v3.attr,
+    &op_attr_modem.attr,
+    &op_attr_operator_no.attr,
+    &op_attr_ddr_manufacture_info.attr,
+    &op_attr_ddr_row.attr,
+    &op_attr_ddr_column.attr,
+    &op_attr_ddr_fw_version.attr,
+    &op_attr_ddr_reserve_info.attr,
+    &op_attr_secboot_status.attr,
+    &op_attr_platform_id.attr,
+    &op_attr_serialno.attr,
+    &op_attr_feature_id.attr,
+    &op_attr_aboard_id.attr,
     NULL,
 };
 
@@ -167,33 +170,33 @@ static struct attribute_group project_info_attr_group = {
     .attrs  = project_info_sysfs_entries,
 };
 
-static DEVICE_ATTR(ddr, 0444, component_info_get, NULL);
-static DEVICE_ATTR(emmc, 0444, component_info_get, NULL);
-static DEVICE_ATTR(f_camera, 0444, component_info_get, NULL);
-static DEVICE_ATTR(r_camera, 0444, component_info_get, NULL);
-static DEVICE_ATTR(second_r_camera, 0444, component_info_get, NULL);
-static DEVICE_ATTR(third_r_camera, 0444, component_info_get, NULL);
-static DEVICE_ATTR(r_ois, 0444, component_info_get, NULL);
-static DEVICE_ATTR(second_r_ois, 0444, component_info_get, NULL);
-static DEVICE_ATTR(r_module, 0444, component_info_get, NULL);
-static DEVICE_ATTR(f_module, 0444, component_info_get, NULL);
-static DEVICE_ATTR(tp, 0444, component_info_get, NULL);
-static DEVICE_ATTR(lcd, 0444, component_info_get, NULL);
-static DEVICE_ATTR(wcn, 0444, component_info_get, NULL);
-static DEVICE_ATTR(l_sensor, 0444, component_info_get, NULL);
-static DEVICE_ATTR(g_sensor, 0444, component_info_get, NULL);
-static DEVICE_ATTR(m_sensor, 0444, component_info_get, NULL);
-static DEVICE_ATTR(gyro, 0444, component_info_get, NULL);
-static DEVICE_ATTR(backlight, 0444, component_info_get, NULL);
-static DEVICE_ATTR(mainboard, 0444, component_info_get, NULL);
-static DEVICE_ATTR(fingerprints, 0444, component_info_get, NULL);
-static DEVICE_ATTR(touch_key, 0444, component_info_get, NULL);
-static DEVICE_ATTR(ufs, 0444, component_info_get, NULL);
-static DEVICE_ATTR(Aboard, 0444, component_info_get, NULL);
-static DEVICE_ATTR(nfc, 0444, component_info_get, NULL);
-static DEVICE_ATTR(fast_charge, 0444, component_info_get, NULL);
-static DEVICE_ATTR(cpu, 0444, component_info_get, NULL);
-static DEVICE_ATTR(rf_version, 0444, component_info_get, NULL);
+static OP_ATTR(ddr, 0444, component_info_get, NULL);
+static OP_ATTR(emmc, 0444, component_info_get, NULL);
+static OP_ATTR(f_camera, 0444, component_info_get, NULL);
+static OP_ATTR(r_camera, 0444, component_info_get, NULL);
+static OP_ATTR(second_r_camera, 0444, component_info_get, NULL);
+static OP_ATTR(third_r_camera, 0444, component_info_get, NULL);
+static OP_ATTR(r_ois, 0444, component_info_get, NULL);
+static OP_ATTR(second_r_ois, 0444, component_info_get, NULL);
+static OP_ATTR(r_module, 0444, component_info_get, NULL);
+static OP_ATTR(f_module, 0444, component_info_get, NULL);
+static OP_ATTR(tp, 0444, component_info_get, NULL);
+static OP_ATTR(lcd, 0444, component_info_get, NULL);
+static OP_ATTR(wcn, 0444, component_info_get, NULL);
+static OP_ATTR(l_sensor, 0444, component_info_get, NULL);
+static OP_ATTR(g_sensor, 0444, component_info_get, NULL);
+static OP_ATTR(m_sensor, 0444, component_info_get, NULL);
+static OP_ATTR(gyro, 0444, component_info_get, NULL);
+static OP_ATTR(backlight, 0444, component_info_get, NULL);
+static OP_ATTR(mainboard, 0444, component_info_get, NULL);
+static OP_ATTR(fingerprints, 0444, component_info_get, NULL);
+static OP_ATTR(touch_key, 0444, component_info_get, NULL);
+static OP_ATTR(ufs, 0444, component_info_get, NULL);
+static OP_ATTR(Aboard, 0444, component_info_get, NULL);
+static OP_ATTR(nfc, 0444, component_info_get, NULL);
+static OP_ATTR(fast_charge, 0444, component_info_get, NULL);
+static OP_ATTR(cpu, 0444, component_info_get, NULL);
+static OP_ATTR(rf_version, 0444, component_info_get, NULL);
 
 char *get_component_version(enum COMPONENT_TYPE type)
 {
@@ -239,33 +242,33 @@ EXPORT_SYMBOL(reset_component_info);
 
 
 static struct attribute *component_info_sysfs_entries[] = {
-    &dev_attr_ddr.attr,
-    &dev_attr_emmc.attr,
-    &dev_attr_f_camera.attr,
-    &dev_attr_r_camera.attr,
-    &dev_attr_second_r_camera.attr,
-    &dev_attr_third_r_camera.attr,
-    &dev_attr_r_ois.attr,
-    &dev_attr_second_r_ois.attr,
-    &dev_attr_r_module.attr,
-    &dev_attr_f_module.attr,
-    &dev_attr_tp.attr,
-    &dev_attr_lcd.attr,
-    &dev_attr_wcn.attr,
-    &dev_attr_l_sensor.attr,
-    &dev_attr_g_sensor.attr,
-    &dev_attr_m_sensor.attr,
-    &dev_attr_gyro.attr,
-    &dev_attr_backlight.attr,
-    &dev_attr_mainboard.attr,
-    &dev_attr_fingerprints.attr,
-    &dev_attr_touch_key.attr,
-    &dev_attr_ufs.attr,
-    &dev_attr_Aboard.attr,
-    &dev_attr_nfc.attr,
-    &dev_attr_fast_charge.attr,
-    &dev_attr_cpu.attr,
-    &dev_attr_rf_version.attr,
+    &op_attr_ddr.attr,
+    &op_attr_emmc.attr,
+    &op_attr_f_camera.attr,
+    &op_attr_r_camera.attr,
+    &op_attr_second_r_camera.attr,
+    &op_attr_third_r_camera.attr,
+    &op_attr_r_ois.attr,
+    &op_attr_second_r_ois.attr,
+    &op_attr_r_module.attr,
+    &op_attr_f_module.attr,
+    &op_attr_tp.attr,
+    &op_attr_lcd.attr,
+    &op_attr_wcn.attr,
+    &op_attr_l_sensor.attr,
+    &op_attr_g_sensor.attr,
+    &op_attr_m_sensor.attr,
+    &op_attr_gyro.attr,
+    &op_attr_backlight.attr,
+    &op_attr_mainboard.attr,
+    &op_attr_fingerprints.attr,
+    &op_attr_touch_key.attr,
+    &op_attr_ufs.attr,
+    &op_attr_Aboard.attr,
+    &op_attr_nfc.attr,
+    &op_attr_fast_charge.attr,
+    &op_attr_cpu.attr,
+    &op_attr_rf_version.attr,
     NULL,
 };
 
@@ -273,116 +276,116 @@ static struct attribute_group component_info_attr_group = {
     .attrs  = component_info_sysfs_entries,
 };
 
-static ssize_t component_info_get(struct device *dev,
-                struct device_attribute *attr,
+static ssize_t component_info_get(struct kobject *kobj,
+                struct kobj_attribute *attr,
                 char *buf)
 {
-    if (attr == &dev_attr_ddr)
+    if (attr == &op_attr_ddr)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(DDR),
         get_component_manufacture(DDR));
-    if (attr == &dev_attr_emmc)
+    if (attr == &op_attr_emmc)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(EMMC),
         get_component_manufacture(EMMC));
-    if (attr == &dev_attr_f_camera)
+    if (attr == &op_attr_f_camera)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(F_CAMERA),
         get_component_manufacture(F_CAMERA));
-    if (attr == &dev_attr_r_camera)
+    if (attr == &op_attr_r_camera)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(R_CAMERA),
         get_component_manufacture(R_CAMERA));
-    if (attr == &dev_attr_second_r_camera)
+    if (attr == &op_attr_second_r_camera)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(SECOND_R_CAMERA),
         get_component_manufacture(SECOND_R_CAMERA));
-    if (attr == &dev_attr_third_r_camera)
+    if (attr == &op_attr_third_r_camera)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(THIRD_R_CAMERA),
         get_component_manufacture(THIRD_R_CAMERA));
-    if (attr == &dev_attr_r_ois)
+    if (attr == &op_attr_r_ois)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(R_OIS),
         get_component_manufacture(R_OIS));
-    if (attr == &dev_attr_second_r_ois)
+    if (attr == &op_attr_second_r_ois)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(SECOND_R_OIS),
         get_component_manufacture(SECOND_R_OIS));
-    if (attr == &dev_attr_r_module)
+    if (attr == &op_attr_r_module)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(R_MODULE),
         get_component_manufacture(R_MODULE));
-    if (attr == &dev_attr_f_module)
+    if (attr == &op_attr_f_module)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(F_MODULE),
         get_component_manufacture(F_MODULE));
-    if (attr == &dev_attr_tp)
+    if (attr == &op_attr_tp)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(TP),
         get_component_manufacture(TP));
-    if (attr == &dev_attr_lcd)
+    if (attr == &op_attr_lcd)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(LCD),
         get_component_manufacture(LCD));
-    if (attr == &dev_attr_wcn)
+    if (attr == &op_attr_wcn)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(WCN),
         get_component_manufacture(WCN));
-    if (attr == &dev_attr_l_sensor)
+    if (attr == &op_attr_l_sensor)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(I_SENSOR),
         get_component_manufacture(I_SENSOR));
-    if (attr == &dev_attr_g_sensor)
+    if (attr == &op_attr_g_sensor)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(G_SENSOR),
         get_component_manufacture(G_SENSOR));
-    if (attr == &dev_attr_m_sensor)
+    if (attr == &op_attr_m_sensor)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(M_SENSOR),
         get_component_manufacture(M_SENSOR));
-    if (attr == &dev_attr_gyro)
+    if (attr == &op_attr_gyro)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(GYRO),
         get_component_manufacture(GYRO));
-    if (attr == &dev_attr_backlight)
+    if (attr == &op_attr_backlight)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(BACKLIGHT),
         get_component_manufacture(BACKLIGHT));
-    if (attr == &dev_attr_mainboard)
+    if (attr == &op_attr_mainboard)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(MAINBOARD),
         get_component_manufacture(MAINBOARD));
-    if (attr == &dev_attr_fingerprints)
+    if (attr == &op_attr_fingerprints)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(FINGERPRINTS),
         get_component_manufacture(FINGERPRINTS));
-    if (attr == &dev_attr_touch_key)
+    if (attr == &op_attr_touch_key)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(TOUCH_KEY),
         get_component_manufacture(TOUCH_KEY));
-    if (attr == &dev_attr_ufs)
+    if (attr == &op_attr_ufs)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(UFS),
         get_component_manufacture(UFS));
-    if (attr == &dev_attr_Aboard) {
+    if (attr == &op_attr_Aboard) {
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(ABOARD),
         get_component_manufacture(ABOARD));
     }
-    if (attr == &dev_attr_nfc)
+    if (attr == &op_attr_nfc)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(NFC),
         get_component_manufacture(NFC));
-    if (attr == &dev_attr_fast_charge)
+    if (attr == &op_attr_fast_charge)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(FAST_CHARGE),
         get_component_manufacture(FAST_CHARGE));
-    if (attr == &dev_attr_cpu)
+    if (attr == &op_attr_cpu)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(CPU),
         get_component_manufacture(CPU));
-    if (attr == &dev_attr_rf_version)
+    if (attr == &op_attr_rf_version)
         return snprintf(buf, BUF_SIZE, "VER:\t%s\nMANU:\t%s\n",
         get_component_version(RF_VERSION),
         get_component_manufacture(RF_VERSION));
