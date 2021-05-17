@@ -6566,6 +6566,14 @@ static int ipa3_post_init(const struct ipa3_plat_drv_res *resource_p,
 	uc_hdlrs.ipa_uc_loaded_hdlr = ipa3_uc_is_loaded;
 	ipa3_uc_register_handlers(IPA_HW_FEATURE_COMMON, &uc_hdlrs);
 
+	if (ipa3_ctx->use_tput_est_ep) {
+		result = ipa3_setup_tput_pipe();
+		if (result)
+			IPAERR(":Failed configuring throughput moniter ep\n");
+		else
+			IPADBG(":Throughput moniter ep configured\n");
+	}
+
 	result = ipa3_wdi_init();
 	if (result)
 		IPAERR(":wdi init failed (%d)\n", -result);
@@ -7145,6 +7153,7 @@ static int ipa3_pre_init(const struct ipa3_plat_drv_res *resource_p,
 		resource_p->ipa_wdi3_5g_holb_timeout;
 	ipa3_ctx->is_wdi3_tx1_needed = false;
 	ipa3_ctx->ipa_in_cpe_cfg = resource_p->ipa_in_cpe_cfg;
+	ipa3_ctx->use_tput_est_ep = resource_p->use_tput_est_ep;
 
 	if (ipa3_ctx->secure_debug_check_action == USE_SCM) {
 		if (ipa_is_mem_dump_allowed())
@@ -8123,6 +8132,14 @@ static int get_ipa_dts_configuration(struct platform_device *pdev,
 	IPADBG(": GSI CH 20 WA is = %s\n",
 		ipa_drv_res->gsi_ch20_wa
 		? "Needed" : "Not needed");
+
+	ipa_drv_res->use_tput_est_ep = false;
+	ipa_drv_res->use_tput_est_ep =
+		of_property_read_bool(pdev->dev.of_node,
+		"qcom,use-tput-estmation-pipe");
+	IPADBG(": Use Tput estimation ep = %s\n",
+		ipa_drv_res->use_tput_est_ep
+		 ? "Needed" : "Not needed");
 
 	elem_num = of_property_count_elems_of_size(pdev->dev.of_node,
 		"qcom,mhi-event-ring-id-limits", sizeof(u32));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -44,8 +44,8 @@ pm8150_1_gpios: &pm8150_gpios {
 	qcom,pm8150@4 {
 		compatible = "qcom,spmi-pmic";
 		reg = <0x4 SPMI_USID>;
-		#address-cells = <1>;
-		#size-cells = <1>;
+		#address-cells = <2>;
+		#size-cells = <0>;
 
 		pm8150_2_tz: qcom,temp-alarm@2400 {
 			compatible = "qcom,spmi-temp-alarm";
@@ -126,8 +126,8 @@ pm8150_1_gpios: &pm8150_gpios {
 	qcom,pm8150@5 {
 		compatible ="qcom,spmi-pmic";
 		reg = <0x5 SPMI_USID>;
-		#address-cells = <1>;
-		#size-cells = <1>;
+		#address-cells = <2>;
+		#size-cells = <0>;
 	};
 };
 

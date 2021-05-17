@@ -96,7 +96,6 @@ static void mhi_dev_event_msi_cb(void *req);
 static void mhi_dev_cmd_event_msi_cb(void *req);
 
 static int mhi_dev_alloc_cmd_ack_buf_req(struct mhi_dev *mhi);
-static int mhi_dev_ring_init(struct mhi_dev *dev);
 
 
 static struct mhi_dev_uevent_info channel_state_info[MHI_MAX_CHANNELS];
@@ -2703,26 +2702,6 @@ static int mhi_dev_cache_host_cfg(struct mhi_dev *mhi)
 					mhi->cfg.event_rings;
 	mhi->ch_ctx_shadow.size = sizeof(struct mhi_dev_ch_ctx) *
 					mhi->cfg.channels;
-
-	/* Allocate ring elements, during M0 when host
-	 * would have updated MHICFG register
-	 */
-
-	if (!mhi->ring) {
-		mhi->ring = devm_kzalloc(&pdev->dev,
-				(sizeof(struct mhi_dev_ring) *
-				(mhi->cfg.channels + mhi->cfg.event_rings + 1)),
-				GFP_KERNEL);
-		if (!mhi->ring) {
-			pr_err("no memory while allocating ring ctx\n");
-			rc = -ENOMEM;
-			goto exit;
-		}
-		mhi_log(MHI_MSG_INFO,
-			"MEM_ALLOC: size:%d RING_ALLOC\n",
-			(sizeof(struct mhi_dev_ring) *
-			(mhi->cfg.channels + mhi->cfg.event_rings + 1)));
-	}
 	/*
 	 * This func mhi_dev_cache_host_cfg will be called when
 	 * processing mhi device reset as well, do not allocate
@@ -2785,12 +2764,6 @@ static int mhi_dev_cache_host_cfg(struct mhi_dev *mhi)
 	memset(mhi->ch_ctx_cache, 0, sizeof(struct mhi_dev_ch_ctx) *
 						mhi->cfg.channels);
 
-	rc = mhi_dev_ring_init(mhi);
-	if (rc) {
-		pr_err("MHI dev ring init failed\n");
-		goto exit;
-	}
-
 	if (MHI_USE_DMA(mhi)) {
 		data_transfer.phy_addr = mhi->cmd_ctx_cache_dma_handle;
 		data_transfer.host_pa = mhi->cmd_ctx_shadow.host_pa;
@@ -2821,23 +2794,10 @@ static int mhi_dev_cache_host_cfg(struct mhi_dev *mhi)
 					mhi->ev_ctx_cache->rp,
 					mhi->ev_ctx_cache->wp);
 
-	rc = mhi_ring_start(&mhi->ring[0],
+	return mhi_ring_start(&mhi->ring[0],
 			(union mhi_dev_ring_ctx *)mhi->cmd_ctx_cache, mhi);
-	if (rc) {
-		pr_err("MHI ring start failed:%d\n", rc);
-		goto exit;
-	}
 
-	return 0;
 exit:
-	if (mhi->ring) {
-		devm_kfree(&pdev->dev, mhi->ring);
-		mhi->ring = NULL;
-		mhi_log(MHI_MSG_INFO,
-			"MEM_DEALLOC: size:%d RING_ALLOC\n",
-			(sizeof(struct mhi_dev_ring) *
-			(mhi->cfg.channels + mhi->cfg.event_rings + 1)));
-	}
 	if (mhi->cmd_ctx_cache) {
 		dma_free_coherent(&pdev->dev,
 			sizeof(struct mhi_dev_cmd_ctx),
@@ -3776,12 +3736,11 @@ static int mhi_dev_recover(struct mhi_dev *mhi)
 static void mhi_dev_enable(struct work_struct *work)
 {
 	int rc = 0;
-	struct ep_pcie_msi_config msi_cfg;
 	struct mhi_dev *mhi = container_of(work,
 				struct mhi_dev, ring_init_cb_work);
 	u32 mhi_reset;
 	enum mhi_dev_state state;
-	uint32_t max_cnt = 0, bhi_intvec = 0;
+	uint32_t max_cnt = 0;
 
 	if (mhi->use_ipa) {
 		rc = ipa_dma_init();
@@ -3797,22 +3756,10 @@ static void mhi_dev_enable(struct work_struct *work)
 		}
 	}
 
-	rc = mhi_dev_mmio_read(mhi, BHI_INTVEC, &bhi_intvec);
-	if (rc)
+	rc = mhi_dev_ring_init(mhi);
+	if (rc) {
+		pr_err("MHI dev ring init failed\n");
 		return;
-
-	if (bhi_intvec != 0xffffffff) {
-		/* Indicate the host that the device is ready */
-		rc = ep_pcie_get_msi_config(mhi->phandle, &msi_cfg);
-		if (!rc) {
-			rc = ep_pcie_trigger_msi(mhi_ctx->phandle, bhi_intvec);
-			if (rc) {
-				pr_err("%s: error sending msi\n", __func__);
-				return;
-			}
-		} else {
-			pr_err("MHI: error geting msi configs\n");
-		}
 	}
 
 	rc = mhi_dev_mmio_get_mhi_state(mhi, &state, &mhi_reset);
@@ -4138,6 +4085,20 @@ static int mhi_init(struct mhi_dev *mhi)
 		pr_err("Failed to update the MMIO init\n");
 		return rc;
 	}
+
+	if (!mhi->ring) {
+		mhi->ring = devm_kzalloc(&pdev->dev,
+				(sizeof(struct mhi_dev_ring) *
+				(mhi->cfg.channels + mhi->cfg.event_rings + 1)),
+				GFP_KERNEL);
+		mhi_log(MHI_MSG_INFO,
+			"MEM_ALLOC: size:%d RING_ALLOC\n",
+			(sizeof(struct mhi_dev_ring) *
+			(mhi->cfg.channels + mhi->cfg.event_rings + 1)));
+
+	}
+	if (!mhi->ring)
+		return -ENOMEM;
 
 	/*
 	 * mhi_init is also called during device reset, in

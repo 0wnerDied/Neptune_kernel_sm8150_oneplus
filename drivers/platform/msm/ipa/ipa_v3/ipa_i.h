@@ -59,6 +59,7 @@
 #define IPA3_MAX_NUM_PIPES 31
 #define IPA_SYS_DESC_FIFO_SZ 0x800
 #define IPA_SYS_TX_DATA_DESC_FIFO_SZ 0x1000
+#define IPA_SYS_TPUT_EP_DESC_FIFO_SZ 0x10
 #define IPA_COMMON_EVENT_RING_SIZE 0x7C00
 #define IPA_LAN_RX_HEADER_LENGTH (2)
 #define IPA_QMAP_HEADER_LENGTH (4)
@@ -2101,6 +2102,7 @@ struct ipa3_context {
 		eth_info[IPA_ETH_CLIENT_MAX][IPA_ETH_INST_ID_MAX];
 	bool ipa_in_cpe_cfg;
 	bool is_modem_up;
+	bool use_tput_est_ep;
 };
 
 struct ipa3_plat_drv_res {
@@ -2158,6 +2160,7 @@ struct ipa3_plat_drv_res {
 	u32 lan_aggr_time_limit;
 	u32 rndis_aggr_time_limit;
 	bool ipa_in_cpe_cfg;
+	bool use_tput_est_ep;
 };
 
 /**
@@ -2686,6 +2689,8 @@ void ipa3_free_skb(struct ipa_rx_data *data);
 /*
  * System pipes
  */
+int ipa3_setup_tput_pipe(void);
+
 int ipa3_setup_sys_pipe(struct ipa_sys_connect_params *sys_in, u32 *clnt_hdl);
 
 int ipa3_teardown_sys_pipe(u32 clnt_hdl);

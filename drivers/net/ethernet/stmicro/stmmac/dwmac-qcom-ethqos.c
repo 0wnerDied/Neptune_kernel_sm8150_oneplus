@@ -48,8 +48,6 @@ static void ethqos_rgmii_io_macro_loopback(struct qcom_ethqos *ethqos,
 static int phy_digital_loopback_config(
 	struct qcom_ethqos *ethqos, int speed, int config);
 
-bool phy_intr_en;
-
 static struct ethqos_emac_por emac_por[] = {
 	{ .offset = RGMII_IO_MACRO_CONFIG,	.value = 0x0 },
 	{ .offset = SDCC_HC_REG_DLL_CONFIG,	.value = 0x0 },
@@ -93,6 +91,11 @@ static struct ip_params pparams;
 
 static DECLARE_WAIT_QUEUE_HEAD(mac_rec_wq);
 static bool mac_rec_wq_flag;
+
+struct qcom_ethqos *get_pethqos(void)
+{
+	return pethqos;
+}
 
 static int qcom_ethqos_get_bus_config(struct platform_device *pdev)
 {
@@ -1172,9 +1175,10 @@ static irqreturn_t ETHQOS_PHY_ISR(int irq, void *dev_data)
 	return IRQ_HANDLED;
 }
 
-int ethqos_phy_intr_enable(struct stmmac_priv *priv)
+static int ethqos_phy_intr_enable(void *priv_n)
 {
 	int ret = 0;
+	struct stmmac_priv *priv = priv_n;
 	struct qcom_ethqos *ethqos = priv->plat->bsp_priv;
 
 	if (ethqos_phy_intr_config(ethqos)) {
@@ -1192,7 +1196,7 @@ int ethqos_phy_intr_enable(struct stmmac_priv *priv)
 			  ethqos->phy_intr);
 		return ret;
 	}
-	phy_intr_en = true;
+	priv->plat->phy_intr_en_extn_stm = true;
 	return ret;
 }
 
@@ -1652,7 +1656,7 @@ static void setup_config_registers(struct qcom_ethqos *ethqos,
 	priv->speed  = speed;
 
 	if (mode > DISABLE_LOOPBACK && pethqos->ipa_enabled)
-		ethqos_ipa_offload_event_handler(ethqos, EV_LOOPBACK_DMA_MAP);
+		priv->plat->offload_event_handler(ethqos, EV_LOOPBACK_DMA_MAP);
 	else
 		priv->hw->mac->map_mtl_to_dma(priv->hw, EMAC_QUEUE_0,
 					      EMAC_CHANNEL_0);
@@ -1899,21 +1903,60 @@ static int ethqos_reset_phy_rec(struct stmmac_priv *priv, int int_en)
 	return ret;
 }
 
-static int ethqos_tx_clean_rec(struct stmmac_priv *priv, int chan)
-{
-	struct stmmac_tx_queue *tx_q = &priv->tx_queue[chan];
-	int ret = 1;
-
-	if (!tx_q->skip_sw)
-		stmmac_tx_clean(priv, chan);
-	return ret;
-}
-
 static int ethqos_reset_tx_dma_rec(struct stmmac_priv *priv, int chan)
 {
+	struct stmmac_tx_queue *tx_q = &priv->tx_queue[chan];
+	int i;
 	int ret = 1;
+	if (tx_q->skip_sw) {
+		priv->plat->offload_event_handler(priv, EV_DEV_CLOSE);
+		priv->plat->offload_event_handler(priv, EV_DEV_OPEN);
+		priv->dev->stats.tx_errors++;
+		return ret;
+	}
 
-	stmmac_tx_err(priv, chan);
+	netif_tx_stop_queue(netdev_get_tx_queue(priv->dev, chan));
+	priv->hw->dma->stop_tx(priv->ioaddr, chan);
+
+	for (i = 0; i < DMA_TX_SIZE; i++) {
+		if (tx_q->tx_skbuff_dma[i].buf) {
+			if (tx_q->tx_skbuff_dma[i].map_as_page)
+				dma_unmap_page(GET_MEM_PDEV_DEV,
+					       tx_q->tx_skbuff_dma[i].buf,
+					       tx_q->tx_skbuff_dma[i].len,
+					       DMA_TO_DEVICE);
+			else
+				dma_unmap_single(GET_MEM_PDEV_DEV,
+						 tx_q->tx_skbuff_dma[i].buf,
+						 tx_q->tx_skbuff_dma[i].len,
+						 DMA_TO_DEVICE);
+		}
+		if (tx_q->tx_skbuff[i]) {
+			dev_kfree_skb_any(tx_q->tx_skbuff[i]);
+			tx_q->tx_skbuff[i] = NULL;
+			tx_q->tx_skbuff_dma[i].buf = 0;
+			tx_q->tx_skbuff_dma[i].map_as_page = false;
+		}
+	}
+
+	for (i = 0; i < DMA_TX_SIZE; i++)
+		if (priv->extend_desc)
+			priv->hw->desc->init_tx_desc(&tx_q->dma_etx[i].basic,
+						     priv->mode,
+						     (i == DMA_TX_SIZE - 1));
+		else
+			priv->hw->desc->init_tx_desc(&tx_q->dma_tx[i],
+						     priv->mode,
+						     (i == DMA_TX_SIZE - 1));
+	tx_q->dirty_tx = 0;
+	tx_q->cur_tx = 0;
+	netdev_tx_reset_queue(netdev_get_tx_queue(priv->dev, chan));
+	priv->hw->dma->init_tx_chan(priv->ioaddr, priv->plat->dma_cfg,
+				    tx_q->dma_tx_phy, chan);
+	priv->hw->dma->start_tx(priv->ioaddr, chan);
+
+	priv->dev->stats.tx_errors++;
+	netif_tx_wake_queue(netdev_get_tx_queue(priv->dev, chan));
 	return ret;
 }
 
@@ -1946,7 +1989,7 @@ static void ethqos_tdu_rec_wq(struct work_struct *work)
 	if (!priv)
 		return;
 
-	ret = ethqos_tx_clean_rec(priv, ethqos->tdu_chan);
+	ret = ethqos_schedule_poll(priv, ethqos->tdu_chan);
 	if (!ret)
 		return;
 
@@ -2332,6 +2375,15 @@ fail:
 	return -ENOMEM;
 }
 
+static int ethqos_cleanup_debugfs(struct qcom_ethqos *ethqos)
+{
+	debugfs_remove_recursive(ethqos->debugfs_dir);
+	ethqos->debugfs_dir = NULL;
+
+	ETHQOSDBG("debugfs Deleted Successfully\n");
+	return 0;
+}
+
 static void ethqos_emac_mem_base(struct qcom_ethqos *ethqos)
 {
 	struct resource *resource = NULL;
@@ -2551,7 +2603,7 @@ static void qcom_ethqos_phy_suspend_clks(struct qcom_ethqos *ethqos)
 
 	ETHQOSINFO("Enter\n");
 
-	if (phy_intr_en)
+	if (priv->plat->phy_intr_en_extn_stm)
 		reinit_completion(&ethqos->clk_enable_done);
 
 	ethqos->clks_suspended = 1;
@@ -2615,7 +2667,7 @@ static void qcom_ethqos_phy_resume_clks(struct qcom_ethqos *ethqos)
 
 	ethqos->clks_suspended = 0;
 
-	if (phy_intr_en)
+	if (priv->plat->phy_intr_en_extn_stm)
 		complete_all(&ethqos->clk_enable_done);
 
 	ETHQOSINFO("Exit\n");
@@ -2652,10 +2704,20 @@ static void qcom_ethqos_bringup_iface(struct work_struct *work)
 	ETHQOSINFO("exit\n");
 }
 
-void qcom_ethqos_request_phy_wol(struct plat_stmmacenet_data *plat)
+static void qcom_ethqos_request_phy_wol(void *plat_n)
 {
-	struct qcom_ethqos *ethqos = plat->bsp_priv;
-	struct stmmac_priv *priv = qcom_ethqos_get_priv(ethqos);
+	struct plat_stmmacenet_data *plat = plat_n;
+	struct qcom_ethqos *ethqos;
+	struct stmmac_priv *priv;
+
+	if (!plat)
+		return;
+
+	ethqos = plat->bsp_priv;
+	priv = qcom_ethqos_get_priv(ethqos);
+
+	if (!priv)
+		return;
 
 	ethqos->phy_wol_supported = 0;
 	ethqos->phy_wol_wolopts = 0;
@@ -2801,11 +2863,16 @@ static ssize_t ethqos_read_dev_emac(struct file *filp, char __user *buf,
 {
 	struct eth_msg_meta msg;
 	u8 status = 0;
+	struct stmmac_priv *priv;
 
 	memset(&msg, 0,  sizeof(struct eth_msg_meta));
+	priv = qcom_ethqos_get_priv(pethqos);
 
-	if (pethqos && pethqos->ipa_enabled)
-		ethqos_ipa_offload_event_handler(
+	if (!priv)
+		return -ENODEV;
+
+	if (pethqos->ipa_enabled)
+		priv->plat->offload_event_handler(
 			&status, EV_QTI_GET_CONN_STATUS);
 
 	msg.msg_type = status;
@@ -2977,13 +3044,16 @@ static unsigned int ethqos_poll_dev_emac(struct file *file, poll_table *wait)
 {
 	int mask = 0;
 	int update = 0;
+	struct stmmac_priv *priv;
 
 	ETHQOSDBG("\n");
 
 	poll_wait(file, &dev_emac_wait, wait);
 
+	priv = qcom_ethqos_get_priv(pethqos);
+
 	if (pethqos && pethqos->ipa_enabled && pethqos->cv2x_mode)
-		ethqos_ipa_offload_event_handler(
+		priv->plat->offload_event_handler(
 			&update, EV_QTI_CHECK_CONN_UPDATE);
 
 	if (update)
@@ -3056,6 +3126,22 @@ fail_alloc_cdev:
 	unregister_chrdev_region(*emac_dev_t, 1);
 alloc_chrdev1_region_fail:
 		return ret;
+}
+
+static void ethqos_remove_emac_device_node(struct qcom_ethqos *ethqos)
+{
+	device_destroy(ethqos->emac_class, ethqos->emac_dev_t);
+	class_destroy(ethqos->emac_class);
+	cdev_del(ethqos->emac_cdev);
+	unregister_chrdev_region(ethqos->emac_dev_t, 1);
+}
+
+static void ethqos_remove_emac_rec_device_node(struct qcom_ethqos *ethqos)
+{
+	device_destroy(ethqos->emac_rec_class, ethqos->emac_rec_dev_t);
+	class_destroy(ethqos->emac_rec_class);
+	cdev_del(ethqos->emac_rec_cdev);
+	unregister_chrdev_region(ethqos->emac_rec_dev_t, 1);
 }
 
 static unsigned int ethqos_poll_rec_dev_emac(struct file *file,
@@ -3211,7 +3297,6 @@ static int ethqos_create_emac_rec_device_node(dev_t *emac_dev_t,
 		goto fail_create_device;
 	}
 
-	ETHQOSERR(" mac recovery node opened");
 	return 0;
 
 fail_create_device:
@@ -3318,7 +3403,7 @@ static int qcom_ethos_panic_notifier(struct notifier_block *this,
 		pr_info("qcom-ethqos: stmmac_priv 0x%px\n", priv);
 
 		pethqos->iommu_domain =
-			stmmac_emb_smmu_ctx.iommu_domain;
+			priv->plat->stmmac_emb_smmu_ctx.iommu_domain;
 
 		pr_info("qcom-ethqos: emac iommu domain 0x%px\n",
 			pethqos->iommu_domain);
@@ -3399,9 +3484,10 @@ static void qcom_ethqos_handle_ssr_workqueue(struct work_struct *work)
 
 	if (priv->hw_offload_enabled) {
 		if (pethqos->action == EVENT_REMOTE_STATUS_DOWN)
-			ethqos_ipa_offload_event_handler(NULL, EV_IPA_SSR_DOWN);
+			priv->plat->offload_event_handler(NULL,
+							  EV_IPA_SSR_DOWN);
 		else if (pethqos->action == EVENT_REMOTE_STATUS_UP)
-			ethqos_ipa_offload_event_handler(NULL, EV_IPA_SSR_UP);
+			priv->plat->offload_event_handler(NULL, EV_IPA_SSR_UP);
 	}
 }
 
@@ -3599,6 +3685,12 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	plat_dat->tso_en = of_property_read_bool(np, "snps,tso");
 	plat_dat->early_eth = ethqos->early_eth_enabled;
 	plat_dat->handle_mac_err = dwmac_qcom_handle_mac_err;
+	plat_dat->offload_enabled = qcom_ethqos_ipa_enabled;
+	plat_dat->handle_prv_ioctl = ethqos_handle_prv_ioctl;
+	plat_dat->request_phy_wol = qcom_ethqos_request_phy_wol;
+	plat_dat->phy_intr_enable = ethqos_phy_intr_enable;
+	plat_dat->offload_event_handler = ethqos_ipa_offload_event_handler;
+	plat_dat->init_pps = ethqos_init_pps;
 	/* Get rgmii interface speed for mac2c from device tree */
 	if (of_property_read_u32(np, "mac2mac-rgmii-speed",
 				 &plat_dat->mac2mac_rgmii_speed))
@@ -3701,6 +3793,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 
 	ethqos_mac_rec_init(ethqos);
 
+	plat_dat->stmmac_emb_smmu_ctx = stmmac_emb_smmu_ctx;
 	ret = stmmac_dvr_probe(&pdev->dev, plat_dat, &stmmac_res);
 	if (ret)
 		goto err_clk;
@@ -3738,16 +3831,6 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	if (pparams.is_valid_mac_addr) {
 		ether_addr_copy(dev_addr, pparams.mac_addr);
 		memcpy(priv->dev->dev_addr, dev_addr, ETH_ALEN);
-	}
-
-	if (ethqos->early_eth_enabled) {
-		/* Initialize work*/
-		INIT_WORK(&ethqos->early_eth,
-			  qcom_ethqos_bringup_iface);
-		/* Queue the work*/
-		queue_work(system_wq, &ethqos->early_eth);
-		/*Set early eth parameters*/
-		ethqos_set_early_eth_param(priv, ethqos);
 	}
 
 	for (i = 0; i < plat_dat->tx_queues_to_use; i++) {
@@ -3789,11 +3872,21 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 					       "emac");
 	}
 
+	if (ethqos->early_eth_enabled) {
+		/* Initialize work*/
+		INIT_WORK(&ethqos->early_eth,
+			  qcom_ethqos_bringup_iface);
+		/* Queue the work*/
+		queue_work(system_wq, &ethqos->early_eth);
+		/*Set early eth parameters*/
+		ethqos_set_early_eth_param(priv, ethqos);
+	}
+
 	if (priv->plat->mac2mac_en)
 		priv->plat->mac2mac_link = -1;
 
 #ifdef CONFIG_ETH_IPA_OFFLOAD
-	ethqos_ipa_offload_event_handler(ethqos, EV_PROBE_INIT);
+	priv->plat->offload_event_handler(ethqos, EV_PROBE_INIT);
 #endif
 	if (pethqos->cv2x_mode != CV2X_MODE_DISABLE)
 		qcom_ethqos_register_listener();
@@ -3826,11 +3919,24 @@ err_mem:
 static int qcom_ethqos_remove(struct platform_device *pdev)
 {
 	struct qcom_ethqos *ethqos;
-	int ret;
+	int ret = 0;
+	struct stmmac_priv *priv;
+
+	if (!pdev)
+		return -ENODEV;
+
+	if (of_device_is_compatible(pdev->dev.of_node,
+				    "qcom,emac-smmu-embedded")) {
+		of_platform_depopulate(&pdev->dev);
+		return 0;
+	}
 
 	ethqos = get_stmmac_bsp_priv(&pdev->dev);
+
 	if (!ethqos)
 		return -ENODEV;
+
+	priv = qcom_ethqos_get_priv(pethqos);
 
 	ret = stmmac_pltfr_remove(pdev);
 	clk_disable_unprepare(ethqos->rgmii_clk);
@@ -3838,14 +3944,33 @@ static int qcom_ethqos_remove(struct platform_device *pdev)
 	if (ethqos->bus_hdl)
 		msm_bus_scale_unregister_client(ethqos->bus_hdl);
 
-	if (phy_intr_en)
+	if (priv->plat->phy_intr_en_extn_stm)
 		free_irq(ethqos->phy_intr, ethqos);
 
-	if (phy_intr_en)
+	if (priv->plat->phy_intr_en_extn_stm)
 		cancel_work_sync(&ethqos->emac_phy_work);
+
+	if (ethqos->emac_ver == EMAC_HW_v2_3_2)
+		ethqos_remove_pps_dev(ethqos);
+
+	ret = ethqos_cleanup_debugfs(ethqos);
+	if (ret)
+		ETHQOSERR("debugsfs cleanup failed");
+
+	ethqos_remove_emac_rec_device_node(ethqos);
+
+	if (ethqos->qoe_mode || ethqos->cv2x_mode)
+		ethqos_remove_emac_device_node(ethqos);
+
+	ethqos_free_gpios(ethqos);
 
 	stmmac_emb_smmu_exit();
 	ethqos_disable_regulators(ethqos);
+
+	atomic_notifier_chain_unregister(&panic_notifier_list,
+					 &qcom_ethqos_panic_blk);
+	platform_set_drvdata(pdev, NULL);
+	of_platform_depopulate(&pdev->dev);
 
 	return ret;
 }
@@ -3877,7 +4002,7 @@ static int qcom_ethqos_suspend(struct device *dev)
 	priv = netdev_priv(ndev);
 	plat = priv->plat;
 
-	ethqos_ipa_offload_event_handler(&allow_suspend, EV_DPM_SUSPEND);
+	priv->plat->offload_event_handler(&allow_suspend, EV_DPM_SUSPEND);
 	if (!allow_suspend) {
 		enable_irq_wake(ndev->irq);
 		ETHQOSDBG("Suspend Exit enable IRQ\n");
@@ -3984,7 +4109,7 @@ static int qcom_ethqos_resume(struct device *dev)
 			      0, RGMII_IO_MACRO_CONFIG);
 		ETHQOSINFO("Loopback EN Disabled\n");
 	}
-	ethqos_ipa_offload_event_handler(NULL, EV_DPM_RESUME);
+	priv->plat->offload_event_handler(NULL, EV_DPM_RESUME);
 
 #ifdef CONFIG_MSM_BOOT_TIME_MARKER
 	update_marker("M - Ethernet Resume End");
