@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -29,8 +29,6 @@
 #include "stmmac_platform.h"
 #include "stmmac_ptp.h"
 #include "dwmac-qcom-ethqos.h"
-
-extern struct qcom_ethqos *pethqos;
 
 static bool avb_class_a_msg_wq_flag;
 static bool avb_class_b_msg_wq_flag;
@@ -262,8 +260,9 @@ int ppsout_config(struct stmmac_priv *priv, struct pps_cfg *eth_pps_cfg)
 	return 0;
 }
 
-int ethqos_init_pps(struct stmmac_priv *priv)
+int ethqos_init_pps(void *priv_n)
 {
+	struct stmmac_priv *priv = priv_n;
 	u32 value;
 	struct pps_cfg eth_pps_cfg = {0};
 
@@ -291,6 +290,7 @@ static ssize_t pps_fops_read(struct file *filp, char __user *buf,
 	char *temp_buf;
 	ssize_t ret_cnt = 0;
 	struct pps_info *info;
+	struct qcom_ethqos *pethqos = get_pethqos();
 
 	info = filp->private_data;
 
@@ -458,4 +458,19 @@ fail_alloc_cdev:
 	unregister_chrdev_region(*pps_dev_t, 1);
 alloc_chrdev1_region_fail:
 		return ret;
+}
+
+int ethqos_remove_pps_dev(struct qcom_ethqos *ethqos)
+{
+	device_destroy(ethqos->avb_class_a_class, ethqos->avb_class_a_dev_t);
+	class_destroy(ethqos->avb_class_a_class);
+	cdev_del(ethqos->avb_class_a_cdev);
+	unregister_chrdev_region(ethqos->avb_class_a_dev_t, 1);
+
+	device_destroy(ethqos->avb_class_b_class, ethqos->avb_class_b_dev_t);
+	class_destroy(ethqos->avb_class_b_class);
+	cdev_del(ethqos->avb_class_b_cdev);
+	unregister_chrdev_region(ethqos->avb_class_b_dev_t, 1);
+
+	return 0;
 }

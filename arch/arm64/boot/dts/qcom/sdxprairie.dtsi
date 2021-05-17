@@ -569,6 +569,7 @@
 		qcom,ipa-hw-mode = <0>;
 		qcom,ee = <0>;
 		qcom,use-ipa-tethering-bridge;
+		qcom,use-tput-estmation-pipe;
 		qcom,mhi-event-ring-id-limits = <9 14>; /* start and end */
 		qcom,modem-cfg-emb-pipe-flt;
 		qcom,use-ipa-pm;
@@ -638,7 +639,7 @@
 			qcom,additional-mapping =
 				/* modem tables in IMEM */
 				<0x14688000 0x14688000 0x3000>;
-			qcom,ipa-q6-smem-size = <26624>;
+			qcom,ipa-q6-smem-size = <36864>;
 			qcom,smmu-fast-map;
 			qcom,geometry-mapping = <0x0 0xF0000000>;
 		};

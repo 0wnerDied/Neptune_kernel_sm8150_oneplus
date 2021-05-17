@@ -146,10 +146,32 @@ struct stmmac_txq_cfg {
 	u32 prio;
 };
 
+struct stmmac_emb_smmu_cb_ctx {
+	bool valid;
+	struct platform_device *pdev_master;
+	struct platform_device *smmu_pdev;
+	struct dma_iommu_mapping *mapping;
+	struct iommu_domain *iommu_domain;
+	u32 va_start;
+	u32 va_size;
+	u32 va_end;
+	int ret;
+};
+
 struct plat_stmmacenet_data {
 	int bus_id;
 	int phy_addr;
 	int interface;
+	struct stmmac_emb_smmu_cb_ctx stmmac_emb_smmu_ctx;
+	bool phy_intr_en_extn_stm;
+	bool (*offload_enabled)(void);
+	int (*handle_prv_ioctl)(struct net_device *dev, struct ifreq *ifr,
+				int cmd);
+	void (*request_phy_wol)(void *plat);
+	int (*phy_intr_enable)(void *priv);
+	void (*offload_event_handler)(void *data, int ev);
+	int (*init_pps)(void *priv);
+	void (*swap_ip_port)(struct sk_buff *skb, unsigned int eth_type);
 	struct stmmac_mdio_bus_data *mdio_bus_data;
 	struct device_node *phy_node;
 	struct device_node *mdio_node;

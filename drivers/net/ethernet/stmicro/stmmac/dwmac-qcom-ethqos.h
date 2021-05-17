@@ -658,7 +658,7 @@ int create_pps_interrupt_device_node(dev_t *pps_dev_t,
 				     struct cdev **pps_cdev,
 				     struct class **pps_class,
 				     char *pps_dev_node_name);
-void qcom_ethqos_request_phy_wol(struct plat_stmmacenet_data *plat);
+int ethqos_remove_pps_dev(struct qcom_ethqos *ethqos);
 bool qcom_ethqos_is_phy_link_up(struct qcom_ethqos *ethqos);
 void *qcom_ethqos_get_priv(struct qcom_ethqos *ethqos);
 
@@ -724,10 +724,11 @@ struct dwmac_qcom_avb_algorithm {
 	enum dwmac_qcom_queue_operating_mode op_mode;
 };
 
+int ethqos_init_pps(void *priv);
 int dwmac_qcom_program_avb_algorithm(
 	struct stmmac_priv *priv, struct ifr_data_struct *req);
 unsigned int dwmac_qcom_get_plat_tx_coal_frames(
 	struct sk_buff *skb);
-
+struct qcom_ethqos *get_pethqos(void);
 unsigned int dwmac_qcom_get_eth_type(unsigned char *buf);
 #endif

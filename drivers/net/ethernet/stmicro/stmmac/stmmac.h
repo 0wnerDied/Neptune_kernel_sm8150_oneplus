@@ -22,6 +22,19 @@
 #define STMMAC_RESOURCE_NAME   "stmmaceth"
 #define DRV_MODULE_VERSION	"Jan_2016"
 
+#define QTAG_VLAN_ETH_TYPE_OFFSET 16
+#define QTAG_ETH_TYPE_OFFSET 12
+
+#define GET_ETHERNET_TYPE(buf, ethtype) do { \
+	unsigned char *buf1 = buf;\
+	ethtype = (((((u16)buf1[QTAG_ETH_TYPE_OFFSET] << 8) | \
+		   buf1[QTAG_ETH_TYPE_OFFSET + 1]) == ETH_P_8021Q) ? \
+		   (((u16)buf1[QTAG_VLAN_ETH_TYPE_OFFSET] << 8) | \
+		   buf1[QTAG_VLAN_ETH_TYPE_OFFSET + 1]) : \
+		   (((u16)buf1[QTAG_ETH_TYPE_OFFSET] << 8) | \
+		   buf1[QTAG_ETH_TYPE_OFFSET + 1]));\
+} while (0)
+
 #include <linux/clk.h>
 #include <linux/stmmac.h>
 #include <linux/phy.h>
@@ -177,33 +190,14 @@ struct stmmac_priv {
 	bool hw_offload_enabled;
 };
 
-struct stmmac_emb_smmu_cb_ctx {
-	bool valid;
-	struct platform_device *pdev_master;
-	struct platform_device *smmu_pdev;
-	struct dma_iommu_mapping *mapping;
-	struct iommu_domain *iommu_domain;
-	u32 va_start;
-	u32 va_size;
-	u32 va_end;
-	int ret;
-};
-
-extern struct stmmac_emb_smmu_cb_ctx stmmac_emb_smmu_ctx;
-
-#define GET_MEM_PDEV_DEV (stmmac_emb_smmu_ctx.valid ? \
-			&stmmac_emb_smmu_ctx.smmu_pdev->dev : priv->device)
+#define GET_MEM_PDEV_DEV (priv->plat->stmmac_emb_smmu_ctx.valid ? \
+			 &priv->plat->stmmac_emb_smmu_ctx.smmu_pdev->dev : \
+			 priv->device)
 
 #define MICREL_PHY_ID 0x00221620
 
 #define MMC_CONFIG 0x24
 
-int ethqos_handle_prv_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
-int ethqos_init_pps(struct stmmac_priv *priv);
-
-int ethqos_phy_intr_enable(struct stmmac_priv *priv);
-extern bool phy_intr_en;
-void qcom_ethqos_request_phy_wol(struct plat_stmmacenet_data *plat_dat);
 
 int stmmac_mdio_unregister(struct net_device *ndev);
 int stmmac_mdio_register(struct net_device *ndev);
@@ -222,9 +216,7 @@ void stmmac_tx_err(struct stmmac_priv *priv, u32 chan);
 void stmmac_tx_clean(struct stmmac_priv *priv, u32 queue);
 void stmmac_disable_eee_mode(struct stmmac_priv *priv);
 bool stmmac_eee_init(struct stmmac_priv *priv);
-bool qcom_ethqos_ipa_enabled(void);
 u16 icmp_fast_csum(u16 old_csum);
 void swap_ip_port(struct sk_buff *skb, unsigned int eth_type);
-unsigned int dwmac_qcom_get_eth_type(unsigned char *buf);
 void stmmac_mac2mac_adjust_link(int speed, struct stmmac_priv *priv);
 #endif /* __STMMAC_H__ */

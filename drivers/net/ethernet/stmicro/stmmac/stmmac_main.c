@@ -555,7 +555,7 @@ static int stmmac_hwtstamp_ioctl(struct net_device *dev, struct ifreq *ifr)
 			   sizeof(struct hwtstamp_config)))
 		return -EFAULT;
 
-	if (qcom_ethqos_ipa_enabled() &&
+	if (priv->plat->offload_enabled &&
 	    config.rx_filter == HWTSTAMP_FILTER_ALL) {
 		netdev_alert(priv->dev,
 			     "No hw timestamping since ipa is enabled\n");
@@ -884,11 +884,11 @@ static void stmmac_adjust_link(struct net_device *dev)
 
 	if (new_state) {
 		if (phydev->link == 1 && priv->hw_offload_enabled)
-			ethqos_ipa_offload_event_handler(priv,
+			priv->plat->offload_event_handler(priv,
 							 EV_PHY_LINK_UP);
 		else if (phydev->link == 0 &&
 			 priv->hw_offload_enabled)
-			ethqos_ipa_offload_event_handler(priv,
+			priv->plat->offload_event_handler(priv,
 							 EV_PHY_LINK_DOWN);
 	}
 #ifdef CONFIG_MSM_BOOT_TIME_MARKER
@@ -1078,21 +1078,21 @@ static int stmmac_init_phy(struct net_device *dev)
 
 	if (((phydev->phy_id & phydev->drv->phy_id_mask) == MICREL_PHY_ID) &&
 	    !priv->plat->phy_intr_en) {
-		ret = ethqos_phy_intr_enable(priv);
+		ret = priv->plat->phy_intr_enable(priv);
 		if (ret)
 			pr_alert("qcom-ethqos: Unable to enable PHY interrupt\n");
 		else
 			priv->plat->phy_intr_en = true;
 	}
 
-	if (phy_intr_en) {
+	if (priv->plat->phy_intr_en_extn_stm) {
 		phydev->irq = PHY_IGNORE_INTERRUPT;
 		phydev->interrupts =  PHY_INTERRUPT_ENABLED;
 		if (phydev->drv->config_intr &&
 		    !phydev->drv->config_intr(phydev)) {
 			pr_debug(" qcom-ethqos: %s config_phy_intr successful\n",
 				 __func__);
-			qcom_ethqos_request_phy_wol(priv->plat);
+			priv->plat->request_phy_wol(priv->plat);
 		} else {
 			pr_alert("Unable to register PHY IRQ\n");
 			phydev->irq = PHY_POLL;
@@ -2134,8 +2134,8 @@ void stmmac_tx_err(struct stmmac_priv *priv, u32 chan)
 	int i;
 
 	if (tx_q->skip_sw) {
-		ethqos_ipa_offload_event_handler(priv, EV_DEV_CLOSE);
-		ethqos_ipa_offload_event_handler(priv, EV_DEV_OPEN);
+		priv->plat->offload_event_handler(priv, EV_DEV_CLOSE);
+		priv->plat->offload_event_handler(priv, EV_DEV_OPEN);
 		priv->dev->stats.tx_errors++;
 		return;
 	}
@@ -2227,10 +2227,10 @@ static void stmmac_dma_interrupt(struct stmmac_priv *priv)
 		status = priv->hw->dma->dma_interrupt(priv->ioaddr,
 						      &priv->xstats, chan);
 		if (priv->rx_queue[chan].skip_sw && (status & handle_rx))
-			ethqos_ipa_offload_event_handler(
+			priv->plat->offload_event_handler(
 				&chan, EV_IPA_HANDLE_RX_INTR);
 		if (priv->tx_queue[chan].skip_sw && (status & handle_tx))
-			ethqos_ipa_offload_event_handler(
+			priv->plat->offload_event_handler(
 				&chan, EV_IPA_HANDLE_TX_INTR);
 
 		if ((likely((status & handle_rx)) || (status & handle_tx)) &&
@@ -2769,7 +2769,7 @@ static int stmmac_hw_setup(struct net_device *dev, bool init_ptp)
 				priv->plat->clk_ptp_ref,
 				priv->plat->clk_ptp_rate);
 
-		ret = ethqos_init_pps(priv);
+		ret = priv->plat->init_pps(priv);
 	}
 
 	priv->tx_lpi_timer = STMMAC_DEFAULT_TWT_LS;
@@ -2928,7 +2928,7 @@ static int stmmac_open(struct net_device *dev)
 	stmmac_enable_all_queues(priv);
 	stmmac_start_all_queues(priv);
 	if (priv->hw_offload_enabled)
-		ethqos_ipa_offload_event_handler(priv, EV_DEV_OPEN);
+		priv->plat->offload_event_handler(priv, EV_DEV_OPEN);
 
 	if (priv->plat->mac2mac_en) {
 		stmmac_mac2mac_adjust_link(priv->plat->mac2mac_rgmii_speed,
@@ -3000,7 +3000,7 @@ static int stmmac_release(struct net_device *dev)
 	/* Release and free the Rx/Tx resources */
 	free_dma_desc_resources(priv);
 	if (priv->hw_offload_enabled)
-		ethqos_ipa_offload_event_handler(priv, EV_DEV_CLOSE);
+		priv->plat->offload_event_handler(priv, EV_DEV_CLOSE);
 
 	/* Disable the MAC Rx/Tx */
 	priv->hw->mac->set_mac(priv->ioaddr, false);
@@ -3919,9 +3919,9 @@ jumbo_read_again:
 		stmmac_rx_vlan(priv->dev, skb);
 
 		if (priv->current_loopback > 0) {
-			eth_type = dwmac_qcom_get_eth_type(skb->data);
+			GET_ETHERNET_TYPE(skb->data, eth_type);
 			if (eth_type == ETH_P_IP)
-				swap_ip_port(skb, eth_type);
+				priv->plat->swap_ip_port(skb, eth_type);
 		}
 
 		skb->protocol = eth_type_trans(skb, priv->dev);
@@ -4170,9 +4170,9 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit, u32 queue)
 			stmmac_rx_vlan(priv->dev, skb);
 
 			if (priv->current_loopback > 0) {
-				eth_type = dwmac_qcom_get_eth_type(skb->data);
+				GET_ETHERNET_TYPE(skb->data, eth_type);
 				if (eth_type == ETH_P_IP)
-					swap_ip_port(skb, eth_type);
+					priv->plat->swap_ip_port(skb, eth_type);
 			}
 
 			skb->protocol = eth_type_trans(skb, priv->dev);
@@ -4469,9 +4469,12 @@ static void stmmac_poll_controller(struct net_device *dev)
 static int stmmac_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 {
 	int ret = -EOPNOTSUPP;
+	struct stmmac_priv *priv;
 
 	if (!netif_running(dev))
 		return -EINVAL;
+
+	priv = netdev_priv(dev);
 
 	switch (cmd) {
 	case SIOCGMIIPHY:
@@ -4485,7 +4488,8 @@ static int stmmac_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 		ret = stmmac_hwtstamp_ioctl(dev, rq);
 		break;
 	case SIOCDEVPRIVATE:
-		ret = ethqos_handle_prv_ioctl(dev, rq, cmd);
+		if (priv->plat->handle_prv_ioctl)
+			ret = priv->plat->handle_prv_ioctl(dev, rq, cmd);
 		break;
 	default:
 		break;
@@ -5059,6 +5063,7 @@ int stmmac_dvr_probe(struct device *device,
 		netdev_warn(priv->dev, "%s: failed debugFS registration\n",
 			    __func__);
 #endif
+	priv->plat->swap_ip_port = swap_ip_port;
 
 	return ret;
 
