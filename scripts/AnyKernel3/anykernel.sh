@@ -56,6 +56,13 @@ fi;
 ## AnyKernel install
 dump_boot;
 
+# Unified with custom ROMs
+if [ $os == "custom" ]; then
+  patch_cmdline "msm_drm.is_stock" "msm_drm.is_stock=0"
+else
+  patch_cmdline "msm_drm.is_stock" "msm_drm.is_stock=1"
+fi
+
 # Override DTB
 if [ $os == "stock" ]; then
   mv $home/dtb $home/split_img/;
