@@ -8000,6 +8000,10 @@ static void set_usb_switch(struct smb_charger *chg, bool enable)
 		return;
 	}
 
+	if (chg->pd_active) {
+		pr_info("%s:pd_active return\n", __func__);
+		return;
+	}
 
 	if (enable) {
 		pr_debug("switch on fastchg\n");
