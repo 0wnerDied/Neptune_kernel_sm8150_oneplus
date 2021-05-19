@@ -127,7 +127,7 @@ static struct sde_crtc_custom_events custom_events[] = {
 #define MAX_VPADDING_RATIO_M		63
 #define MAX_VPADDING_RATIO_N		15
 
-static unsigned int is_stock;
+static unsigned int is_stock = 1;
 module_param(is_stock, uint, 0444);
 
 static inline struct sde_kms *_sde_crtc_get_kms(struct drm_crtc *crtc)
