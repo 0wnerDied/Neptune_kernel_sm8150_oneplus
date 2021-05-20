@@ -40,7 +40,7 @@ static void __touch_boost_kick_phc(struct boost_drv *boost)
 	set_bit(TOUCH_PHC, &boost->state);
 
 	if (!mod_delayed_work(system_unbound_wq, &boost->phc_unboost,
-			      msecs_to_jiffies(80))) {
+			      msecs_to_jiffies(300))) {
 		set_bit(TOUCH_PHC, &boost->state);
 		wake_up(&boost->boost_waitq);
 	}
