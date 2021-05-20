@@ -52,14 +52,6 @@
 #include "ufs-qcom.h"
 #include <linux/project_info.h>
 
-#include <linux/touch_boost.h>
-#include <linux/binfmts.h>
-
-#ifdef CONFIG_TOUCH_BOOST_CLKGATE
-struct Scsi_Host *ph_host;
-#endif
-
-
 #ifdef CONFIG_DEBUG_FS
 
 static int ufshcd_tag_req_type(struct request *rq)
@@ -2524,29 +2516,6 @@ out:
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
 	return count;
 }
-
-#ifdef CONFIG_TOUCH_BOOST_CLKGATE
-void ufshcd_clkgate_enable_status(u32 value)
-{
-	struct ufs_hba *hba = shost_priv(ph_host);
-	unsigned long flags;
-
-	value = !!value;
-
-	spin_lock_irqsave(hba->host->host_lock, flags);
-	if (value == hba->clk_gating.is_enabled)
-		goto out;
-
-	if (value)
-		hba->clk_gating.active_reqs--;
-	else
-		hba->clk_gating.active_reqs++;
-
-	hba->clk_gating.is_enabled = value;
-out:
-	spin_unlock_irqrestore(hba->host->host_lock, flags);
-}
-#endif
 
 static enum hrtimer_restart ufshcd_clkgate_hrtimer_handler(
 					struct hrtimer *timer)
@@ -11383,11 +11352,6 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 	int err;
 	struct Scsi_Host *host = hba->host;
 	struct device *dev = hba->dev;
-
-#ifdef CONFIG_TOUCH_BOOST_CLKGATE
-	if (touch_clkgate_boost)
-		ph_host = hba->host;
-#endif
 
 	if (!mmio_base) {
 		dev_err(hba->dev,
