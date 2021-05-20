@@ -5,7 +5,24 @@
 
 #define pr_fmt(fmt) "touch_boost: " fmt
 
-#include <linux/touch_boost.h>
+#include <linux/input.h>
+#include <linux/kthread.h>
+#include <linux/msm_drm_notify.h>
+#include <linux/sched.h>
+#include <linux/slab.h>
+#include <uapi/linux/sched/types.h>
+
+enum {
+	SCREEN_ON,
+	TOUCH_PHC
+};
+
+struct boost_drv {
+	struct delayed_work phc_unboost;
+	struct notifier_block msm_drm_notif;
+	wait_queue_head_t boost_waitq;
+	unsigned long state;
+};
 
 static void phc_unboost_worker(struct work_struct *work);
 
@@ -23,8 +40,10 @@ static void __touch_boost_kick_phc(struct boost_drv *boost)
 	set_bit(TOUCH_PHC, &boost->state);
 
 	if (!mod_delayed_work(system_unbound_wq, &boost->phc_unboost,
-			      msecs_to_jiffies(80)))
+			      msecs_to_jiffies(80))) {
+		set_bit(TOUCH_PHC, &boost->state);
 		wake_up(&boost->boost_waitq);
+	}
 }
 
 static void touch_boost_phc_event(struct boost_drv *boost)
@@ -65,8 +84,10 @@ static int touch_boost_thread(void *data)
 		if (sho_stop)
 			break;
 
-		state_bef = state_nex;
-		touch_boost_phc_event(boost);
+		if (state_bef != state_nex) {
+			touch_boost_phc_event(boost);
+			state_bef = state_nex;
+		}
 	}
 
 	return 0;
