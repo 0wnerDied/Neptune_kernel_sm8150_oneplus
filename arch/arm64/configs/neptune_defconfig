@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 4.14.232 Kernel Configuration
+# Linux/arm64 4.14.233 Kernel Configuration
 #
 CONFIG_ARM64=y
 CONFIG_64BIT=y
@@ -5142,7 +5142,6 @@ CONFIG_KEYS_COMPAT=y
 # CONFIG_ENCRYPTED_KEYS is not set
 # CONFIG_KEY_DH_OPERATIONS is not set
 # CONFIG_SECURITY_DMESG_RESTRICT is not set
-CONFIG_SECURITY_PERF_EVENTS_RESTRICT=y
 CONFIG_SECURITY=y
 # CONFIG_SECURITY_WRITABLE_HOOKS is not set
 # CONFIG_SECURITYFS is not set
