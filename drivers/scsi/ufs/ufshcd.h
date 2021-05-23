@@ -3,7 +3,7 @@
  *
  * This code is based on drivers/scsi/ufs/ufshcd.h
  * Copyright (C) 2011-2013 Samsung India Software Operations
- * Copyright (c) 2013-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2021, The Linux Foundation. All rights reserved.
  *
  * Authors:
  *	Santosh Yaraganavi <santosh.sy@samsung.com>
@@ -814,6 +814,9 @@ struct ufs_hba {
 	struct device_attribute spm_lvl_attr;
 	int pm_op_in_progress;
 
+	/* Auto-Hibernate Idle Timer register value */
+	u32 ahit;
+
 	struct ufshcd_lrb *lrb;
 	unsigned long lrb_in_use;
 
@@ -1152,6 +1155,11 @@ static inline bool ufshcd_is_auto_hibern8_supported(struct ufs_hba *hba)
 		!(hba->quirks & UFSHCD_QUIRK_BROKEN_AUTO_HIBERN8));
 }
 
+static inline bool ufshcd_is_auto_hibern8_enabled(struct ufs_hba *hba)
+{
+	return ufshcd_is_auto_hibern8_supported(hba) && !!hba->ahit;
+}
+
 static inline bool ufshcd_is_crypto_supported(struct ufs_hba *hba)
 {
 	return !!(hba->capabilities & MASK_CRYPTO_SUPPORT);
@@ -1221,6 +1229,7 @@ static inline bool ufshcd_keep_autobkops_enabled_except_suspend(
 	return hba->caps & UFSHCD_CAP_KEEP_AUTO_BKOPS_ENABLED_EXCEPT_SUSPEND;
 }
 
+extern void ufshcd_apply_pm_quirks(struct ufs_hba *hba);
 extern int ufshcd_system_thaw(struct ufs_hba *hba);
 extern int ufshcd_system_restore(struct ufs_hba *hba);
 extern int ufshcd_system_freeze(struct ufs_hba *hba);
@@ -1336,8 +1345,22 @@ static inline void ufshcd_init_req_stats(struct ufs_hba *hba) {}
 #endif
 
 /* Expose Query-Request API */
+int ufshcd_query_descriptor_retry(struct ufs_hba *hba,
+				  enum query_opcode opcode,
+				  enum desc_idn idn, u8 index,
+				  u8 selector,
+				  u8 *desc_buf, int *buf_len);
+
+int ufshcd_read_desc_param(struct ufs_hba *hba,
+			   enum desc_idn desc_id,
+			   int desc_index,
+			   u8 param_offset,
+			   u8 *param_read_buf,
+			   u8 param_size);
 int ufshcd_query_flag(struct ufs_hba *hba, enum query_opcode opcode,
 	enum flag_idn idn, bool *flag_res);
+int ufshcd_read_string_desc(struct ufs_hba *hba, int desc_index,
+			    u8 *buf, u32 size, bool ascii);
 int ufshcd_query_attr(struct ufs_hba *hba, enum query_opcode opcode,
 	enum attr_idn idn, u8 index, u8 selector, u32 *attr_val);
 int ufshcd_query_descriptor_retry(struct ufs_hba *hba, enum query_opcode opcode,
@@ -1540,5 +1563,22 @@ static inline void ufshcd_vops_remove_debugfs(struct ufs_hba *hba)
 {
 }
 #endif
+
+extern struct ufs_pm_lvl_states ufs_pm_lvl_states[];
+
+/*
+ * ufshcd_scsi_to_upiu_lun - maps scsi LUN to UPIU LUN
+ * @scsi_lun: scsi LUN id
+ *
+ * Returns UPIU LUN id
+ */
+static inline u8 ufshcd_scsi_to_upiu_lun(unsigned int scsi_lun)
+{
+	if (scsi_is_wlun(scsi_lun))
+		return (scsi_lun & UFS_UPIU_MAX_UNIT_NUM_ID)
+			| UFS_UPIU_WLUN_ID;
+	else
+		return scsi_lun & UFS_UPIU_MAX_UNIT_NUM_ID;
+}
 
 #endif /* End of Header */

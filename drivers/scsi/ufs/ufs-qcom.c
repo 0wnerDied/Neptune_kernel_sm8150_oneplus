@@ -1519,8 +1519,7 @@ static int ufs_qcom_setup_clocks(struct ufs_hba *hba, bool on,
 			ufs_qcom_dev_ref_clk_ctrl(host, true);
 
 	} else if (!on && (status == PRE_CHANGE)) {
-		if (hba->hibern8_on_idle.is_enabled ||
-		    !ufs_qcom_is_link_active(hba)) {
+		if (!ufs_qcom_is_link_active(hba)) {
 			/* disable device ref_clk */
 			ufs_qcom_dev_ref_clk_ctrl(host, false);
 
