@@ -369,6 +369,7 @@ endmenu
 
 config ASSISTED_SUPERUSER
 	bool "Kernel-assisted superuser"
+	default n
 	select SECURITY_SELINUX_DEVELOP if SECURITY_SELINUX
 	---help---
 	  This driver gives trivial root access by typing `su` in a
