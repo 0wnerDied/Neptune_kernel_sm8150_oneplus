@@ -89,6 +89,30 @@
 		};
 	};
 
+	leds-gpios {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		led_wifi {
+			lable = "led_wifi";
+			gpios = <&tlmm 65 0>;
+			default-state = "on";
+		};
+
+		led_bt {
+			lable = "led_bt";
+			gpios = <&tlmm 67 0>;
+			default-state = "on";
+		};
+
+		led_59 {
+			lable = "led_59";
+			gpios = <&tlmm 59 0>;
+			default-state = "on";
+		};
+
+	};
+
 	mtp_batterydata: qcom,battery-data {
 		qcom,batt-id-range-pct = <15>;
 		#include "qg-batterydata-alium-3600mah.dtsi"
