@@ -344,6 +344,9 @@
 	qcom,phy-reset-delay-msecs = <10>;
 	ipa-dma-rx-desc-cnt = <512>;
 	ipa-dma-tx-desc-cnt = <512>;
+	rgmii-tx-drv-str-clk = <16>;
+	rgmii-tx-drv-str-data = <16>;
+	rgmii-tx-drv-str-ctl = <16>;
 };
 
 &vreg_rgmii_io_pads {
