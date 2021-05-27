@@ -44,6 +44,14 @@ Documentation/devicetree/bindings/gpio/gpio.txt.
 need to configured.
 qcom,use-pm : If present, this property will cause the device to prevent system
 suspend as long as the port remains open.
+dmas : If present, this property will represent the dma node.
+	for Ex. <&gpi_dma1 0 1 2 64 0>;
+	- gpi_dma: will represent the gpi controller
+	- 0 : Tx channel and 1 : Rx channel
+	- 1 : Serial Engine number
+	- 2 : protocol
+	- 64 : TRE Buffer size
+dma-names : If dmas property present, then this property will represent the channel name.
 - Refer to "Documentation/devicetree/bindings/arm/msm/msm_bus.txt" for below properties:
     - qcom,msm_bus,name
     - qcom,msm_bus,num_cases
