@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1595,21 +1595,8 @@ static void gpi_process_xfer_compl_event(struct gpii_chan *gpii_chan,
 
 	gpi_desc = to_gpi_desc(vd);
 
-	/* TRE Event generated didn't match descriptor's TRE */
-	if (gpi_desc->wp != ev_rp) {
-		spin_unlock_irqrestore(&gpii_chan->vc.lock, flags);
-		GPII_ERR(gpii, gpii_chan->chid,
-			 "EOT\EOB received for wrong TRE 0x%0llx != 0x%0llx\n",
-			 to_physical(ch_ring, gpi_desc->wp),
-			 to_physical(ch_ring, ev_rp));
-		gpi_generate_cb_event(gpii_chan, MSM_GPI_QUP_EOT_DESC_MISMATCH,
-				      __LINE__);
-		return;
-	}
-
 	list_del(&vd->node);
 	spin_unlock_irqrestore(&gpii_chan->vc.lock, flags);
-
 
 	/*
 	 * RP pointed by Event is to last TRE processed,
