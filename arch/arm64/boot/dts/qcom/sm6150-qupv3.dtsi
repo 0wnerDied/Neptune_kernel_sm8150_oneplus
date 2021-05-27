@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -165,6 +165,9 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP1_S0_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_S_AHB_CLK>;
+		dmas = <&gpi_dma1 0 0 2 64 0>,
+			<&gpi_dma1 1 0 2 64 0>;
+		dma-names = "tx", "rx";
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se4_2uart_active>;
 		pinctrl-1 = <&qupv3_se4_2uart_sleep>;
