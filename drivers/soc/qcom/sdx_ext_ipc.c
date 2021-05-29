@@ -19,9 +19,11 @@
 #include <linux/interrupt.h>
 #include <linux/suspend.h>
 #include <soc/qcom/sb_notification.h>
+#include <linux/kfifo.h>
 
 #define STATUS_UP 1
 #define STATUS_DOWN 0
+#define SB_FIFO_SIZE 8
 
 enum subsys_policies {
 	SUBSYS_PANIC = 0,
@@ -60,6 +62,8 @@ struct gpio_cntrl {
 	struct mutex e911_lock;
 	struct notifier_block panic_blk;
 	struct notifier_block sideband_nb;
+	DECLARE_KFIFO_PTR(st_in_fifo, u8);
+	wait_queue_head_t st_in_wq;
 };
 
 static ssize_t set_remote_status_store(struct device *dev,
@@ -376,6 +380,15 @@ static int sdx_ext_ipc_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, mdm);
 
 	if (mdm->gpios[STATUS_IN] >= 0) {
+		ret = kfifo_alloc(&mdm->st_in_fifo, SB_FIFO_SIZE, GFP_KERNEL);
+		if (ret < 0) {
+			dev_err(mdm->dev,
+				 "can't create status in fifo, %d\n", ret);
+			goto irq_fail;
+		}
+
+		init_waitqueue_head(&mdm->st_in_wq);
+
 		ret = devm_request_threaded_irq(mdm->dev, mdm->status_irq,
 				status_in_hwirq_hdlr, ap_status_change,
 				IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING |
@@ -398,7 +411,7 @@ static int sdx_ext_ipc_probe(struct platform_device *pdev)
 			dev_err(mdm->dev,
 				"%s: WAKEUP_IN IRQ#%d request failed,\n",
 				__func__, mdm->wakeup_irq);
-			goto irq_fail;
+			goto fifo_fail;
 		}
 	}
 
@@ -409,12 +422,15 @@ static int sdx_ext_ipc_probe(struct platform_device *pdev)
 			dev_err(mdm->dev,
 				"%s: sb_register_evt_listener failed!\n",
 				__func__);
-			goto irq_fail;
+			goto fifo_fail;
 		}
 	}
 
 	return 0;
 
+fifo_fail:
+	if (mdm->gpios[STATUS_IN] >= 0)
+		kfifo_free(&mdm->st_in_fifo);
 irq_fail:
 	device_remove_file(mdm->dev, &dev_attr_policy);
 sys_fail1:
@@ -433,8 +449,10 @@ static int sdx_ext_ipc_remove(struct platform_device *pdev)
 	struct gpio_cntrl *mdm;
 
 	mdm = dev_get_drvdata(&pdev->dev);
-	if (mdm->gpios[STATUS_IN] >= 0)
+	if (mdm->gpios[STATUS_IN] >= 0) {
 		disable_irq_wake(mdm->status_irq);
+		kfifo_free(&mdm->st_in_fifo);
+	}
 	if (mdm->gpios[STATUS_OUT] >= 0)
 		atomic_notifier_chain_unregister(&panic_notifier_list,
 						&mdm->panic_blk);
