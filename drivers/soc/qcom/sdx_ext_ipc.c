@@ -175,6 +175,12 @@ static int sideband_notify(struct notifier_block *nb,
 	return NOTIFY_OK;
 }
 
+static irqreturn_t status_in_hwirq_hdlr(int irq, void *p)
+{
+	pm_system_wakeup();
+	return IRQ_WAKE_THREAD;
+}
+
 static irqreturn_t ap_status_change(int irq, void *dev_id)
 {
 	struct gpio_cntrl *mdm = dev_id;
@@ -371,8 +377,9 @@ static int sdx_ext_ipc_probe(struct platform_device *pdev)
 
 	if (mdm->gpios[STATUS_IN] >= 0) {
 		ret = devm_request_threaded_irq(mdm->dev, mdm->status_irq,
-				NULL, ap_status_change, IRQF_ONESHOT |
-				IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
+				status_in_hwirq_hdlr, ap_status_change,
+				IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING |
+				IRQF_ONESHOT | IRQF_NO_SUSPEND,
 				"ap status", mdm);
 		if (ret < 0) {
 			dev_err(mdm->dev,
@@ -380,7 +387,6 @@ static int sdx_ext_ipc_probe(struct platform_device *pdev)
 				__func__, mdm->status_irq);
 			goto irq_fail;
 		}
-		irq_set_irq_wake(mdm->status_irq, 1);
 	}
 
 	if (mdm->gpios[WAKEUP_IN] >= 0) {
@@ -444,6 +450,8 @@ static int sdx_ext_ipc_suspend(struct device *dev)
 
 	if (mdm->gpios[WAKEUP_IN] >= 0)
 		enable_irq_wake(mdm->wakeup_irq);
+	if (mdm->gpios[STATUS_IN] >= 0)
+		enable_irq_wake(mdm->status_irq);
 	return 0;
 }
 
@@ -453,6 +461,8 @@ static int sdx_ext_ipc_resume(struct device *dev)
 
 	if (mdm->gpios[WAKEUP_IN] >= 0)
 		disable_irq_wake(mdm->wakeup_irq);
+	if (mdm->gpios[STATUS_IN] >= 0)
+		disable_irq_wake(mdm->status_irq);
 	return 0;
 }
 
