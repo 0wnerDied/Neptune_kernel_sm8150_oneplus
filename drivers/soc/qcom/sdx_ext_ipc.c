@@ -332,6 +332,7 @@ static irqreturn_t hw_irq_handler(int irq, void *p)
 }
 
 static const struct file_operations sb_fileops = {
+	.llseek = noop_llseek,
 	.owner = THIS_MODULE,
 };
 
