@@ -75,20 +75,20 @@
 
 #ifndef LOG_LEVEL
 /*! LOG LEVEL DEFINATION */
-#define LOG_LEVEL LOG_LEVEL_A
+#define LOG_LEVEL LOG_LEVEL_I
 #endif
 
 #ifdef BOSCH_DRIVER_LOG_FUNC
 	#ifdef BSLOG_VAR_DEF
-		uint8_t debug_log_level = LOG_LEVEL;
+		uint8_t smi230_debug_log_level = LOG_LEVEL;
 	#else
-		extern uint8_t debug_log_level;
+		extern uint8_t smi230_debug_log_level;
 	#endif
 
 	/*! print error message */
 	#define PERR(fmt, args...) do\
 	{\
-		if (debug_log_level >= LOG_LEVEL_E)\
+		if (smi230_debug_log_level >= LOG_LEVEL_E)\
 			printk(KERN_INFO "\n" "[E]" KERN_ERR MODULE_TAG \
 				"<%s><%d>" fmt "\n", __func__, __LINE__, ##args);\
 	} while (0)
@@ -96,7 +96,7 @@
 	/*! print notice message */
 	#define PNOTICE(fmt, args...) do\
 	{\
-		if (debug_log_level >= LOG_LEVEL_N)\
+		if (smi230_debug_log_level >= LOG_LEVEL_N)\
 			printk(KERN_INFO "\n" "[N]" KERN_NOTICE MODULE_TAG \
 				"<%s><%d>" fmt "\n", __func__, __LINE__, ##args);\
 	} while (0)
@@ -104,7 +104,7 @@
 	/*! print information message */
 	#define PINFO(fmt, args...) do\
 	{\
-		if (debug_log_level >= LOG_LEVEL_I)\
+		if (smi230_debug_log_level >= LOG_LEVEL_I)\
 			printk(KERN_INFO "\n" "[I]" KERN_INFO MODULE_TAG \
 				"<%s><%d>" fmt "\n", __func__, __LINE__, ##args);\
 	} while (0)
@@ -112,7 +112,7 @@
 	/*! print debug message */
 	#define PDEBUG(fmt, args...) do\
 	{\
-		if (debug_log_level >= LOG_LEVEL_D)\
+		if (smi230_debug_log_level >= LOG_LEVEL_D)\
 			printk(KERN_INFO "\n" "[D]" KERN_DEBUG MODULE_TAG \
 				"<%s><%d>" fmt "\n", __func__, __LINE__, ##args);\
 	} while (0)
@@ -120,7 +120,7 @@
 	/*! print debug fw download message */
 	#define PDEBUG_FWDL(fmt, args...) do\
 	{\
-		if (debug_log_level >= LOG_LEVEL_DF)\
+		if (smi230_debug_log_level >= LOG_LEVEL_DF)\
 			printk(KERN_INFO "\n" "[DF]" KERN_DEBUG MODULE_TAG \
 				"<%s><%d>" fmt "\n", __func__, __LINE__, ##args);\
 	} while (0)
@@ -128,13 +128,13 @@
 	/*! print debug data log message */
 	#define PDEBUG_DLOG(fmt, args...) do\
 	{\
-		if (debug_log_level >= LOG_LEVEL_DA)\
+		if (smi230_debug_log_level >= LOG_LEVEL_DA)\
 			printk(KERN_INFO "\n" "[DA]" KERN_DEBUG MODULE_TAG \
 				"<%s><%d>" fmt "\n", __func__, __LINE__, ##args);\
 	} while (0)
 
-	void set_debug_log_level(uint8_t level);
-	uint8_t get_debug_log_level(void);
+	void smi230_set_debug_log_level(uint8_t level);
+	uint8_t smi230_get_debug_log_level(void);
 
 #else
 
@@ -194,8 +194,8 @@
 	#define PDEBUG_DLOG(fmt, args...)
 	#endif
 
-	#define set_debug_log_level(level) {}
-	#define get_debug_log_level() (LOG_LEVEL)
+	#define smi230_set_debug_log_level(level) {}
+	#define smi230_get_debug_log_level() (LOG_LEVEL)
 
 #endif
 

@@ -71,7 +71,7 @@ config SMI230_GYRO_FIFO
 	help
 	 enable GYRO FIFO feature.
 
-config BOSCH_DRIVER_LOG_FUNC
+config SMI230_BOSCH_DRIVER_LOG_FUNC
 	bool "Smart log function support"
 	depends on (I2C || SPI_MASTER) && SYSFS
 	help
@@ -87,4 +87,11 @@ config SMI230_DEBUG
 	bool "debug option in developing phase"
 	help
 	 Enable this option for the convinience of debuging
+
+config ENABLE_SMI230_ACC_GYRO_BUFFERING
+        bool "Enable accel & gyro  boot time sensor sample buffering"
+        depends on INPUT_SMI230
+        help
+         Say Y here if you want to buffer boot time sensor
+         samples for SMI230 accelerometer and gyroscope
 endif

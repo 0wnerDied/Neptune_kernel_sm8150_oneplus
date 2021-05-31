@@ -2,7 +2,7 @@
 # Makefile for Bosch sensor driver.
 #
 
-ifneq ($(CONFIG_BOSCH_DRIVER_LOG_FUNC),n)
+ifneq ($(CONFIG_SMI230_BOSCH_DRIVER_LOG_FUNC),n)
 	EXTRA_CFLAGS += -DBOSCH_DRIVER_LOG_FUNC
 endif
 
