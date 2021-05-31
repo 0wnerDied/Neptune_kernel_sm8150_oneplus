@@ -20,6 +20,7 @@
 #include <linux/suspend.h>
 #include <soc/qcom/sb_notification.h>
 #include <linux/kfifo.h>
+#include <linux/cdev.h>
 
 #define STATUS_UP 1
 #define STATUS_DOWN 0
@@ -64,6 +65,9 @@ struct gpio_cntrl {
 	struct notifier_block sideband_nb;
 	DECLARE_KFIFO_PTR(st_in_fifo, u8);
 	wait_queue_head_t st_in_wq;
+	struct cdev sb_cdev;
+	dev_t sb_cdev_devid;
+	struct class *sb_class;
 };
 
 static ssize_t set_remote_status_store(struct device *dev,
@@ -327,11 +331,16 @@ static irqreturn_t hw_irq_handler(int irq, void *p)
 	return IRQ_WAKE_THREAD;
 }
 
+static const struct file_operations sb_fileops = {
+	.owner = THIS_MODULE,
+};
+
 static int sdx_ext_ipc_probe(struct platform_device *pdev)
 {
 	int ret;
 	struct device_node *node;
 	struct gpio_cntrl *mdm;
+	struct device *sb_dev;
 
 	node = pdev->dev.of_node;
 	mdm = devm_kzalloc(&pdev->dev, sizeof(*mdm), GFP_KERNEL);
@@ -400,6 +409,35 @@ static int sdx_ext_ipc_probe(struct platform_device *pdev)
 				__func__, mdm->status_irq);
 			goto irq_fail;
 		}
+
+		ret = alloc_chrdev_region(&mdm->sb_cdev_devid, 0, 1,
+					"rmt_sys_evt");
+		if (ret < 0) {
+			dev_err(mdm->dev,
+				 "can't allocate major number, %d\n", ret);
+			goto fifo_fail;
+		}
+
+		cdev_init(&mdm->sb_cdev, &sb_fileops);
+		cdev_add(&mdm->sb_cdev, mdm->sb_cdev_devid, 1);
+
+		mdm->sb_class = class_create(THIS_MODULE, "rmt_sys_evt");
+		if (IS_ERR(mdm->sb_class)) {
+			dev_err(mdm->dev,
+				"can't create rmt_sys_evt class, %d\n",
+				-ENOMEM);
+			goto cdev_fail;
+		}
+
+		sb_dev = device_create(mdm->sb_class, &pdev->dev,
+						mdm->sb_cdev_devid, mdm,
+						"rmt_sys_evt");
+		if (IS_ERR(sb_dev)) {
+			dev_err(mdm->dev,
+				"can't create rmt_sys_evt device, %d\n",
+				-ENOMEM);
+			goto class_fail;
+		}
 	}
 
 	if (mdm->gpios[WAKEUP_IN] >= 0) {
@@ -411,7 +449,7 @@ static int sdx_ext_ipc_probe(struct platform_device *pdev)
 			dev_err(mdm->dev,
 				"%s: WAKEUP_IN IRQ#%d request failed,\n",
 				__func__, mdm->wakeup_irq);
-			goto fifo_fail;
+			goto sbdev_fail;
 		}
 	}
 
@@ -422,12 +460,23 @@ static int sdx_ext_ipc_probe(struct platform_device *pdev)
 			dev_err(mdm->dev,
 				"%s: sb_register_evt_listener failed!\n",
 				__func__);
-			goto fifo_fail;
+			goto sbdev_fail;
 		}
 	}
 
 	return 0;
 
+sbdev_fail:
+	if (mdm->gpios[STATUS_IN] >= 0)
+		device_destroy(mdm->sb_class, mdm->sb_cdev_devid);
+class_fail:
+	if (mdm->gpios[STATUS_IN] >= 0)
+		class_destroy(mdm->sb_class);
+cdev_fail:
+	if (mdm->gpios[STATUS_IN] >= 0) {
+		cdev_del(&mdm->sb_cdev);
+		unregister_chrdev_region(mdm->sb_cdev_devid, 1);
+	}
 fifo_fail:
 	if (mdm->gpios[STATUS_IN] >= 0)
 		kfifo_free(&mdm->st_in_fifo);
@@ -451,6 +500,10 @@ static int sdx_ext_ipc_remove(struct platform_device *pdev)
 	mdm = dev_get_drvdata(&pdev->dev);
 	if (mdm->gpios[STATUS_IN] >= 0) {
 		disable_irq_wake(mdm->status_irq);
+		device_destroy(mdm->sb_class, mdm->sb_cdev_devid);
+		class_destroy(mdm->sb_class);
+		cdev_del(&mdm->sb_cdev);
+		unregister_chrdev_region(mdm->sb_cdev_devid, 1);
 		kfifo_free(&mdm->st_in_fifo);
 	}
 	if (mdm->gpios[STATUS_OUT] >= 0)
