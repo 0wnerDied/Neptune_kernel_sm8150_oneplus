@@ -21,6 +21,7 @@
 #include <soc/qcom/sb_notification.h>
 #include <linux/kfifo.h>
 #include <linux/cdev.h>
+#include <linux/uaccess.h>
 
 #define STATUS_UP 1
 #define STATUS_DOWN 0
@@ -349,9 +350,56 @@ static int sb_release(struct inode *inodp, struct file *filp)
 	return 0;
 }
 
+/*
+ * If the line has been toggled before user space read the gpio,
+ * return it. Otherwise return current state of the gpio. The spinlock
+ * ensures if more than one thread is reading, they observe latest
+ * status of the fifo as it is consumable.
+ */
+static ssize_t sb_read(struct file *filp,
+		char __user *buf, size_t count, loff_t *off)
+{
+	char evt[SB_FIFO_SIZE];
+	int ret, to_copy, available, state;
+	struct gpio_cntrl *mdm = filp->private_data;
+
+	if (!buf || count < 1)
+		return -EINVAL;
+
+	spin_lock(&mdm->st_in_wq.lock);
+
+	if (kfifo_is_empty(&mdm->st_in_fifo)) {
+		spin_unlock(&mdm->st_in_wq.lock);
+		state = gpio_get_value(mdm->gpios[STATUS_IN]);
+		evt[0] = state ? '1' : '0';
+		if (copy_to_user(buf, evt, 1))
+			return -EFAULT;
+		return 1;
+	}
+
+	available = kfifo_avail(&mdm->st_in_fifo);
+	if (available < count)
+		to_copy = available;
+	else
+		to_copy = count;
+
+	ret = kfifo_out(&mdm->st_in_fifo, evt, to_copy);
+
+	spin_unlock(&mdm->st_in_wq.lock);
+
+	if (ret < to_copy)
+		return -EIO;
+
+	if (copy_to_user(buf, evt, to_copy))
+		return -EFAULT;
+
+	return to_copy;
+}
+
 static const struct file_operations sb_fileops = {
 	.open = sb_open,
 	.release = sb_release,
+	.read = sb_read,
 	.llseek = noop_llseek,
 	.owner = THIS_MODULE,
 };
