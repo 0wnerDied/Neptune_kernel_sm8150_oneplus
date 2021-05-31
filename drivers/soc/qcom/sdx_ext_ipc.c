@@ -331,7 +331,27 @@ static irqreturn_t hw_irq_handler(int irq, void *p)
 	return IRQ_WAKE_THREAD;
 }
 
+static int sb_open(struct inode *inodp, struct file *filp)
+{
+	struct gpio_cntrl *mdm;
+
+	mdm = container_of(inodp->i_cdev, struct gpio_cntrl, sb_cdev);
+	filp->private_data = mdm;
+
+	return 0;
+}
+
+static int sb_release(struct inode *inodp, struct file *filp)
+{
+	struct gpio_cntrl *mdm = filp->private_data;
+
+	wake_up_interruptible_all(&mdm->st_in_wq);
+	return 0;
+}
+
 static const struct file_operations sb_fileops = {
+	.open = sb_open,
+	.release = sb_release,
 	.llseek = noop_llseek,
 	.owner = THIS_MODULE,
 };
