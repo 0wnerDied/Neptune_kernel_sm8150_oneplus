@@ -22,6 +22,7 @@
 #include <linux/kfifo.h>
 #include <linux/cdev.h>
 #include <linux/uaccess.h>
+#include <linux/poll.h>
 
 #define STATUS_UP 1
 #define STATUS_DOWN 0
@@ -396,10 +397,29 @@ static ssize_t sb_read(struct file *filp,
 	return to_copy;
 }
 
+static unsigned int sb_poll(struct file *filp,
+			struct poll_table_struct *pt)
+{
+	unsigned int events = 0;
+	struct gpio_cntrl *mdm = filp->private_data;
+
+	poll_wait(filp, &mdm->st_in_wq, pt);
+
+	spin_lock(&mdm->st_in_wq.lock);
+
+	if (!kfifo_is_empty(&mdm->st_in_fifo))
+		events = POLLIN | POLLPRI;
+
+	spin_unlock(&mdm->st_in_wq.lock);
+
+	return events;
+}
+
 static const struct file_operations sb_fileops = {
 	.open = sb_open,
 	.release = sb_release,
 	.read = sb_read,
+	.poll = sb_poll,
 	.llseek = noop_llseek,
 	.owner = THIS_MODULE,
 };
