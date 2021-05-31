@@ -194,9 +194,10 @@ static irqreturn_t status_in_hwirq_hdlr(int irq, void *p)
 static irqreturn_t ap_status_change(int irq, void *dev_id)
 {
 	struct gpio_cntrl *mdm = dev_id;
-	int state;
+	int state, ret;
 	struct gpio_desc *gp_status = gpio_to_desc(mdm->gpios[STATUS_IN]);
 	int active_low = 0;
+	char evt;
 
 	if (gp_status)
 		active_low = gpiod_is_active_low(gp_status);
@@ -204,14 +205,22 @@ static irqreturn_t ap_status_change(int irq, void *dev_id)
 	state = gpio_get_value(mdm->gpios[STATUS_IN]);
 	if ((!active_low && !state) || (active_low && state)) {
 		if (mdm->policy) {
+			evt = '0';
 			dev_info(mdm->dev, "Host undergoing SSR, leaving SDX as it is\n");
 			sb_notifier_call_chain(EVENT_REMOTE_STATUS_DOWN, NULL);
 		} else
 			panic("Host undergoing SSR, panicking SDX\n");
 	} else {
+		evt = '1';
 		dev_info(mdm->dev, "HOST booted\n");
 		sb_notifier_call_chain(EVENT_REMOTE_STATUS_UP, NULL);
 	}
+
+	ret = kfifo_put(&mdm->st_in_fifo, evt);
+	if (ret)
+		wake_up_interruptible_poll(&mdm->st_in_wq, POLLIN | POLLPRI);
+	else
+		pr_debug_ratelimited("status-in fifo full, event dropped!\n");
 
 	return IRQ_HANDLED;
 }
