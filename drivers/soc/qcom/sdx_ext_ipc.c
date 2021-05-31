@@ -387,7 +387,7 @@ static ssize_t sb_read(struct file *filp,
 		return 1;
 	}
 
-	available = kfifo_avail(&mdm->st_in_fifo);
+	available = SB_FIFO_SIZE - kfifo_avail(&mdm->st_in_fifo);
 	if (available < count)
 		to_copy = available;
 	else
