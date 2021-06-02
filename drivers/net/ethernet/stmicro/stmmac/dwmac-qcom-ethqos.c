@@ -471,6 +471,7 @@ place_marker("M - Etherent Assigned IPv4 address");
 	return res;
 }
 
+#ifdef CONFIG_IPV6
 static int qcom_ethqos_add_ipv6addr(struct ip_params *ip_info,
 				    struct net_device *dev)
 {
@@ -518,6 +519,7 @@ static int qcom_ethqos_add_ipv6addr(struct ip_params *ip_info,
 		}
 	return ret;
 }
+#endif
 
 static int rgmii_readl(struct qcom_ethqos *ethqos, unsigned int offset)
 {
@@ -2897,6 +2899,7 @@ static void ethqos_is_ipv4_NW_stack_ready(struct work_struct *work)
 	flush_delayed_work(&ethqos->ipv4_addr_assign_wq);
 }
 
+#ifdef CONFIG_IPV6
 static void ethqos_is_ipv6_NW_stack_ready(struct work_struct *work)
 {
 	struct delayed_work *dwork;
@@ -2926,6 +2929,7 @@ static void ethqos_is_ipv6_NW_stack_ready(struct work_struct *work)
 	cancel_delayed_work_sync(&ethqos->ipv6_addr_assign_wq);
 	flush_delayed_work(&ethqos->ipv6_addr_assign_wq);
 }
+#endif
 
 static void ethqos_set_early_eth_param(
 				struct stmmac_priv *priv,
@@ -2946,6 +2950,7 @@ static void ethqos_set_early_eth_param(
 		schedule_delayed_work(&ethqos->ipv4_addr_assign_wq, 0);
 	}
 
+#ifdef CONFIG_IPV6
 	if (pparams.is_valid_ipv6_addr) {
 		INIT_DELAYED_WORK(&ethqos->ipv6_addr_assign_wq,
 				  ethqos_is_ipv6_NW_stack_ready);
@@ -2954,6 +2959,7 @@ static void ethqos_set_early_eth_param(
 			schedule_delayed_work(&ethqos->ipv6_addr_assign_wq,
 					      msecs_to_jiffies(1000));
 	}
+#endif
 	return;
 }
 
