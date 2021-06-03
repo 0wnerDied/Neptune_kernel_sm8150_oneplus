@@ -114,6 +114,60 @@ out:
 	return err;
 }
 
+static int qca_board_id_req(struct hci_dev *hdev, struct board_id *req_id)
+{
+	struct sk_buff *skb;
+	struct edl_hst_event_hdr *hst_edl;
+	struct board_id *id;
+	char cmd;
+	int err = 0;
+
+	BT_DBG("%s: QCA Board ID Request", hdev->name);
+
+	cmd = EDL_BOARD_ID_REQ_CMD;
+	skb = __hci_cmd_sync_ev(hdev, EDL_PATCH_CMD_OPCODE, EDL_PATCH_CMD_LEN,
+				&cmd, HCI_VENDOR_PKT, HCI_CMD_TIMEOUT);
+	if (IS_ERR(skb)) {
+		err = PTR_ERR(skb);
+		BT_ERR("%s: Failed to read board id of QCA (%d)", hdev->name,
+		       err);
+		return err;
+	}
+
+	if (skb->data[0] != 0x00) {
+		BT_ERR("%s: Wrong packet received skb->data[0] = 0x%x",
+				hdev->name, skb->data[0]);
+		err = -EIO;
+		goto out;
+	} else if (skb->data[1] == EDL_BOARD_ID_REQ_CMD) {
+		BT_DBG("%s: QCA Got CC", hdev->name);
+		hst_edl = (struct edl_hst_event_hdr *)(skb->data);
+
+		if (hst_edl->len != 2) {
+			BT_ERR("%s: Wrong packet received in len = 0x%x",
+				hdev->name, hst_edl->len);
+			err = -EIO;
+			goto out;
+		}
+		id = (struct board_id *)(hst_edl->data);
+	} else {
+		BT_ERR("%s: Wrong packet received skb->data[1] = 0x%x",
+				hdev->name, skb->data[1]);
+		err = -EIO;
+		goto out;
+	}
+
+	*req_id = *id;
+
+	BT_INFO("%s: QCA Board ID MSB:0x%x LSB:0x%x", hdev->name,
+		req_id->msb, req_id->lsb);
+
+out:
+	kfree_skb(skb);
+
+	return err;
+}
+
 static int qca_reset(struct hci_dev *hdev)
 {
 	struct sk_buff *skb;
@@ -508,7 +562,7 @@ static int qca_download_firmware(struct hci_dev *hdev,
 	int ret;
 
 	BT_INFO("%s: QCA Downloading file: %s", hdev->name, config->fwname);
-	ret = request_firmware(&fw, config->fwname, &hdev->dev);
+	ret = request_firmware_direct(&fw, config->fwname, &hdev->dev);
 
 	if (ret || !fw || !fw->data || fw->size <= 0) {
 		BT_ERR("Failed to request file: err = (%d)", ret);
@@ -631,12 +685,54 @@ static void qca_get_bda(struct hci_dev *hdev, const char *str, bdaddr_t *bda)
 		bda->b[4], bda->b[3], bda->b[2], bda->b[1], bda->b[0]);
 }
 
+static int set_fw_name(u64 qca_ver, struct rome_config *config,
+						struct board_id *id)
+{
+	int err = 0;
+	u8 len = 0;
+
+	if (config->type == TLV_TYPE_PATCH) {
+		if (qca_ver == ROME_VER_3_2)
+			snprintf(config->fwname, sizeof(config->fwname), "%s%s",
+				FW_PATH, FW_NAME_RAMPATCH_ROME_VER_3_2);
+		else if (qca_ver == HST_VER_2_0)
+			snprintf(config->fwname, sizeof(config->fwname), "%s%s",
+				FW_PATH, FW_NAME_RAMPATCH_HST_VER_2_0);
+		else if (qca_ver == GNA_VER_2_0)
+			snprintf(config->fwname, sizeof(config->fwname), "%s%s",
+				FW_PATH, FW_NAME_RAMPATCH_GNA_VER_2_0);
+
+	} else if (config->type == TLV_TYPE_NVM) {
+		if (qca_ver == ROME_VER_3_2)
+			snprintf(config->fwname, sizeof(config->fwname), "%s%s",
+				FW_PATH, FW_NAME_NVM_ROME_VER_3_2);
+		else if (qca_ver == HST_VER_2_0)
+			snprintf(config->fwname, sizeof(config->fwname), "%s%s",
+				FW_PATH, FW_NAME_NVM_HST_VER_2_0);
+		else if (qca_ver == GNA_VER_2_0)
+			snprintf(config->fwname, sizeof(config->fwname), "%s%s",
+				FW_PATH, FW_NAME_NVM_GNA_VER_2_0);
+
+		if (id) {
+			len = strlen(config->fwname);
+			snprintf(&config->fwname[len-2], 5, "%02x%02x",
+							id->msb, id->lsb);
+		}
+	} else {
+		BT_ERR("%s: wrong config type selected", __func__);
+		err = -EINVAL;
+	}
+
+	return err;
+}
+
 int qca_uart_setup_rome(struct hci_dev *hdev, uint8_t baudrate,
 				qca_enque_send_callback callback)
 {
 	struct rome_config config;
 	u64 qca_ver = 0;
-	int err;
+	struct board_id req_id;
+	int err = 0;
 
 	BT_DBG("%s: QCA setup on UART", hdev->name);
 
@@ -667,15 +763,7 @@ int qca_uart_setup_rome(struct hci_dev *hdev, uint8_t baudrate,
 	qca_bt_version = qca_ver;
 	/* Download rampatch file */
 	config.type = TLV_TYPE_PATCH;
-	if (qca_ver == ROME_VER_3_2)
-		snprintf(config.fwname, sizeof(config.fwname),
-					"image/btfw32.tlv");
-	else if (qca_ver == HST_VER_2_0)
-		snprintf(config.fwname, sizeof(config.fwname),
-					"image/htbtfw20.tlv");
-	else if (qca_ver == GNA_VER_2_0)
-		snprintf(config.fwname, sizeof(config.fwname),
-					"image/gnbtfw20.tlv");
+	set_fw_name(qca_ver, &config, NULL);
 
 	err = qca_download_firmware(hdev, &config);
 	if (err < 0) {
@@ -688,20 +776,22 @@ int qca_uart_setup_rome(struct hci_dev *hdev, uint8_t baudrate,
 
 	/* Download NVM configuration */
 	config.type = TLV_TYPE_NVM;
-	if (qca_ver == ROME_VER_3_2)
-		snprintf(config.fwname, sizeof(config.fwname),
-					"image/btnv32.bin");
-	else if (qca_ver == HST_VER_2_0)
-		snprintf(config.fwname, sizeof(config.fwname),
-					 "image/htnv20.bin");
-	else if (qca_ver == GNA_VER_2_0)
-		snprintf(config.fwname, sizeof(config.fwname),
-					 "image/gnnv20.bin");
+	err = qca_board_id_req(hdev, &req_id);
+	if (err == 0) {
+		set_fw_name(qca_ver, &config, &req_id);
+		err = qca_download_firmware(hdev, &config);
+	}
 
-	err = qca_download_firmware(hdev, &config);
+	/* If no board id or downloading failed */
 	if (err < 0) {
-		BT_ERR("%s: Failed to download NVM (%d)", hdev->name, err);
-		return err;
+		/* Download the default NVM file */
+		set_fw_name(qca_ver, &config, NULL);
+		err = qca_download_firmware(hdev, &config);
+		if (err < 0) {
+			BT_ERR("%s: Failed to download NVM (%d)",
+				hdev->name, err);
+			return err;
+		}
 	}
 
 	err = qca_patch_ver_req(hdev, &qca_ver);

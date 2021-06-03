@@ -1615,7 +1615,6 @@
 		compatible = "qcom,stmmac-ethqos";
 		reg = <0x07A80000 0x10000>,
 			  <0x7A96000 0x100>;
-		qcom,arm-smmu;
 		emac-phy-addr = <3>;
 		reg-names = "stmmaceth", "rgmii";
 		dma-bit-mask = <32>;
@@ -1692,13 +1691,6 @@
 			io-interface = "rgmii";
 		};
 
-		ethqos_emb_smmu: ethqos_emb_smmu {
-			compatible = "qcom,emac-smmu-embedded";
-			iommus = <&apps_smmu 0x1400 0x0>;
-			qcom,iova-mapping = <0x80000000 0x40000000>;
-			qcom,smmu-fastmap;
-			qcom,smmu-geometry;
-		};
 
 	};
 
