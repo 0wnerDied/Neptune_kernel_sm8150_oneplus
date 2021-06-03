@@ -4131,6 +4131,16 @@ static int qcom_ethqos_suspend(struct device *dev)
 			ethqos->backup_autoneg = AUTONEG_ENABLE;
 		}
 	}
+	if (ethqos->current_phy_mode == DISABLE_PHY_AT_SUSPEND_ONLY ||
+	    ethqos->current_phy_mode == DISABLE_PHY_SUSPEND_ENABLE_RESUME) {
+		if (priv->phydev) {
+			if (qcom_ethqos_is_phy_link_up(ethqos)) {
+				ETHQOSINFO("Post Link down before PHY off\n");
+				netif_carrier_off(ndev);
+				phy_mac_interrupt(priv->phydev, LINK_DOWN);
+			}
+		}
+	}
 	ret = stmmac_suspend(dev);
 	qcom_ethqos_phy_suspend_clks(ethqos);
 	if (ethqos->current_phy_mode == DISABLE_PHY_AT_SUSPEND_ONLY ||
