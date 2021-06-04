@@ -745,8 +745,8 @@ block:
 		if (netif_running (dev->net) &&
 		    !test_bit (EVENT_RX_HALT, &dev->flags) &&
 		    state != unlink_start &&
-		    ((dev->driver_info->flags & FLAG_THROTTLE_RX) &&
-		    (dev->udev->speed > USB_SPEED_HIGH) &&
+		    (!(dev->driver_info->flags & FLAG_THROTTLE_RX) ||
+		    (dev->udev->speed <= USB_SPEED_HIGH) ||
 		    (dev->done.qlen < usb0_rx_skb_threshold))) {
 			rx_submit (dev, urb, GFP_ATOMIC);
 			usb_mark_last_busy(dev->udev);

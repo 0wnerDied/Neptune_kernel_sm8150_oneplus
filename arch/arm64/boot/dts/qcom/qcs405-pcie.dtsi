@@ -22,10 +22,11 @@
 		      <0x7786000 0x1000>,
 		      <0x10000000 0xf1d>,
 		      <0x10000f20 0xa8>,
-		      <0x10100000 0x100000>;
+		      <0x10100000 0x100000>,
+		      <0x07787000 0x1000>;
 
 		reg-names = "parf", "phy", "dm_core", "elbi",
-				"conf";
+				"conf", "mhi";
 
 		#address-cells = <3>;
 		#size-cells = <2>;

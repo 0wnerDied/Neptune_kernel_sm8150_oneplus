@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -306,7 +306,7 @@ static int dsi_pll_relock(struct mdss_pll_resources *pll)
 
 	data = MDSS_PLL_REG_R(pll_base, DSIPHY_PLL_POWERUP_CTRL);
 	data &= ~BIT(1); /* remove ONPLL_OVR_EN bit */
-	data |= 0x1; /* set ONPLL_OVN to 0x1 */
+	data &= ~BIT(0); /* clear ONPLL_OVN bit*/
 	MDSS_PLL_REG_W(pll_base, DSIPHY_PLL_POWERUP_CTRL, data);
 	ndelay(500); /* h/w recommended delay */
 	MDSS_PLL_REG_W(pll_base, DSIPHY_SYS_CTRL, 0x49);

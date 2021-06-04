@@ -23,6 +23,7 @@
 #define EDL_PATCH_CMD_LEN		(1)
 #define EDL_PATCH_VER_REQ_CMD		(0x19)
 #define EDL_PATCH_TLV_REQ_CMD		(0x1E)
+#define EDL_BOARD_ID_REQ_CMD		(0x23)
 #define EDL_NVM_ACCESS_SET_REQ_CMD	(0x01)
 #define MAX_SIZE_PER_TLV_SEGMENT	(243)
 
@@ -40,6 +41,15 @@
 
 #define QCA_BT_VER(s, p, b) (((u64)(s) << 32) | ((u64)(p & 0xffff) << 16) \
 				| ((u64)(b & 0xffff)))
+
+#define FW_PATH "image/"
+#define FW_NAME_RAMPATCH_ROME_VER_3_2		"btfw32.tlv"
+#define FW_NAME_RAMPATCH_HST_VER_2_0		"htbtfw20.tlv"
+#define FW_NAME_RAMPATCH_GNA_VER_2_0		"gnbtfw20.tlv"
+
+#define FW_NAME_NVM_ROME_VER_3_2			"btnv32.bin"
+#define FW_NAME_NVM_HST_VER_2_0				"htnv20.bin"
+#define FW_NAME_NVM_GNA_VER_2_0				"gnnv20.bin"
 
 enum {
 	ROME_SOC_ID_44 = 0x00000044,
@@ -149,6 +159,11 @@ struct qca_version {
 	__le16 patch_ver;
 	__le16 rome_ver;
 	__le32 soc_id;
+} __packed;
+
+struct board_id {
+	__u8 msb;
+	__u8 lsb;
 } __packed;
 
 struct tlv_seg_resp {
