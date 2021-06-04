@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 4.14.234 Kernel Configuration
+# Linux/arm64 4.14.235 Kernel Configuration
 #
 CONFIG_ARM64=y
 CONFIG_64BIT=y
@@ -4997,7 +4997,6 @@ CONFIG_NLS_UTF8=y
 CONFIG_UNICODE=y
 # CONFIG_UNICODE_NORMALIZATION_SELFTEST is not set
 # CONFIG_FILE_TABLE_DEBUG is not set
-# CONFIG_ONEPLUS_BRAIN_SERVICE is not set
 # CONFIG_VIRTUALIZATION is not set
 
 #
