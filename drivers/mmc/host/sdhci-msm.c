@@ -3815,14 +3815,14 @@ void sdhci_msm_dump_vendor_regs(struct sdhci_host *host)
 			msm_host_offset->CORE_DLL_STATUS),
 		readl_relaxed(host->ioaddr +
 			msm_host_offset->CORE_DLL_CONFIG),
-		sdhci_msm_readl_relaxed(host,
+		readl_relaxed(host->ioaddr +
 			msm_host_offset->CORE_DLL_CONFIG_2));
 	pr_info("DLL cfg3: 0x%08x | DLL usr ctl:  0x%08x | DDR cfg: 0x%08x\n",
 		readl_relaxed(host->ioaddr +
 			msm_host_offset->CORE_DLL_CONFIG_3),
 		readl_relaxed(host->ioaddr +
 			msm_host_offset->CORE_DLL_USR_CTL),
-		sdhci_msm_readl_relaxed(host,
+		readl_relaxed(host->ioaddr +
 			msm_host_offset->CORE_DDR_CONFIG));
 	pr_info("SDCC ver: 0x%08x | Vndr adma err : addr0: 0x%08x addr1: 0x%08x\n",
 		readl_relaxed(host->ioaddr +
