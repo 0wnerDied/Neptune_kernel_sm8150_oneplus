@@ -1,4 +1,4 @@
-/* Copyright (c) 2009-2020, Linux Foundation. All rights reserved.
+/* Copyright (c) 2009-2021, Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1336,6 +1336,7 @@ static irqreturn_t msm_otg_phy_irq_handler(int irq, void *data)
 
 static void msm_otg_set_vbus_state(int online);
 static void msm_otg_perf_vote_update(struct msm_otg *motg, bool perf_mode);
+static int get_psy_type(struct msm_otg *motg);
 
 #ifdef CONFIG_PM_SLEEP
 static int msm_otg_suspend(struct msm_otg *motg)
@@ -1374,7 +1375,11 @@ lpm_start:
 		msm_otg_perf_vote_update(motg, false);
 
 	host_pc_charger = (motg->chg_type == USB_SDP_CHARGER) ||
-				(motg->chg_type == USB_CDP_CHARGER);
+			(motg->chg_type == USB_CDP_CHARGER) ||
+			(get_psy_type(motg) == POWER_SUPPLY_TYPE_USB) ||
+			(get_psy_type(motg) == POWER_SUPPLY_TYPE_USB_CDP);
+	msm_otg_dbg_log_event(phy, "CHARGER CONNECTED",
+			host_pc_charger, motg->inputs);
 
 	/* !BSV, but its handling is in progress by otg sm_work */
 	sm_work_busy = !test_bit(B_SESS_VLD, &motg->inputs) &&
