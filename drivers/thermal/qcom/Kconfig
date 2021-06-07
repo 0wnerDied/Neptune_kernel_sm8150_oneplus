@@ -145,3 +145,12 @@ config QTI_THERMAL_QFPROM
 	  set or not. It supports to check multiple nvmem cell value for
 	  multiple condtion. In that case, if any of the nvmem-cell condition
 	  fails, driver just exits with default enabled thermal zones.
+
+config QTI_BUS_SCALING_COOLING_DEVICE
+	tristate "QTI DDR bus scaling cooling device driver"
+	depends on THERMAL_OF && QCOM_BUS_SCALING
+	help
+	   This enables the QTI DDR bus scaling cooling devices. These cooling
+	   devices will be used by QTI chipset to place a DDR state request
+	   to meet the performance requirement under thermally constrained
+	   conditions.
