@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -387,14 +387,16 @@
 		arm,primecell-periphid = <0x0003b962>;
 
 		reg = <0x6002000 0x1000>,
-		      <0x16280000 0x180000>,
-		      <0x7820f0 0x4>;
-		reg-names = "stm-base", "stm-stimulus-base", "stm-debug-status";
+		      <0x16280000 0x180000>;
+		reg-names = "stm-base", "stm-stimulus-base";
 
 		coresight-name = "coresight-stm";
 
 		clocks = <&clock_aop QDSS_CLK>;
 		clock-names = "apb_pclk";
+
+		nvmem-cells = <&stm_debug_fuse>;
+		nvmem-cell-names = "debug_fuse";
 
 		port {
 			stm_out_funnel_in0: endpoint {

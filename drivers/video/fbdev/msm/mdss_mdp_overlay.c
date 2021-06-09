@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -5900,7 +5900,7 @@ static int mdss_mdp_overlay_off(struct msm_fb_data_type *mfd)
 		pr_debug("cleaning up pipes on fb%d\n", mfd->index);
 		if (mdata->handoff_pending)
 			mdp5_data->allow_kickoff = true;
-
+		atomic_inc(&mfd->mdp_sync_pt_data.commit_cnt);
 		mdss_mdp_overlay_kickoff(mfd, NULL);
 	} else if (!mdss_mdp_ctl_is_power_on(mdp5_data->ctl)) {
 		if (mfd->panel_reconfig) {

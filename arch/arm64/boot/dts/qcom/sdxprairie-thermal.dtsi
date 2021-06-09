@@ -14,11 +14,20 @@
 #include "sdxprairie-thermal-common.dtsi"
 
 &soc {
-	qcom-thermal-qfprom {
+	qcom-thermal-qfprom-cpe {
 		compatible = "qcom,thermal-qfprom-device";
 		nvmem-cells = <&thermal_cpe>, <&thermal_revision>;
 		nvmem-cell-names = "cpe", "revision";
 		qcom,thermal-qfprom-bit-values = <0x1 0x3>;
+		qcom,thermal-zone-enable-list = "mdm-core-0-cpe-step";
+		qcom,thermal-zone-disable-list = "mdm-core-0-step";
+	};
+
+	qcom-thermal-qfprom-iot {
+		compatible = "qcom,thermal-qfprom-device";
+		nvmem-cells = <&thermal_iot>;
+		nvmem-cell-names = "iot";
+		qcom,thermal-qfprom-bit-values = <0x1>;
 		qcom,thermal-zone-enable-list = "mdm-core-0-cpe-step";
 		qcom,thermal-zone-disable-list = "mdm-core-0-step";
 	};
