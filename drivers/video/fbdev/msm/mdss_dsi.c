@@ -1752,8 +1752,10 @@ static int mdss_dsi_unblank(struct mdss_panel_data *pdata)
 
 	if (ctrl_pdata->ctrl_state & CTRL_STATE_PANEL_LP) {
 		pr_debug("%s: dsi_unblank with panel always on\n", __func__);
-		if (ctrl_pdata->low_power_config)
+		if (ctrl_pdata->low_power_config) {
 			ret = ctrl_pdata->low_power_config(pdata, false);
+			mdss_mdp_set_panel_idle_mode(false);
+		}
 		if (!ret)
 			ctrl_pdata->ctrl_state &= ~CTRL_STATE_PANEL_LP;
 		goto error;
@@ -1816,8 +1818,10 @@ static int mdss_dsi_blank(struct mdss_panel_data *pdata, int power_state)
 
 	if (mdss_panel_is_power_on_lp(power_state)) {
 		pr_debug("%s: low power state requested\n", __func__);
-		if (ctrl_pdata->low_power_config)
+		if (ctrl_pdata->low_power_config) {
 			ret = ctrl_pdata->low_power_config(pdata, true);
+			mdss_mdp_set_panel_idle_mode(true);
+		}
 		if (!ret)
 			ctrl_pdata->ctrl_state |= CTRL_STATE_PANEL_LP;
 		goto error;
