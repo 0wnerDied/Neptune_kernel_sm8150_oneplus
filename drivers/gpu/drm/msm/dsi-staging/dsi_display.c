@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -4072,7 +4072,7 @@ static void _dsi_display_calc_pipe_delay(struct dsi_display *display,
 	else
 		delay->pll_delay = 25;
 
-	delay->pll_delay = ((delay->pll_delay * esc_clk_rate_hz) / 1000000) * 2;
+	delay->pll_delay = (delay->pll_delay * esc_clk_rate_hz) / 1000000;
 }
 
 static int _dsi_display_dyn_update_clks(struct dsi_display *display,
