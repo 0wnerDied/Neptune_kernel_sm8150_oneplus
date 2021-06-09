@@ -5241,6 +5241,13 @@ int stmmac_resume(struct device *dev)
 
 	stmmac_start_all_queues(priv);
 
+	if (priv->plat->mac2mac_en) {
+		stmmac_mac2mac_adjust_link(priv->plat->mac2mac_rgmii_speed,
+					   priv);
+		priv->plat->mac2mac_link = true;
+		netif_carrier_on(ndev);
+	}
+
 	mutex_unlock(&priv->lock);
 
 	if (ndev->phydev)

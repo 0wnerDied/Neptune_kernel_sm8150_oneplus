@@ -178,7 +178,8 @@ int usb_choose_configuration(struct usb_device *udev)
 			"due to insufficient available bus power\n",
 			insufficient_power, plural(insufficient_power));
 
-	if (best) {
+	/* choose 'best' config only if some other config is not set already */
+	if (best && !udev->actconfig) {
 		/* choose device preferred config */
 		i = get_usb_audio_config(udev->bos);
 		if (i < 0)

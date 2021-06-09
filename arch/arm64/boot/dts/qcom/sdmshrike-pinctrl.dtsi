@@ -1,4 +1,4 @@
-/* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -3631,12 +3631,12 @@
 
 		usb2phy_ac_en2_default: usb2phy_ac_en2_default {
 			mux {
-				pins = "gpio47";
+				pins = "gpio123";
 				function = "usb2phy_ac";
 			};
 
 			config {
-				pins = "gpio47";
+				pins = "gpio123";
 				drive-strength = <2>;
 				bias-disable;
 			};
@@ -3644,12 +3644,12 @@
 
 		usb2phy_ac_en3_default: usb2phy_ac_en3_default {
 			mux {
-				pins = "gpio123";
+				pins = "gpio47";
 				function = "usb2phy_ac";
 			};
 
 			config {
-				pins = "gpio123";
+				pins = "gpio47";
 				drive-strength = <2>;
 				bias-disable;
 			};

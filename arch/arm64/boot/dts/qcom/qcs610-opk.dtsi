@@ -24,8 +24,9 @@
 #include "sm6150-sde.dtsi"
 #include "sm6150-sde-pll.dtsi"
 #include "sm6150-sde-display.dtsi"
-#include "qcs610-camera-sensor-idp.dtsi"
-#include "sm6150-audio-overlay.dtsi"
+#include "qcs610-camera-sensor-opk.dtsi"
+#include "sm6150-ext-codec-audio-opk-overlay.dtsi"
+#include "sm6150-external-codec.dtsi"
 
 / {
 	model = "Qualcomm Technologies, Inc. QCS610 Openkit";
@@ -40,6 +41,10 @@
 
 &fsa4480 {
 	status = "disabled";
+};
+
+&sm6150_snd {
+	pa-vddio-supply = <&pm6150_l15>;
 };
 
 &pm6150l_gpios {
@@ -82,6 +87,30 @@
 			debounce-interval = <15>;
 			gpio-key,wakeup;
 		};
+	};
+
+	leds-gpios {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		led_wifi {
+			lable = "led_wifi";
+			gpios = <&tlmm 65 0>;
+			default-state = "on";
+		};
+
+		led_bt {
+			lable = "led_bt";
+			gpios = <&tlmm 67 0>;
+			default-state = "on";
+		};
+
+		led_59 {
+			lable = "led_59";
+			gpios = <&tlmm 59 0>;
+			default-state = "on";
+		};
+
 	};
 
 	mtp_batterydata: qcom,battery-data {
@@ -128,6 +157,7 @@
 		clock-names = "eth_axi_clk", "eth_ptp_clk",
 				"eth_rgmii_clk", "eth_slave_ahb_clk";
 		qcom,phy-reset = <&tlmm 36 GPIO_ACTIVE_HIGH>;
+		qcom,phy-reset-delay-msecs = <10 50>;
 		qcom,phy-intr-redirect = <&tlmm 76 GPIO_ACTIVE_LOW>;
 		gdsc_emac-supply = <&emac_gdsc>;
 		pinctrl-names = "dev-emac-mdc", "dev-emac-mdio",
@@ -168,9 +198,61 @@
 			compatible = "qcom,emac-smmu-embedded";
 			iommus = <&apps_smmu 0x1C0 0x0>;
 			qcom,iova-mapping = <0x80000000 0x40000000>;
+			qcom,smmu-geometry;
 		};
 	};
+};
 
+&lpi_wcd934x_reset_active {
+	mux {
+		pins = "gpio24";
+		function = "func2";
+	};
+	config {
+		pins = "gpio24";
+		drive-strength = <16>;
+		output-high;
+	};
+};
+
+&lpi_wcd934x_reset_sleep {
+	mux {
+		pins = "gpio24";
+		function = "func2";
+	};
+
+	config {
+		pins = "gpio24";
+		drive-strength = <16>;
+		bias-disable;
+		output-low;
+	};
+};
+
+&wcd_intr_default {
+	mux {
+		pins = "gpio50";
+		function = "gpio";
+	};
+
+	config {
+		pins = "gpio50";
+		drive-strength = <2>; /* 2 mA */
+		bias-pull-down; /* pull down */
+		input-enable;
+	};
+};
+
+&qupv3_se4_spi {
+	status = "disabled";
+};
+
+&qupv3_se6_spi {
+	status = "okay";
+};
+
+&L15A {
+	regulator-always-on;
 };
 
 &emac_phy_intr {
@@ -368,6 +450,12 @@
 	status = "ok";
 };
 
+&usb0 {
+	dwc3@a600000 {
+		snps,usb3-u1u2-disable;
+	};
+};
+
 &L16A {
 	regulator-max-microvolt = <3304000>;
 };
@@ -508,6 +596,123 @@
 			ext_dsi_out: endpoint {
 				remote-endpoint = <&lt9611_in>;
 			};
+		};
+	};
+};
+/*for camera*/
+&tlmm {
+	cam_sensor_rear1_active: cam_sensor_rear1_active {
+		/* RESET */
+		mux {
+			pins = "gpio45";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio45";
+			bias-disable; /* No PULL */
+			drive-strength = <2>; /* 2 MA */
+		};
+	};
+
+	cam_sensor_rear1_suspend: cam_sensor_rear1_suspend {
+		/* RESET */
+		mux {
+			pins = "gpio45";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio45";
+			bias-pull-down; /* PULL DOWN */
+			drive-strength = <2>; /* 2 MA */
+			output-low;
+		};
+	};
+
+	cam_sensor_rear2_active: cam_sensor_rear2_active {
+		/* RESET */
+		mux {
+			pins = "gpio47";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio47";
+			bias-disable; /* No PULL */
+			drive-strength = <2>; /* 2 MA */
+		};
+	};
+
+	cam_sensor_rear2_suspend: cam_sensor_rear2_suspend {
+		/* RESET */
+		mux {
+			pins = "gpio47";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio47";
+			bias-pull-down; /* PULL DOWN */
+			drive-strength = <2>; /* 2 MA */
+			output-low;
+		};
+	};
+
+	cam_sensor_rear3_active: cam_sensor_rear3_active {
+		/* RESET */
+		mux {
+			pins = "gpio47";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio47";
+			bias-disable; /* No PULL */
+			drive-strength = <2>; /* 2 MA */
+		};
+	};
+
+	cam_sensor_rear3_suspend: cam_sensor_rear3_suspend {
+		/* RESET */
+		mux {
+			pins = "gpio47";
+			function = "gpio";
+		};
+
+		config {
+			pins = "gpio47";
+			bias-pull-down; /* PULL DOWN */
+			drive-strength = <2>; /* 2 MA */
+			output-low;
+		};
+	};
+
+	cam_sensor_mclk2_active: cam_sensor_mclk2_active {
+		/* MCLK2 */
+		mux {
+			pins = "gpio28";
+			function = "cam_mclk";
+		};
+
+		config {
+			pins = "gpio28";
+			bias-disable; /* No PULL */
+			drive-strength = <2>; /* 2 MA */
+		};
+	};
+
+	cam_sensor_mclk2_suspend: cam_sensor_mclk2_suspend {
+		/* MCLK2 */
+		mux {
+			pins = "gpio28";
+			function = "cam_mclk";
+		};
+
+		config {
+			pins = "gpio28";
+			bias-pull-down; /* PULL DOWN */
+			drive-strength = <2>; /* 2 MA */
 		};
 	};
 };
