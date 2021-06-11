@@ -132,6 +132,6 @@ config ENABLE_SMI_ACC_GYRO_BUFFERING
 	depends on SMI130
 	help
 	 Say Y here if you want to buffer boot time sensor
-	 samples for ASM330 accelerometer and gyroscope
+	 samples for SMI130 accelerometer and gyroscope
 
 endif
