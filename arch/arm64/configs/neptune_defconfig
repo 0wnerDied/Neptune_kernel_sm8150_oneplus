@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 4.14.235 Kernel Configuration
+# Linux/arm64 4.14.236 Kernel Configuration
 #
 CONFIG_ARM64=y
 CONFIG_64BIT=y
@@ -2136,6 +2136,7 @@ CONFIG_INPUT_UINPUT=y
 # CONFIG_INPUT_DRV2667_HAPTICS is not set
 CONFIG_STMVL53L1=y
 # CONFIG_SMI130 is not set
+# CONFIG_INPUT_SMI230 is not set
 # CONFIG_RMI4_CORE is not set
 
 #
