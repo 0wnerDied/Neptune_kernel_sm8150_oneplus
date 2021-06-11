@@ -1647,7 +1647,7 @@
 
 	qfprom: qfprom@780000 {
 		compatible = "qcom,qfprom";
-		reg = <0x00780000 0x7000>;
+		reg = <0x00780000 0x6030>;
 		#address-cells = <1>;
 		#size-cells = <1>;
 		read-only;
@@ -1665,6 +1665,11 @@
 
 		stm_debug_fuse: stm@20f0 {
 			reg = <0x20f0 0x4>;
+		};
+
+		thermal_iot: thermal-iot@602f {
+			reg = <0x602f 0x1>;
+			bits = <7 1>;
 		};
 	};
 };

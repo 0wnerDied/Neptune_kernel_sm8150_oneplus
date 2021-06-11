@@ -1,0 +1,97 @@
+menuconfig INPUT_SMI230
+	tristate "Bosch Sensor SMI230"
+	help
+	  if you choose this option, a list of SMI230 features will be displayed.
+
+	  If unsure, say N.
+
+choice
+	prompt "Select communication interface"
+	depends on INPUT_SMI230
+	help
+	  Note: SPI and I2C are not supported at the same time, that is to say:
+	  Choose either SPI or I2C to build the driver.
+
+    config SMI230_SPI
+	bool "Enable SPI connection"
+	depends on SPI_MASTER
+    config SMI230_I2C
+	bool "Enable I2C connection"
+	depends on I2C
+endchoice
+
+if INPUT_SMI230
+
+config SMI230_ACC_DRIVER
+	bool "SMI230 ACC driver"
+	depends on (I2C || SPI_MASTER) && SYSFS
+	help
+	 smi230 ACC linux driver
+
+config SMI230_GYRO_DRIVER
+	bool "SMI230 GYRO driver"
+	depends on (I2C || SPI_MASTER) && SYSFS
+	help
+	 smi230 gyroscope linux driver
+
+choice
+	prompt "Select features"
+	help
+	  Note: these are exclusive features which cannot be enabled at the same time.
+
+    config SMI230_RAW_DATA
+	bool "SMI230 raw data"
+	depends on SMI230_ACC_DRIVER || SMI230_GYRO_DRIVER
+	help
+	 This is default option for SMI230 driver which provides interrupt driving raw data sampling for both ACC and GYRO.
+
+    config SMI230_DATA_SYNC
+	bool "SMI230 Data sync"
+	depends on SMI230_ACC_DRIVER && SMI230_GYRO_DRIVER
+	help
+	 SMI230 data sync between accel and gyroscope, this feature can only be exclusively enabled in one compile, while it needs its dedicated config file loaded and interupt pins specially configured
+
+    config SMI230_FIFO
+	bool "SMI230 FIFO"
+	depends on SMI230_ACC_DRIVER || SMI230_GYRO_DRIVER
+	help
+	 enable SMI230 FIFO feature for ACC and GYRO
+
+endchoice
+
+config SMI230_ACC_FIFO
+	bool "SMI230 ACC FIFO enable"
+	depends on SMI230_FIFO && SMI230_ACC_DRIVER
+	help
+	 enable ACC FIFO feature.
+
+config SMI230_GYRO_FIFO
+	bool "SMI230 gyroscope FIFO enable"
+	depends on SMI230_FIFO && SMI230_GYRO_DRIVER
+	help
+	 enable GYRO FIFO feature.
+
+config SMI230_BOSCH_DRIVER_LOG_FUNC
+	bool "Smart log function support"
+	depends on (I2C || SPI_MASTER) && SYSFS
+	help
+	 If you say yes here, you get support for smart log function in Bosch sensor driver.
+
+config SMI230_MAX_BUFFER_LEN
+	int "configue read buffer size"
+	default "1024"
+	help
+	  Considering using FIFO, 1024 bytes are big enough for most cases. Do not change this value if not sure.
+
+config SMI230_DEBUG
+	bool "debug option in developing phase"
+	help
+	 Enable this option for the convinience of debuging
+
+config ENABLE_SMI230_ACC_GYRO_BUFFERING
+        bool "Enable accel & gyro  boot time sensor sample buffering"
+        depends on INPUT_SMI230
+        help
+         Say Y here if you want to buffer boot time sensor
+         samples for SMI230 accelerometer and gyroscope
+endif
