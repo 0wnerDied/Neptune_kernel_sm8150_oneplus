@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -53,6 +53,22 @@
 #define MPPS_DOWN_EVENT_TO_BG_TIMEOUT 3000
 #define ADSP_DOWN_EVENT_TO_BG_TIMEOUT 3000
 
+#define SSR_RESET_CMD 1
+#define BG_CMND_REG (0x14)
+
+static ssize_t bg_ssr_store(struct kobject *kobj,
+	struct kobj_attribute *attr,
+	const char *buf, size_t count);
+
+static struct kobj_attribute bg_ssr_attribute =
+	__ATTR(ssr, 0220, NULL, bg_ssr_store);
+
+static struct attribute *attrs[] = {
+	&bg_ssr_attribute.attr,
+	NULL,
+};
+
+
 enum {
 	SSR_DOMAIN_BG,
 	SSR_DOMAIN_MODEM,
@@ -86,6 +102,8 @@ struct bgdaemon_priv {
 	u32 cmd_status;
 	struct device *platform_dev;
 	void *twm_data_buff;
+	struct kobject *boot_bg_obj;
+	struct attribute_group *attr_group;
 };
 
 struct bg_event {
@@ -688,6 +706,94 @@ static int bgcom_char_close(struct inode *inode, struct file *file)
 	return ret;
 }
 
+static ssize_t bg_ssr_store(struct kobject *kobj,
+	struct kobj_attribute *attr,
+	const char *buf,
+	size_t count)
+{
+	int ssr_command = 0;
+	uint32_t cmnd_reg        = 0;
+	int rc;
+
+	pr_info("%s: going to call BG ssr\n ", __func__);
+
+	if (kstrtoint(buf, 10, &ssr_command) < 0)
+		return -EINVAL;
+
+	if (ssr_command != SSR_RESET_CMD)
+		return -EINVAL;
+
+	cmnd_reg |= BIT(27);
+	mutex_lock(&bg_char_mutex);
+	handle = bgcom_open(&config_type);
+	if (IS_ERR(handle)) {
+		handle = NULL;
+		mutex_unlock(&bg_char_mutex);
+		return count;
+	}
+
+	pr_err("requesting for BG restart\n");
+	rc = bgcom_reg_write(handle, BG_CMND_REG, 1, &cmnd_reg);
+	if (rc < 0)
+		pr_err("bgchar_write_cmd failed\n");
+
+	rc = bgcom_close(&handle);
+	mutex_unlock(&bg_char_mutex);
+	pr_info("BG restarted\n");
+
+	return count;
+}
+
+static int bg_loader_init_sysfs(struct platform_device *pdev)
+{
+	int ret;
+	struct bgdaemon_priv *priv = NULL;
+
+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+	if (!priv)
+		return -ENOMEM;
+
+	platform_set_drvdata(pdev, priv);
+
+	priv->pil_h = NULL;
+	priv->boot_bg_obj = NULL;
+	priv->attr_group = devm_kzalloc(&pdev->dev,
+				sizeof(*(priv->attr_group)),
+				GFP_KERNEL);
+	if (!priv->attr_group) {
+		ret = -ENOMEM;
+		goto error_return;
+	}
+
+	priv->attr_group->attrs = attrs;
+
+	priv->boot_bg_obj = kobject_create_and_add("boot_bg", kernel_kobj);
+	if (!priv->boot_bg_obj) {
+		pr_err("%s: sysfs create and add failed\n",
+						__func__);
+		ret = -ENOMEM;
+		goto error_return;
+	}
+
+	ret = sysfs_create_group(priv->boot_bg_obj, priv->attr_group);
+	if (ret) {
+		pr_err("%s: sysfs create group failed %d\n",
+							__func__, ret);
+		goto error_return;
+	}
+
+	return 0;
+
+error_return:
+
+	if (priv->boot_bg_obj) {
+		kobject_del(priv->boot_bg_obj);
+		priv->boot_bg_obj = NULL;
+	}
+
+	return ret;
+}
+
 static int bg_daemon_probe(struct platform_device *pdev)
 {
 	struct device_node *node;
@@ -733,6 +839,11 @@ static int bg_daemon_probe(struct platform_device *pdev)
 		goto err_ret;
 	}
 	dev->platform_dev = &pdev->dev;
+	ret = bg_loader_init_sysfs(pdev);
+	if (ret != 0) {
+		pr_err("%s: Error in initing sysfs\n", __func__);
+		return ret;
+	}
 	pr_info("%s success", __func__);
 
 err_device:
