@@ -2103,6 +2103,7 @@ struct ipa3_context {
 	bool ipa_in_cpe_cfg;
 	bool is_modem_up;
 	bool use_tput_est_ep;
+	bool is_device_crashed;
 };
 
 struct ipa3_plat_drv_res {
