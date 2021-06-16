@@ -119,18 +119,16 @@ static void set_bootloader_stats(bool hibernation_restore)
 		_create_boot_marker("D - APPSBL Kernel Load Start - ",
 			readl_relaxed(&boot_stats->load_kernel_start));
 		_create_boot_marker("D - APPSBL Kernel Load End - ",
-			readl_relaxed(&boot_stats->load_kernel_done));
+			readl_relaxed(&boot_stats->bootloader_load_kernel));
 		_create_boot_marker("D - APPSBL Kernel Load Time - ",
-			readl_relaxed(&boot_stats->load_kernel_done) -
-			readl_relaxed(&boot_stats->load_kernel_start));
+			readl_relaxed(&boot_stats->bootloader_load_kernel));
 		_create_boot_marker("D - APPSBL Kernel Auth Time - ",
-			readl_relaxed(&boot_stats->bootloader_chksum_done) -
-			readl_relaxed(&boot_stats->bootloader_chksum_start));
+			readl_relaxed(&boot_stats->bootloader_checksum));
 	} else {
 		_create_boot_marker("D - APPSBL Hibernation Image Load Start -",
 			readl_relaxed(&boot_stats->load_kernel_start));
 		_create_boot_marker("D - APPSBL Hibernation Image Load End - ",
-			readl_relaxed(&boot_stats->load_kernel_done));
+			readl_relaxed(&boot_stats->bootloader_load_kernel));
 	}
 	_create_boot_marker("M - APPSBL End - ",
 		readl_relaxed(&boot_stats->bootloader_end));
