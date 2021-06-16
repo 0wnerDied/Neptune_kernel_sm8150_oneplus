@@ -493,6 +493,22 @@ static int dwc3_link_state_show(struct seq_file *s, void *unused)
 	}
 
 	spin_lock_irqsave(&dwc->lock, flags);
+	if (DWC3_GHWPARAMS0_MODE(dwc->hwparams.hwparams0) ==
+					DWC3_GHWPARAMS0_MODE_HOST) {
+		reg = dwc3_readl(dwc->regs, DWC31_LINK_GDBGLTSSM(0));
+		state = ((reg & DWC3_GDBGLTSSM_LINKSTATE_MASK) >> 22);
+		seq_printf(s, "%s\n", dwc3_gadget_link_string(state));
+		if (dwc->dual_port) {
+			reg = dwc3_readl(dwc->regs, DWC31_LINK_GDBGLTSSM(1));
+			state = ((reg & DWC3_GDBGLTSSM_LINKSTATE_MASK) >> 22);
+			seq_printf(s, "%s\n", dwc3_gadget_link_string(state));
+		}
+
+		spin_unlock_irqrestore(&dwc->lock, flags);
+
+		return 0;
+	}
+
 	reg = dwc3_readl(dwc->regs, DWC3_DSTS);
 	state = DWC3_DSTS_USBLNKST(reg);
 	speed = reg & DWC3_DSTS_CONNECTSPD;
@@ -500,6 +516,7 @@ static int dwc3_link_state_show(struct seq_file *s, void *unused)
 	seq_printf(s, "%s\n", (speed >= DWC3_DSTS_SUPERSPEED) ?
 		   dwc3_gadget_link_string(state) :
 		   dwc3_gadget_hs_link_string(state));
+
 	spin_unlock_irqrestore(&dwc->lock, flags);
 
 	return 0;
