@@ -95,6 +95,11 @@
 #define ST_ASM330LHHX_TEMP_GAIN				256
 #define ST_ASM330LHHX_TEMP_OFFSET			6400
 
+#define CONFIG_IMU_ASM330LHHX_TEST 1
+#ifdef CONFIG_IMU_ASM330LHHX_TEST
+static u8 asm330lhhx_addr;
+#endif
+
 static const struct st_asm330lhhx_odr_table_entry st_asm330lhhx_odr_table[] = {
 	[ST_ASM330LHHX_ID_ACC] = {
 		.size = 8,
@@ -854,6 +859,70 @@ static ssize_t read_acc_boot_sample_store(struct device *dev,
 }
 #endif
 
+#ifdef CONFIG_IMU_ASM330LHHX_TEST
+static ssize_t st_asm330lhhx_read_reg_addr(struct device *dev,
+		struct device_attribute *attr,
+		char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "0x%02x\n",
+			asm330lhhx_addr);
+}
+static ssize_t st_asm330lhhx_write_reg_addr(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+
+	if (kstrtou8(buf, 0, &asm330lhhx_addr))
+		return -EINVAL;
+
+	return count;
+}
+
+static ssize_t st_asm330lhhx_read_reg_data(struct device *dev,
+		struct device_attribute *attr,
+		char *buf)
+{
+	struct st_asm330lhhx_sensor *sensor = iio_priv(dev_get_drvdata(dev));
+	struct st_asm330lhhx_hw *hw = sensor->hw;
+	int data;
+	int err;
+
+	mutex_lock(&hw->page_lock);
+
+	err = regmap_read(hw->regmap, asm330lhhx_addr, &data);
+	if (err < 0)
+		dev_err(hw->dev, "failed to read %02x register\n",
+				asm330lhhx_addr);
+
+	mutex_unlock(&hw->page_lock);
+
+	return snprintf(buf, PAGE_SIZE, "0x%02x\n", data);
+}
+
+static ssize_t st_asm330lhhx_write_reg_data(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct st_asm330lhhx_sensor *sensor = iio_priv(dev_get_drvdata(dev));
+	struct st_asm330lhhx_hw *hw = sensor->hw;
+	u8 data;
+	int err;
+
+	if (kstrtou8(buf, 0, &data))
+		return -EINVAL;
+
+	mutex_lock(&hw->page_lock);
+
+	err = regmap_write(hw->regmap, asm330lhhx_addr, data);
+	if (err < 0)
+		dev_err(hw->dev, "failed to write %02x register data %02x\n",
+				asm330lhhx_addr, data);
+
+	mutex_unlock(&hw->page_lock);
+
+	return (err < 0) ? err : count;
+}
+#endif
+
 ssize_t st_asm330lhhx_get_power_mode(struct device *dev,
 				     struct device_attribute *attr, char *buf)
 {
@@ -901,17 +970,21 @@ static IIO_DEVICE_ATTR(read_gyro_boot_sample, 0444,
 		read_gyro_boot_sample_show, read_gyro_boot_sample_store, 0);
 #endif
 
+#ifdef CONFIG_IMU_ASM330LHHX_TEST
+static IIO_DEVICE_ATTR(addr, 0644,
+		st_asm330lhhx_read_reg_addr, st_asm330lhhx_write_reg_addr, 0);
+static IIO_DEVICE_ATTR(data, 0644,
+		st_asm330lhhx_read_reg_data, st_asm330lhhx_write_reg_data, 0);
+#endif
 static IIO_DEVICE_ATTR(in_anglvel_scale_available, 0444,
 		       st_asm330lhhx_sysfs_scale_avail, NULL, 0);
 static IIO_DEVICE_ATTR(in_temp_scale_available, 0444,
 		       st_asm330lhhx_sysfs_scale_avail, NULL, 0);
-
 static IIO_DEVICE_ATTR(hwfifo_watermark_max, 0444,
 		       st_asm330lhhx_get_max_watermark, NULL, 0);
 static IIO_DEVICE_ATTR(hwfifo_flush, 0200, NULL, st_asm330lhhx_flush_fifo, 0);
 static IIO_DEVICE_ATTR(hwfifo_watermark, 0644, st_asm330lhhx_get_watermark,
 		       st_asm330lhhx_set_watermark, 0);
-
 static IIO_DEVICE_ATTR(power_mode, 0644,
 		       st_asm330lhhx_get_power_mode,
 		       st_asm330lhhx_set_power_mode, 0);
@@ -920,6 +993,10 @@ static struct attribute *st_asm330lhhx_acc_attributes[] = {
 	&iio_dev_attr_sampling_frequency_available.dev_attr.attr,
 #ifdef CONFIG_ENABLE_ASMX_ACC_GYRO_BUFFERING
 	&iio_dev_attr_read_acc_boot_sample.dev_attr.attr,
+#endif
+#ifdef CONFIG_IMU_ASM330LHHX_TEST
+	&iio_dev_attr_addr.dev_attr.attr,
+	&iio_dev_attr_data.dev_attr.attr,
 #endif
 	&iio_dev_attr_in_accel_scale_available.dev_attr.attr,
 	&iio_dev_attr_hwfifo_watermark_max.dev_attr.attr,
