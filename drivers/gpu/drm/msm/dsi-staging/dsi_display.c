@@ -10444,7 +10444,7 @@ static int dsi_display_get_mipi_dsi_msg(const struct mipi_dsi_msg *msg, char* bu
 	len += snprintf(buf + len, PAGE_SIZE - len, "%02X ", (unsigned int)msg->flags);
 	/* Delay */
 	len += snprintf(buf + len, PAGE_SIZE - len, "%02X ", msg->wait_ms);
-	len += snprintf(buf + len, PAGE_SIZE - len, "%02X %02X ", msg->tx_len >> 8, msg->tx_len & 0x00FF);
+	len += snprintf(buf + len, PAGE_SIZE - len, "%02lX %02lX ", msg->tx_len >> 8, msg->tx_len & 0x00FF);
 
 	/* Packet Payload */
 	for (i = 0 ; i < msg->tx_len ; i++) {
