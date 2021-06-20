@@ -284,7 +284,7 @@ static void geni_i2c_bus_recovery(struct geni_i2c_dev *gi2c)
 		geni_abort_m_cmd(gi2c->base);
 		if (!wait_for_completion_timeout(&gi2c->xfer, HZ))
 			GENI_SE_ERR(gi2c->ipcl, false, gi2c->dev,
-				"Abort failed\n", __func__);
+				"Abort failed:%s\n", __func__);
 	}
 
 	reinit_completion(&gi2c->xfer);
@@ -959,7 +959,7 @@ static int geni_i2c_xfer(struct i2c_adapter *adap,
 			if (gi2c->bus_recovery_enable &&
 				geni_i2c_is_bus_recovery_required(gi2c)) {
 				GENI_SE_ERR(gi2c->ipcl, true, gi2c->dev,
-					"SDA Line stuck\n", gi2c->err);
+					"SDA Line stuck:%d\n", gi2c->err);
 				geni_i2c_bus_recovery(gi2c);
 			}
 			break;
