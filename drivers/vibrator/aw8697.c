@@ -654,7 +654,7 @@ static int aw8697_haptic_play_go(struct aw8697 *aw8697, bool flag)
         aw8697->interval_us = (aw8697->current_time.tv_sec-aw8697->pre_enter_time.tv_sec) * 1000000
           + (aw8697->current_time.tv_usec-aw8697->pre_enter_time.tv_usec);
        if (aw8697->interval_us < 2000) {
-           pr_info("aw8697->interval_us t=%ld\n",aw8697->interval_us);
+           pr_info("aw8697->interval_us t=%u\n",aw8697->interval_us);
            mdelay(2);
        }
     }
@@ -3872,7 +3872,7 @@ static ssize_t aw8697_ignore_sync_show(struct device *dev,
 	struct led_classdev *cdev = dev_get_drvdata(dev);
 	struct aw8697 *aw8697 = container_of(cdev, struct aw8697, cdev);
 
-	return snprintf(buf, PAGE_SIZE, "%lld\n", aw8697->ignore_sync);
+	return snprintf(buf, PAGE_SIZE, "%d\n", aw8697->ignore_sync);
 }
 
 static ssize_t aw8697_cont_show(struct device *dev, struct device_attribute *attr,
@@ -4363,7 +4363,7 @@ static ssize_t aw8697_osc_cali_show(struct device *dev, struct device_attribute 
 	struct aw8697 *aw8697 = container_of(cdev, struct aw8697, cdev);
 	ssize_t len = 0;
 
-	len += snprintf(buf+len, PAGE_SIZE-len, "%d\n", aw8697->microsecond);
+	len += snprintf(buf+len, PAGE_SIZE-len, "%lu\n", aw8697->microsecond);
 	return len;
 }
 
@@ -4609,7 +4609,7 @@ static ssize_t aw8697_haptic_audio_tp_input_store(struct device *dev, struct dev
 	haptic_audio = &(aw8697->haptic_audio);
 
 	if (count != sizeof(struct tp_input_info)) {
-		pr_err("%s: unmatch buf len, node_len=%d, struct len=%d\n",
+		pr_err("%s: unmatch buf len, node_len=%lu, struct len=%lu\n",
 			__func__, count, sizeof(struct tp_input_info));
 		return count;
 	}
@@ -4789,7 +4789,7 @@ static ssize_t aw8697_haptic_audio_ai_input_store(struct device *dev, struct dev
 	haptic_audio = &(aw8697->haptic_audio);
 
 	if (count != sizeof(struct ai_trust_zone)) {
-		pr_err("%s: unmatch buf len, node_len=%d, struct len=%d\n",
+		pr_err("%s: unmatch buf len, node_len=%lu, struct len=%lu\n",
 			__func__, count, sizeof(struct ai_trust_zone));
 		return count;
 	}
@@ -4916,7 +4916,7 @@ static ssize_t aw8697_haptic_audio_tp_size_store(struct device *dev, struct devi
 	tp_size = &(aw8697->haptic_audio.tp_size);
 
 	if (count != sizeof(struct haptic_audio_tp_size)) {
-		pr_err("%s: unmatch buf len, node_len=%d, struct len=%d\n",
+		pr_err("%s: unmatch buf len, node_len=%lu, struct len=%lu\n",
 			__func__, count, sizeof(struct haptic_audio_tp_size));
 		return count;
 	}
