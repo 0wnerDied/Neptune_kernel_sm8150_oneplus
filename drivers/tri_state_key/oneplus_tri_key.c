@@ -1204,7 +1204,7 @@ static ssize_t hall_dump_regs_show(struct device *dev,
 	}
 
 	oneplus_hall_dump_regs(1, _buf);
-	return sprintf(buf, "%s\n %s\n", _buf);
+	return sprintf(buf, "%s\n", _buf);
 }
 
 static ssize_t hall_debug_info_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
