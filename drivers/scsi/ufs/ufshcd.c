@@ -3853,7 +3853,7 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	if (err) {
 		if (err != -EAGAIN)
 			dev_err(hba->dev,
-				"%s: failed to compose upiu %d cmd:0x%08x lun:%d\n",
+				"%s: failed to compose upiu %d cmd:0x%pK lun:%d\n",
 				__func__, err, cmd, lrbp->lun);
 
 		lrbp->cmd = NULL;
