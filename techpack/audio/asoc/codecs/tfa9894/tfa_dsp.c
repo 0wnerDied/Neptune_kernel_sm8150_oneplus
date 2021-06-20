@@ -3687,14 +3687,14 @@ enum tfa_error tfa_dev_set_state(struct tfa_device *tfa, enum tfa_state state)
 	/* Base states */
 	/* Do not change the order of setting bits as this is important! */
 	switch (state & 0x0f) {
-	case TFA_STATE_POWERDOWN:    /* PLL in powerdown, Algo up */
-		break;
-	case TFA_STATE_INIT_HW:      /* load I2C/PLL hardware setting (~wait2srcsettings) */
-		break;
-	case TFA_STATE_INIT_CF:      /* coolflux HW access possible (~initcf) */
-								 /* Start with SBSL=0 to stay in initCF state */
-	if(!tfa->is_probus_device)
-		TFA_SET_BF(tfa, SBSL, 0);
+		case TFA_STATE_POWERDOWN:    /* PLL in powerdown, Algo up */
+			break;
+		case TFA_STATE_INIT_HW:      /* load I2C/PLL hardware setting (~wait2srcsettings) */
+			break;
+		case TFA_STATE_INIT_CF:      /* coolflux HW access possible (~initcf) */
+									 /* Start with SBSL=0 to stay in initCF state */
+		if(!tfa->is_probus_device)
+			TFA_SET_BF(tfa, SBSL, 0);
 
 		/* We want to leave Wait4SrcSettings state for max2 */
 		if (tfa->tfa_family == 2)
@@ -3711,27 +3711,25 @@ enum tfa_error tfa_dev_set_state(struct tfa_device *tfa, enum tfa_state state)
 			if (ready)
 				break;
 		} while (loop--);
- if (!tfa->is_probus_device)
-	{
-		//MTPOTC set to 1		
-		tfa_dev_mtp_set(tfa, TFA_MTP_OTC, 1);
-		/* Enable FAIM when clock is stable, to avoid MTP corruption */
-		err = (enum tfa_error)tfa98xx_faim_protect(tfa, 1);
-		if (tfa->verbose) {
-			pr_debug("FAIM enabled (err:%d).\n", err);
+		if (!tfa->is_probus_device) {
+			//MTPOTC set to 1		
+			tfa_dev_mtp_set(tfa, TFA_MTP_OTC, 1);
+			/* Enable FAIM when clock is stable, to avoid MTP corruption */
+			err = (enum tfa_error)tfa98xx_faim_protect(tfa, 1);
+			if (tfa->verbose)
+				pr_debug("FAIM enabled (err:%d).\n", err);
 		}
-	}
 		break;
-	case TFA_STATE_INIT_FW:      /* DSP framework active (~patch loaded) */
-		break;
-	case TFA_STATE_OPERATING:    /* Amp and Algo running */
-								 /* Depending on our previous state we need to set 3 bits */
-		TFA_SET_BF(tfa, PWDN, 0);	/* Coming from state 0 */
-		TFA_SET_BF(tfa, MANSCONF, 1);	/* Coming from state 1 */
-	if (!tfa->is_probus_device)
-		TFA_SET_BF(tfa, SBSL, 1);	/* Coming from state 6 */
-	else
-		TFA_SET_BF(tfa, AMPE, 1);	/* No SBSL for probus device, we set AMPE to 1  */
+		case TFA_STATE_INIT_FW:      /* DSP framework active (~patch loaded) */
+			break;
+		case TFA_STATE_OPERATING:    /* Amp and Algo running */
+									 /* Depending on our previous state we need to set 3 bits */
+			TFA_SET_BF(tfa, PWDN, 0);	/* Coming from state 0 */
+			TFA_SET_BF(tfa, MANSCONF, 1);	/* Coming from state 1 */
+		if (!tfa->is_probus_device)
+			TFA_SET_BF(tfa, SBSL, 1);	/* Coming from state 6 */
+		else
+			TFA_SET_BF(tfa, AMPE, 1);	/* No SBSL for probus device, we set AMPE to 1  */
 
 									/*
 									* Disable MTP clock to protect memory.
@@ -3744,13 +3742,11 @@ enum tfa_error tfa_dev_set_state(struct tfa_device *tfa, enum tfa_state state)
 				count--;
 			}
 		}
-  if (!tfa->is_probus_device)
-	{ 
-		err = (enum tfa_error)tfa98xx_faim_protect(tfa, 0);
-		if (tfa->verbose) {
-			pr_debug("FAIM disabled (err:%d).\n", err);
+		if (!tfa->is_probus_device) { 
+			err = (enum tfa_error)tfa98xx_faim_protect(tfa, 0);
+			if (tfa->verbose)
+				pr_debug("FAIM disabled (err:%d).\n", err);
 		}
-	}
 		/* Synchonize I/V delay on 96/97 at cold start */
 		if (tfa->sync_iv_delay) {
 			if (tfa->verbose)
@@ -3798,17 +3794,17 @@ enum tfa_state tfa_dev_get_state(struct tfa_device *tfa)
 	int manstate;
 
 	/* different per family type */
-	if ( tfa->tfa_family == 1 ) {
+	if (tfa->tfa_family == 1) {
 		cold = TFA_GET_BF(tfa, ACS);
-		if (  cold && TFA_GET_BF(tfa, PWDN) )
+		if (cold && TFA_GET_BF(tfa, PWDN))
 			tfa->state = TFA_STATE_RESET;
-		else if ( !cold && TFA_GET_BF(tfa, SWS))
+		else if (!cold && TFA_GET_BF(tfa, SWS))
 			tfa->state = TFA_STATE_OPERATING;
 	} else /* family 2 */ {
 		if (is_94_N2_device(tfa))
 			manstate = tfa_get_bf(tfa, TFA9894N2_BF_MANSTATE);
 		else
-		manstate = TFA_GET_BF(tfa, MANSTATE);
+			manstate = TFA_GET_BF(tfa, MANSTATE);
 		switch(manstate) {
 			case 0:
 				tfa->state = TFA_STATE_POWERDOWN;
@@ -3840,23 +3836,21 @@ int tfa_dev_mtp_get(struct tfa_device *tfa, enum tfa_mtp item)
 			break;
 		case TFA_MTP_RE25:
 		case TFA_MTP_RE25_PRIM:
-			if(tfa->tfa_family == 2) {
-				if((tfa->rev & 0xFF) == 0x88)
+			if (tfa->tfa_family == 2) {
+				if ((tfa->rev & 0xFF) == 0x88)
 					value = TFA_GET_BF(tfa, R25CL);
-				else if((tfa->rev & 0xFF) == 0x13)
+				else if ((tfa->rev & 0xFF) == 0x13)
 					value = tfa_get_bf(tfa, TFA9912_BF_R25C);
 				else
 					value = TFA_GET_BF(tfa, R25C);
-			} else {
+			} else
 				reg_read(tfa, 0x83, (unsigned short*)&value);
-			}
 			break;
 		case TFA_MTP_RE25_SEC:
-			if((tfa->rev & 0xFF) == 0x88) {
+			if ((tfa->rev & 0xFF) == 0x88)
 				value = TFA_GET_BF(tfa, R25CR);
-			} else {
+			else
 				pr_debug("Error: Current device has no secondary Re25 channel \n");
-			}
 			break;
 		case TFA_MTP_LOCK:
 			break;
@@ -3878,19 +3872,19 @@ enum tfa_error tfa_dev_mtp_set(struct tfa_device *tfa, enum tfa_mtp item, int va
 			break;
 		case TFA_MTP_RE25:
 		case TFA_MTP_RE25_PRIM:
-			if(tfa->tfa_family == 2) {
-				if((tfa->rev & 0xFF) == 0x88)
+			if (tfa->tfa_family == 2) {
+				if ((tfa->rev & 0xFF) == 0x88)
 					TFA_SET_BF(tfa, R25CL, (uint16_t)value);
-				else
-				{
-				    if (tfa->is_probus_device)
+				else {
+				    if (tfa->is_probus_device) {
 				        tfa2_manual_mtp_cpy(tfa, 0xf4, value, 2);
+					}
 					TFA_SET_BF(tfa, R25C, (uint16_t)value);
 				}
 			}
 			break;
 		case TFA_MTP_RE25_SEC:
-			if((tfa->rev & 0xFF) == 0x88) {
+			if ((tfa->rev & 0xFF) == 0x88) {
 				TFA_SET_BF(tfa, R25CR, (uint16_t)value);
 			} else {
 				pr_debug("Error: Current device has no secondary Re25 channel \n");
