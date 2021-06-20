@@ -2057,7 +2057,7 @@ static DEVICE_ATTR(tp_fw_update, 0644, sec_update_fw_show, sec_update_fw_store);
 	{ \
 		int enabled = 0; \
 		char page[PAGESIZE] = {0}; \
-		copy_from_user(page, user_buf, count); \
+		if (copy_from_user(page, user_buf, count)); \
 		sscanf(page, "%d", &enabled); \
 		out = enabled > 0 ? 1 : 0; \
 		return count; \
