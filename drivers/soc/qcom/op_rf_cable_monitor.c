@@ -228,16 +228,16 @@ static ssize_t rf_factory_mode_proc_write_func(struct file *file,
     if (ret < 0)
         return ret;
 
-    pr_err("%s: input : %d\n", enable, __func__);
+    pr_err("%s: input : %d\n", __func__, enable);
     irq_cable_enable(0);
     rf_cable_data->is_rf_factory_mode = enable;
     if (!rf_cable_data->is_rf_factory_mode) {
         modify_rf_v2_info(0);
-        pr_err("%s: Modem restart due to RF Factory Mode exit\n", enable, __func__);
+        pr_err("%s: Modem restart due to RF Factory Mode exit\n", __func__);
         op_restart_modem();
     } else {
         modify_rf_v2_info(2);
-        pr_err("%s: Modem restart due to RF Factory Mode entry\n", enable, __func__);
+        pr_err("%s: Modem restart due to RF Factory Mode entry\n",__func__);
         op_restart_modem();
     }
     irq_cable_enable(1);
@@ -511,7 +511,7 @@ static int op_rf_cable_probe(struct platform_device *pdev)
 		pr_err("SDX5X RF Cable init\n");
 		sdx5x_rf_class = class_create(THIS_MODULE, "sdx5x_rf_cable");
 		if (IS_ERR(sdx5x_rf_class)) {
-			pr_err("%s: class_create fail - %d!\n", __func__,
+			pr_err("%s: class_create fail - %ld!\n", __func__,
 					PTR_ERR(sdx5x_rf_class));
 			return PTR_ERR(sdx5x_rf_class);
 		}
@@ -519,7 +519,7 @@ static int op_rf_cable_probe(struct platform_device *pdev)
 		sdx5x_rf_device = device_create(sdx5x_rf_class, rf_cable_data->dev,
 				MKDEV(0, 0), NULL, "rf_cable");
 		if (IS_ERR(sdx5x_rf_device)) {
-			pr_err("%s: sdx5x_rf_device fail - %d!\n", __func__,
+			pr_err("%s: sdx5x_rf_device fail - %ld!\n", __func__,
 					PTR_ERR(sdx5x_rf_device));
 			return PTR_ERR(sdx5x_rf_device);
 		}
@@ -628,7 +628,7 @@ static int op_rf_cable_probe(struct platform_device *pdev)
 		modify_rf_cable_smem_info(cable_state);
 		cable_connect_state(cable_state);
 
-		pr_err("%s gpio0=%d gpio1=%d,\n", __func__, cable_state);
+		pr_err("%s gpio0=%d gpio1=%d,\n", __func__, cable_state, cable_state);
 		create_rf_cable_procfs();
 	}
 
