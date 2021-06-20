@@ -316,7 +316,7 @@ static int nfc_probe(struct i2c_client *client,
     pr_debug("%s: enter\n", __func__);
 
     if (get_second_board_absent() == 1) {
-        pr_err("second board absent, don't probe pn5xx\n", __func__);
+        pr_err("%s: second board absent, don't probe pn5xx\n", __func__);
 	ret = -ENODEV;
         goto err;
     }
