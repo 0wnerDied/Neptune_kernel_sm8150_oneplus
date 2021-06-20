@@ -4279,8 +4279,9 @@ static void __exit stmvl53l1_exit(void)
 	stmvl53l1_module_func_tbl.deinit(NULL);
 	if (stmvl53l1_module_func_tbl.clean_up != NULL)
 		stmvl53l1_module_func_tbl.clean_up();
-    if(ipp_inited)
+    if (ipp_inited) {
     	stmvl53l1_ipp_exit();
+	}
 	vl53l1_dbgmsg("End\n");
 }
 
