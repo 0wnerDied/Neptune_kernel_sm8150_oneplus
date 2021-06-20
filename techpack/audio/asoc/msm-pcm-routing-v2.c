@@ -1271,7 +1271,7 @@ static int msm_pcm_loopback_volume_get(struct snd_kcontrol *kcontrol,
 static int msm_pcm_loopback_volume_put(struct snd_kcontrol *kcontrol,
 			       struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s: volume = %d\n", __func__, ucontrol->value.integer.value[0]);
+	pr_debug("%s: volume = %ld\n", __func__, ucontrol->value.integer.value[0]);
 
 	if (loopback_map.active) {
 		loopback_map.volume = ucontrol->value.integer.value[0];
