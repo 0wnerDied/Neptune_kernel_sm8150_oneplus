@@ -5725,7 +5725,7 @@ int dsi_panel_set_aod_mode(struct dsi_panel *panel, int level)
     mode = panel->cur_mode;
 	if (level == 1) {
 		mutex_lock(&panel->panel_lock);
-		panel->aod_status == 1;
+		panel->aod_status = 1;
 		real_aod_mode = true;
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_AOD_ON_1);
 		pr_err("send AOD ON commd mode 1 start \n");
