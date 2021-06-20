@@ -4345,7 +4345,7 @@ const char *buf, size_t count)
 	int rc = 0;
 
 	rc = kstrtouint(buf, 0, &val);
-	pr_info("%s: vqal:\n", __func__, val);
+	pr_info("%s: vqal:%d\n", __func__, val);
 	if (rc < 0)
 	return rc;
 	mutex_lock(&aw8697->lock);
