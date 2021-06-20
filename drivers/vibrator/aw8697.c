@@ -2200,7 +2200,7 @@ static void aw8697_haptic_audio_work_routine(struct work_struct *work)
 						list_for_each_entry(p_tmp, &(haptic_audio->score_list), list) {
 							if (aw8697_haptic_audio_tp_list_match(&(tp->id[i].pt_info), p_tmp))
 							{
-								p_tmp->level = (p_tmp->level < TRUST_LEVEL) ? (++p_tmp->level) : TRUST_LEVEL;
+								p_tmp->level == (p_tmp->level < TRUST_LEVEL) ? (++p_tmp->level) : TRUST_LEVEL;
 							}
 						}
 					}
