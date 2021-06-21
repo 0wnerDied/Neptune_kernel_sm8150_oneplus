@@ -282,8 +282,6 @@ static int msm_geni_serial_runtime_resume(struct device *dev);
 static int msm_geni_serial_runtime_suspend(struct device *dev);
 static int uart_line_id;
 static int msm_geni_serial_get_ver_info(struct uart_port *uport);
-static void msm_geni_serial_set_manual_flow(bool enable,
-				struct msm_geni_serial_port *port);
 static void msm_geni_serial_ssr_down(struct device *dev);
 static void msm_geni_serial_ssr_up(struct device *dev);
 static bool handle_rx_dma_xfer(u32 s_irq_status, struct uart_port *uport);
@@ -1883,47 +1881,6 @@ static void msm_geni_serial_start_rx(struct uart_port *uport)
 		return;
 	}
 	start_rx_sequencer(&port->uport);
-}
-
-static void msm_geni_serial_set_manual_flow(bool enable,
-					struct msm_geni_serial_port *port)
-{
-	u32 uart_manual_rfr = 0;
-
-	if (port->uart_ssr.is_ssr_down) {
-		IPC_LOG_MSG(port->ipc_log_misc, "%s: SSR Down event set\n",
-			__func__);
-		return;
-	}
-
-	if (!enable) {
-		uart_manual_rfr |= (UART_MANUAL_RFR_EN);
-		geni_write_reg_nolog(uart_manual_rfr, port->uport.membase,
-						SE_UART_MANUAL_RFR);
-		/* UART FW needs delay per HW experts recommendation */
-		udelay(10);
-
-		uart_manual_rfr |= (UART_RFR_NOT_READY);
-		geni_write_reg_nolog(uart_manual_rfr, port->uport.membase,
-						SE_UART_MANUAL_RFR);
-		/*
-		 * Ensure that the manual flow on writes go through before
-		 * doing a stop_rx.
-		 */
-		mb();
-		IPC_LOG_MSG(port->ipc_log_misc,
-			"%s: Manual Flow Enabled, HW Flow OFF\n", __func__);
-	} else {
-		geni_write_reg_nolog(0, port->uport.membase,
-						SE_UART_MANUAL_RFR);
-		/* Ensure that the manual flow off writes go through */
-		mb();
-		uart_manual_rfr = geni_read_reg_nolog(port->uport.membase,
-							SE_UART_MANUAL_RFR);
-		IPC_LOG_MSG(port->ipc_log_misc,
-			"%s: Manual Flow Disabled, HW Flow ON rfr = 0x%x\n",
-						__func__, uart_manual_rfr);
-	}
 }
 
 static int stop_rx_sequencer(struct uart_port *uport)
@@ -4165,24 +4122,6 @@ static int msm_geni_serial_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static void msm_geni_serial_allow_rx(struct msm_geni_serial_port *port)
-{
-	u32 uart_manual_rfr;
-
-	uart_manual_rfr = (UART_MANUAL_RFR_EN | UART_RFR_READY);
-	geni_write_reg_nolog(uart_manual_rfr, port->uport.membase,
-						SE_UART_MANUAL_RFR);
-	/* Ensure that the manual flow off writes go through */
-	mb();
-	uart_manual_rfr = geni_read_reg_nolog(port->uport.membase,
-						SE_UART_MANUAL_RFR);
-	IPC_LOG_MSG(port->ipc_log_misc, "%s(): rfr = 0x%x\n",
-					__func__, uart_manual_rfr);
-
-	/* To give control of RFR back to HW */
-	msm_geni_serial_set_manual_flow(true, port);
-}
-
 #ifdef CONFIG_PM
 static int msm_geni_serial_runtime_suspend(struct device *dev)
 {
@@ -4193,8 +4132,6 @@ static int msm_geni_serial_runtime_suspend(struct device *dev)
 							SE_GENI_STATUS);
 
 	IPC_LOG_MSG(port->ipc_log_pwr, "%s: Start\n", __func__);
-	/* Flow off from UART */
-	msm_geni_serial_set_manual_flow(false, port);
 	wait_for_transfers_inflight(&port->uport);
 	/*
 	 * Stop Rx.
@@ -4205,8 +4142,6 @@ static int msm_geni_serial_runtime_suspend(struct device *dev)
 	if (ret) {
 		IPC_LOG_MSG(port->ipc_log_pwr, "%s: stop rx failed %d\n",
 							__func__, ret);
-		/* Flow on from UART */
-		msm_geni_serial_allow_rx(port);
 		return -EBUSY;
 	}
 	geni_status = geni_read_reg_nolog(port->uport.membase, SE_GENI_STATUS);
@@ -4214,13 +4149,6 @@ static int msm_geni_serial_runtime_suspend(struct device *dev)
 		stop_tx_sequencer(&port->uport);
 
 	disable_irq(port->uport.irq);
-
-	/*
-	 * Flow on from UART
-	 * Above before stop_rx disabled the flow so we need to enable it here
-	 * Make sure wake up interrupt is enabled before RFR is made low
-	 */
-	msm_geni_serial_allow_rx(port);
 
 	ret = se_geni_resources_off(&port->serial_rsc);
 	if (ret) {
