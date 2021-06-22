@@ -141,8 +141,10 @@ static void __v4l2_event_queue_fh(struct v4l2_fh *fh, const struct v4l2_event *e
 	/* Take one and fill it. */
 	kev = sev->events + sev_pos(sev, sev->in_use);
 	kev->event.type = ev->type;
-	if (copy_payload)
+	if (copy_payload) {
 		kev->event.u = ev->u;
+		memcpy(kev->event.reserved, ev->reserved, sizeof(ev->reserved));
+	}
 	kev->event.id = ev->id;
 	kev->event.timestamp = *ts;
 	kev->event.sequence = fh->sequence;
