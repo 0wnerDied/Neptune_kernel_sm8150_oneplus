@@ -1,4 +1,14 @@
-cc_library_static {
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "external_dtc_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-BSD
+    //   SPDX-license-identifier-BSD-2-Clause
+    default_applicable_licenses: ["external_dtc_license"],
+}
+
+cc_library {
     name: "libfdt",
     host_supported: true,
 
@@ -9,6 +19,7 @@ cc_library_static {
     ],
     srcs: [
         "fdt.c",
+        "fdt_check.c",
         "fdt_ro.c",
         "fdt_wip.c",
         "fdt_sw.c",
@@ -20,4 +31,8 @@ cc_library_static {
         "acpi.c",
     ],
     export_include_dirs: ["."],
+    apex_available: [
+        "//apex_available:platform",
+        "com.android.virt",
+    ],
 }
