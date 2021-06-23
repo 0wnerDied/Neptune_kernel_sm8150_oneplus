@@ -153,19 +153,6 @@
 		ipc_log_string(ctx, x); \
 } while (0)
 
-#ifdef __init
-#undef __init
-#endif
-
-#ifdef __exit
-#undef __exit
-#endif
-
-#define __init
-#define __exit
-
-
-
 #define DMA_RX_BUF_SIZE		(2048)
 #define UART_CONSOLE_RX_WM	(2)
 
@@ -3262,8 +3249,8 @@ static int __init parse_console_config(char *str)
 	return 0;
 }
 early_param("console", parse_console_config);
-static int  msm_serial_oem_pinctrl_init(void);
-static int  oem_msm_geni_serial_init(void);
+static int __init msm_serial_oem_pinctrl_init(void);
+static int __init oem_msm_geni_serial_init(void);
 
 static int msm_geni_serial_probe(struct platform_device *pdev)
 {
@@ -3886,7 +3873,7 @@ static void __exit msm_geni_serial_exit(void)
 }
 module_exit(msm_geni_serial_exit);
 
-static int oem_msm_geni_serial_init(void)
+static int __init oem_msm_geni_serial_init(void)
 {
 	int ret = 0;
 
@@ -3950,7 +3937,7 @@ static struct platform_driver msm_platform_serial_pinctrl_driver = {
 	},
 };
 
-static int	msm_serial_oem_pinctrl_init(void)
+static int __init msm_serial_oem_pinctrl_init(void)
 {
 	int ret = 0;
 
@@ -3964,8 +3951,9 @@ EXPORT_SYMBOL(msm_serial_oem_pinctrl_init);
 
 #define SERIAL_CMDLINE "ttyMSM0,115200n8"
 char oem_force_cmdline_str[60];
+int force_oem_console_setup(char *str);
 
-int msm_serial_oem_init(void)
+int __init msm_serial_oem_init(void)
 {
 	int ret = 0;
 
@@ -3978,7 +3966,7 @@ int msm_serial_oem_init(void)
 }
 EXPORT_SYMBOL(msm_serial_oem_init);
 
-void msm_serial_oem_exit(void)
+void __exit msm_serial_oem_exit(void)
 {
 	pr_err("%s\n", __func__);
 	msm_geni_serial_exit();
