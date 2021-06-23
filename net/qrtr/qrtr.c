@@ -377,8 +377,8 @@ static void __qrtr_node_release(struct kref *kref)
 			sock_put(waiter->sk);
 			kfree(waiter);
 		}
-		kfree(flow);
 		radix_tree_delete(&node->qrtr_tx_flow, iter.index);
+		kfree(flow);
 	}
 	mutex_unlock(&node->qrtr_tx_lock);
 
@@ -431,11 +431,13 @@ static void qrtr_tx_resume(struct qrtr_node *node, struct sk_buff *skb)
 	src.sq_port = le32_to_cpu(pkt.client.port);
 	key = (u64)src.sq_node << 32 | src.sq_port;
 
-	flow = radix_tree_lookup(&node->qrtr_tx_flow, key);
-	if (!flow)
-		return;
-
 	mutex_lock(&node->qrtr_tx_lock);
+	flow = radix_tree_lookup(&node->qrtr_tx_flow, key);
+	if (!flow) {
+		mutex_unlock(&node->qrtr_tx_lock);
+		return;
+	}
+
 	atomic_set(&flow->pending, 0);
 	wake_up_interruptible_all(&node->resume_tx);
 
@@ -664,11 +666,18 @@ static void qrtr_node_assign(struct qrtr_node *node, unsigned int nid)
 	if (tnode)
 		return;
 
+	/* If the node is not in qrtr_all_epts, it is being released and should
+	 * not be inserted into the lookup table.
+	 */
 	down_write(&qrtr_node_lock);
-	radix_tree_insert(&qrtr_nodes, nid, node);
-
-	if (node->nid == QRTR_EP_NID_AUTO)
-		node->nid = nid;
+	list_for_each_entry(tnode, &qrtr_all_epts, item) {
+		if (tnode == node) {
+			radix_tree_insert(&qrtr_nodes, nid, node);
+			if (node->nid == QRTR_EP_NID_AUTO)
+				node->nid = nid;
+			break;
+		}
+	}
 	up_write(&qrtr_node_lock);
 
 	snprintf(name, sizeof(name), "qrtr_%d", nid);
@@ -988,14 +997,12 @@ static bool qrtr_must_forward(struct qrtr_node *src,
 	return false;
 }
 
-static void qrtr_fwd_ctrl_pkt(struct sk_buff *skb)
+static void qrtr_fwd_ctrl_pkt(struct qrtr_node *src, struct sk_buff *skb)
 {
 	struct qrtr_node *node;
-	struct qrtr_node *src;
 	struct qrtr_cb *cb = (struct qrtr_cb *)skb->cb;
 
 	qrtr_skb_align_linearize(skb);
-	src = qrtr_node_lookup(cb->src_node);
 	down_read(&qrtr_node_lock);
 	list_for_each_entry(node, &qrtr_all_epts, item) {
 		struct sockaddr_qrtr from;
@@ -1020,7 +1027,6 @@ static void qrtr_fwd_ctrl_pkt(struct sk_buff *skb)
 		qrtr_node_enqueue(node, skbn, cb->type, &from, &to, 0);
 	}
 	up_read(&qrtr_node_lock);
-	qrtr_node_release(src);
 }
 
 static void qrtr_fwd_pkt(struct sk_buff *skb, struct qrtr_cb *cb)
@@ -1083,7 +1089,7 @@ static void qrtr_node_rx_work(struct kthread_work *work)
 		qrtr_node_assign(node, cb->src_node);
 
 		if (cb->type != QRTR_TYPE_DATA)
-			qrtr_fwd_ctrl_pkt(skb);
+			qrtr_fwd_ctrl_pkt(node, skb);
 
 		if (cb->type == QRTR_TYPE_NEW_SERVER &&
 		    skb->len == sizeof(pkt)) {
