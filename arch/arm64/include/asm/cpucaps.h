@@ -47,8 +47,7 @@
 #define ARM64_SSBS				27
 #define ARM64_HW_DBM				28
 #define ARM64_WORKAROUND_1188873		29
-#define ARM64_HAS_CRC32				30
 
-#define ARM64_NCAPS				31
+#define ARM64_NCAPS				30
 
 #endif /* __ASM_CPUCAPS_H */
