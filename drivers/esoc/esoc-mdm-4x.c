@@ -16,9 +16,7 @@
 #include <linux/sched/clock.h>
 #include <soc/qcom/sysmon.h>
 #include "esoc-mdm.h"
-#include <linux/project_info.h>
 #include <linux/oneplus/boot_mode.h>
-#include <soc/qcom/subsystem_restart.h>
 
 enum gpio_update_config {
 	GPIO_UPDATE_BOOTING_CONFIG = 1,
@@ -267,20 +265,12 @@ static int mdm_cmd_exe(enum esoc_cmd cmd, struct esoc_clink *esoc)
 		if (esoc->statusline_not_a_powersource == false) {
 			esoc_mdm_log(
 			"ESOC_FORCE_PWR_OFF: setting AP2MDM_STATUS = 0\n");
-			dev_err(mdm->dev,
-			"ESOC_FORCE_PWR_OFF: setting AP2MDM_STATUS = 0\n");
 			//gpio_set_value(MDM_GPIO(mdm, AP2MDM_STATUS), 0);
 		}
 		esoc_mdm_log(
 		"ESOC_FORCE_PWR_OFF: Queueing request: ESOC_REQ_SHUTDOWN\n");
-		dev_err(mdm->dev,
-		"ESOC_FORCE_PWR_OFF: Queueing request: ESOC_REQ_SHUTDOWN\n");
 		esoc_clink_queue_request(ESOC_REQ_SHUTDOWN, esoc);
-		dev_err(mdm->dev,
-			"ESOC_FORCE_PWR_OFF: mdm_power_down start!\n");
 		mdm_power_down(mdm);
-		dev_err(mdm->dev,
-		"ESOC_FORCE_PWR_OFF: mdm_power_down end!\n");
 		mdm_update_gpio_configs(mdm, GPIO_UPDATE_BOOTING_CONFIG);
 		break;
 	case ESOC_RESET:
@@ -409,9 +399,6 @@ static void mdm_get_restart_reason(struct work_struct *work)
 		if (!ret) {
 			esoc_mdm_log("restart reason is %s\n", sfr_buf);
 			dev_err(dev, "mdm restart reason is %s\n", sfr_buf);
-			dev_err(dev, "[OEM_MDM] SSR: send esoc crash reason\n");
-			subsys_store_crash_reason(mdm->esoc->subsys_dev, sfr_buf);
-			subsys_send_uevent_notify(&mdm->esoc->subsys);
 			break;
 		}
 		msleep(SFR_RETRY_INTERVAL);
@@ -449,11 +436,8 @@ void mdm_wait_for_status_low(struct mdm_ctrl *mdm, bool atomic)
 
 	esoc_mdm_log("Waiting for MDM2AP_STATUS to go LOW\n");
 	// Optimize esoc SSR time
-	if (!oem_get_download_mode() && gpio_get_value(MDM_GPIO(mdm, MDM2AP_STATUS)) != 0) {
-		esoc_mdm_log("[OEM] mdm_toggle_soft_reset() directly to optimize esoc SSR time\n");
-		dev_err(mdm->dev, "[OEM] mdm_toggle_soft_reset() directly to optimize esoc SSR time\n");
+	if (!oem_get_download_mode() && gpio_get_value(MDM_GPIO(mdm, MDM2AP_STATUS)) != 0)
 		mdm_toggle_soft_reset(mdm, atomic);
-	}
 
 	timeout = local_clock();
 	do_div(timeout, NSEC_PER_MSEC);
