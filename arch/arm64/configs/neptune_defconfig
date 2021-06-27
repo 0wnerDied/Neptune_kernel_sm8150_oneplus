@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 4.14.236 Kernel Configuration
+# Linux/arm64 4.14.237 Kernel Configuration
 #
 CONFIG_ARM64=y
 CONFIG_64BIT=y
@@ -2574,6 +2574,7 @@ CONFIG_QTI_BCL_PMIC5=y
 CONFIG_QTI_BCL_SOC_DRIVER=y
 CONFIG_QTI_ADC_TM=y
 # CONFIG_QTI_CX_IPEAK_COOLING_DEVICE is not set
+# CONFIG_QTI_BUS_SCALING_COOLING_DEVICE is not set
 # CONFIG_WATCHDOG is not set
 CONFIG_SSB_POSSIBLE=y
 
