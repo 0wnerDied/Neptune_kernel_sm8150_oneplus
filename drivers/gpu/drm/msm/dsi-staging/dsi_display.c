@@ -10205,6 +10205,11 @@ int dsi_display_set_aod_mode(struct drm_connector *connector, int level)
 	panel = dsi_display->panel;
 	panel->aod_mode = level;
 
+	if (dsi_display->panel->hw_type == DSI_PANEL_DEFAULT) {
+		dsi_display->panel->aod_mode = 0;
+		return 0;
+	}
+
 	mutex_lock(&dsi_display->display_lock);
 	if (!dsi_panel_initialized(panel)) {
 		goto error;
