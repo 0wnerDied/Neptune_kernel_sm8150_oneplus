@@ -429,7 +429,6 @@ static const struct file_operations sb_fileops = {
 	.release = sb_release,
 	.read = sb_read,
 	.poll = sb_poll,
-	.llseek = noop_llseek,
 	.owner = THIS_MODULE,
 };
 
