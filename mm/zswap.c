@@ -844,7 +844,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
 		goto put_dstmem;
 	}
 
-	buf = (u8 *)zpool_map_handle(entry->pool->zpool, handle, ZPOOL_MM_RW);
+	buf = (u8 *)zpool_map_handle(entry->pool->zpool, handle, ZPOOL_MM_WO);
 	if (dlen == PAGE_SIZE) {
 		src = kmap_atomic(page);
 		copy_page(buf, src);
