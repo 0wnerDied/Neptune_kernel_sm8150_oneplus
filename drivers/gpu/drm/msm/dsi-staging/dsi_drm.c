@@ -411,7 +411,7 @@ static bool dsi_bridge_mode_fixup(struct drm_bridge *bridge,
 		rc = dsi_display_validate_mode_change(c_bridge->display,
 					&cur_dsi_mode, &dsi_mode);
 		if (rc) {
-			pr_err("[%s] seamless mode mismatch failure rc=%d\n",
+			pr_debug("[%s] seamless mode mismatch failure rc=%d\n",
 				c_bridge->display->name, rc);
 //			return false;
 		}

@@ -239,31 +239,31 @@ int dsi_display_set_backlight(struct drm_connector *connector,
 		if (bl_lvl != 0 && panel->bl_config.bl_level == 0) {
 			if (panel->naive_display_p3_mode) {
 				mdelay(20);
-				pr_err("Send DSI_CMD_SET_NATIVE_DISPLAY_P3_ON cmds\n");
+				pr_debug("Send DSI_CMD_SET_NATIVE_DISPLAY_P3_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_NATIVE_DISPLAY_P3_ON);
 			}
 			if (panel->naive_display_wide_color_mode) {
 				mdelay(20);
-				pr_err("Send DSI_CMD_SET_NATIVE_DISPLAY_WIDE_COLOR_ON cmds\n");
+				pr_debug("Send DSI_CMD_SET_NATIVE_DISPLAY_WIDE_COLOR_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_NATIVE_DISPLAY_WIDE_COLOR_ON);
 			}
 			if (panel->naive_display_srgb_color_mode) {
 				mdelay(20);
-				pr_err("Send DSI_CMD_SET_NATIVE_DISPLAY_SRGB_COLOR_ON cmds\n");
+				pr_debug("Send DSI_CMD_SET_NATIVE_DISPLAY_SRGB_COLOR_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_NATIVE_DISPLAY_SRGB_COLOR_ON);
 			}
 			if (panel->naive_display_customer_srgb_mode) {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_RGB_ON cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_RGB_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_RGB_ON);
 			} else {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_RGB_OFF cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_RGB_OFF cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_RGB_OFF);
 			}
 			if (panel->naive_display_customer_p3_mode) {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_P3_ON cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_P3_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_P3_ON);
 			} else {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_P3_OFF cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_P3_OFF cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_P3_OFF);
 			}
 		}
@@ -273,38 +273,38 @@ int dsi_display_set_backlight(struct drm_connector *connector,
 		if (bl_lvl != 0 && panel->bl_config.bl_level == 0) {
 			if (panel->naive_display_p3_mode) {
 				mdelay(20);
-				pr_err("Send DSI_CMD_SET_NATIVE_DISPLAY_P3_ON cmds\n");
+				pr_debug("Send DSI_CMD_SET_NATIVE_DISPLAY_P3_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_NATIVE_DISPLAY_P3_ON);
 			}
 			if (panel->naive_display_wide_color_mode) {
 				mdelay(20);
-				pr_err("Send DSI_CMD_SET_NATIVE_DISPLAY_WIDE_COLOR_ON cmds\n");
+				pr_debug("Send DSI_CMD_SET_NATIVE_DISPLAY_WIDE_COLOR_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_NATIVE_DISPLAY_WIDE_COLOR_ON);
 			}
 			if (panel->naive_display_srgb_color_mode) {
 				mdelay(20);
-				pr_err("Send DSI_CMD_SET_NATIVE_DISPLAY_SRGB_COLOR_ON cmds\n");
+				pr_debug("Send DSI_CMD_SET_NATIVE_DISPLAY_SRGB_COLOR_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_NATIVE_DISPLAY_SRGB_COLOR_ON);
 			}
 			if (panel->naive_display_loading_effect_mode) {
-				pr_err("Send DSI_CMD_LOADING_EFFECT_ON cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_EFFECT_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_EFFECT_ON);
 			} else {
-				pr_err("Send DSI_CMD_LOADING_EFFECT_OFF cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_EFFECT_OFF cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_EFFECT_OFF);
 			}
 			if (panel->naive_display_customer_srgb_mode) {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_RGB_ON cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_RGB_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_RGB_ON);
 			} else {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_RGB_OFF cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_RGB_OFF cmds\n");
 				//rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_RGB_OFF);
 			}
 			if (panel->naive_display_customer_p3_mode) {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_P3_ON cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_P3_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_P3_ON);
 			} else {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_P3_OFF cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_P3_OFF cmds\n");
 				//rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_P3_OFF);
 			}
 		}
@@ -314,38 +314,38 @@ int dsi_display_set_backlight(struct drm_connector *connector,
 		if (bl_lvl != 0 && panel->bl_config.bl_level == 0) {
 			if (panel->naive_display_p3_mode) {
 				msleep(20);
-				pr_err("Send DSI_CMD_SET_NATIVE_DISPLAY_P3_ON cmds\n");
+				pr_debug("Send DSI_CMD_SET_NATIVE_DISPLAY_P3_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_NATIVE_DISPLAY_P3_ON);
 			}
 			if (panel->naive_display_wide_color_mode) {
 				msleep(20);
-				pr_err("Send DSI_CMD_SET_NATIVE_DISPLAY_WIDE_COLOR_ON cmds\n");
+				pr_debug("Send DSI_CMD_SET_NATIVE_DISPLAY_WIDE_COLOR_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_NATIVE_DISPLAY_WIDE_COLOR_ON);
 			}
 			if (panel->naive_display_srgb_color_mode) {
 				msleep(20);
-				pr_err("Send DSI_CMD_SET_NATIVE_DISPLAY_SRGB_COLOR_ON cmds\n");
+				pr_debug("Send DSI_CMD_SET_NATIVE_DISPLAY_SRGB_COLOR_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_NATIVE_DISPLAY_SRGB_COLOR_ON);
 			}
 			if (panel->naive_display_loading_effect_mode) {
-				pr_err("Send DSI_CMD_LOADING_EFFECT_ON cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_EFFECT_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_EFFECT_ON);
 			} else {
-				pr_err("Send DSI_CMD_LOADING_EFFECT_OFF cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_EFFECT_OFF cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_EFFECT_OFF);
 			}
 			if (panel->naive_display_customer_srgb_mode) {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_RGB_ON cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_RGB_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_RGB_ON);
 			} else {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_RGB_OFF cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_RGB_OFF cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_RGB_OFF);
 			}
 			if (panel->naive_display_customer_p3_mode) {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_P3_ON cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_P3_ON cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_P3_ON);
 			} else {
-				pr_err("Send DSI_CMD_LOADING_CUSTOMER_P3_OFF cmds\n");
+				pr_debug("Send DSI_CMD_LOADING_CUSTOMER_P3_OFF cmds\n");
 				rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_LOADING_CUSTOMER_P3_OFF);
 			}
 		}
@@ -1655,12 +1655,12 @@ int dsi_display_set_power(struct drm_connector *connector,
 
 	switch (power_mode) {
 	case SDE_MODE_DPMS_LP1:
-		pr_err("SDE_MODE_DPMS_LP1\n");
+		pr_debug("SDE_MODE_DPMS_LP1\n");
 		rc = dsi_panel_set_lp1(display->panel);
 		if (display->panel->aod_mode && display->panel->aod_mode != 2) {
 			display->panel->aod_status = 0;
 			rc = dsi_panel_set_aod_mode(display->panel, 5);
-			pr_err("Send dsi_panel_set_aod_mode 5 cmds\n");
+			pr_debug("Send dsi_panel_set_aod_mode 5 cmds\n");
 			if (rc) {
 				pr_err("[%s] failed to send dsi_panel_set_aod_mode cmds, rc=%d\n",
 				display->panel->name, rc);
@@ -1668,11 +1668,11 @@ int dsi_display_set_power(struct drm_connector *connector,
 		}
 	break;
 	case SDE_MODE_DPMS_LP2:
-		pr_err("SDE_MODE_DPMS_LP2\n");
+		pr_debug("SDE_MODE_DPMS_LP2\n");
 		rc = dsi_panel_set_lp2(display->panel);
 	break;
 	case SDE_MODE_DPMS_ON:
-		pr_err("SDE_MODE_DPMS_ON\n");
+		pr_debug("SDE_MODE_DPMS_ON\n");
 		if (display->panel->power_mode == SDE_MODE_DPMS_LP1 ||
 			display->panel->power_mode == SDE_MODE_DPMS_LP2)
 			rc = dsi_panel_set_nolp(display->panel);
@@ -5515,7 +5515,7 @@ static int dsi_display_force_update_dsi_clk(struct dsi_display *display)
 	rc = dsi_display_link_clk_force_update_ctrl(display->dsi_clk_handle);
 
 	if (!rc) {
-		pr_info("dsi bit clk has been configured to %d\n",
+		pr_debug("dsi bit clk has been configured to %d\n",
 			display->cached_clk_rate);
 
 		atomic_set(&display->clkrate_change_pending, 0);
@@ -7352,7 +7352,7 @@ int dsi_display_validate_mode_change(struct dsi_display *display,
 
 			if (mode_fps != adj_mode->timing.refresh_rate) {
 				mode_fps = adj_mode->timing.refresh_rate;
-				pr_err("set fps: %d, fresh_rate_report_enable : %d\n", mode_fps, fresh_rate_report_enable);
+				pr_debug("set fps: %d, fresh_rate_report_enable : %d\n", mode_fps, fresh_rate_report_enable);
 				ts_switch_poll_rate(mode_fps == 90 ? true : false);
 
 				if (fresh_rate_report_enable) {
@@ -7363,7 +7363,7 @@ int dsi_display_validate_mode_change(struct dsi_display *display,
 			}
 
 			if (!dfps_caps.dfps_support) {
-				pr_err("invalid mode dfps not supported\n");
+				pr_debug("invalid mode dfps not supported\n");
 				rc = -ENOTSUPP;
 				goto error;
 			}
