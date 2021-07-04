@@ -8383,8 +8383,12 @@ static inline int wake_energy(struct task_struct *p, int prev_cpu,
  * preempt must be disabled.
  */
 static int
+#ifdef CONFIG_SCHED_WALT
 select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_flags,
 		    int sibling_count_hint)
+#else
+select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_flags)
+#endif
 {
 	struct sched_domain *tmp, *affine_sd = NULL;
 	struct sched_domain *sd = NULL, *energy_sd = NULL;
@@ -8410,10 +8414,15 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 
 		record_wakee(p);
 		want_energy = wake_energy(p, prev_cpu, sd_flag, wake_flags);
+#ifdef CONFIG_SCHED_WALT
 		want_affine = !want_energy &&
 			      !wake_wide(p, sibling_count_hint) &&
 			      !_wake_cap &&
 			      _cpus_allowed;
+#else
+		want_affine = !want_energy && !wake_wide(p, 1) &&
+			      !_wake_cap && _cpus_allowed;
+#endif
 	}
 
 	for_each_domain(cpu, tmp) {
