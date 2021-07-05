@@ -30,6 +30,8 @@
 &sm6150_snd {
 	qcom,msm-mbhc-hphl-swh = <0>;
 	qcom,msm-mbhc-gnd-swh = <0>;
+	qcom,msm-mi2s-master = <1>, <1>, <0>, <1>, <1>, <1>;
+	qcom,tert-mi2s-gpios = <&cdc_tert_mi2s_gpios>;
 };
 
 &soc {
@@ -94,6 +96,20 @@
 	    startup-delay-us = <0>;
 	    enable-active-high;
 	};
+
+	cdc_tert_mi2s_gpios: msm_cdc_pinctrl_tert {
+		compatible = "qcom,msm-cdc-pinctrl";
+		pinctrl-names = "aud_active", "aud_sleep";
+		pinctrl-0 = <&ter_i2s_sck_active &ter_i2s_data0_active
+				&ter_i2s_data1_active>;
+		pinctrl-1 = <&ter_i2s_sck_sleep &ter_i2s_data0_sleep
+				&ter_i2s_data1_sleep>;
+	};
+};
+
+&dai_mi2s2 {
+	qcom,msm-mi2s-rx-lines = <0>;
+	qcom,msm-mi2s-tx-lines = <3>;
 };
 
 &slim_aud {
