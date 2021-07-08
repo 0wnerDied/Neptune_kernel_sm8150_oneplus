@@ -71,7 +71,6 @@ static unsigned int boot_config_shift;
  * So the SDI cannot be re-enabled when it already by-passed.
  */
 static int download_mode = 1;
-static bool force_warm_reboot = true;
 
 #ifdef CONFIG_QCOM_DLOAD_MODE
 #define EDL_MODE_PROP "qcom,msm-imem-emergency_download_mode"
@@ -182,11 +181,6 @@ int get_download_mode(void)
 }
 EXPORT_SYMBOL(get_download_mode);
 
-static bool get_dload_mode(void)
-{
-	return dload_mode_enabled;
-}
-
 void oem_force_minidump_mode(void)
 {
 	if (dload_type == SCM_DLOAD_FULLDUMP) {
@@ -266,11 +260,6 @@ static void set_dload_mode(int on)
 static void enable_emergency_dload_mode(void)
 {
 	pr_err("dload mode is not enabled on target\n");
-}
-
-static bool get_dload_mode(void)
-{
-	return false;
 }
 #endif
 
