@@ -210,7 +210,8 @@ static int aw8697_i2c_write(struct aw8697 *aw8697,
             break;
         }
         cnt ++;
-        msleep(AW_I2C_RETRY_DELAY);
+        usleep_range(AW_I2C_RETRY_DELAY * 1000,
+                        AW_I2C_RETRY_DELAY * 1000 + 500);
     }
     return ret;
 }
@@ -230,7 +231,8 @@ static int aw8697_i2c_read(struct aw8697 *aw8697,
             break;
         }
         cnt ++;
-        msleep(AW_I2C_RETRY_DELAY);
+        usleep_range(AW_I2C_RETRY_DELAY * 1000,
+                      AW_I2C_RETRY_DELAY * 1000 + 500);
     }
 
     return ret;
@@ -493,7 +495,7 @@ static int aw8697_haptic_softreset(struct aw8697 *aw8697)
     pr_debug("%s enter\n", __func__);
 
     aw8697_i2c_write(aw8697, AW8697_REG_ID, 0xAA);
-    msleep(1);
+    usleep_range(3000, 3500);
     return 0;
 }
 
@@ -543,7 +545,7 @@ static int aw8697_haptic_play_mode(struct aw8697 *aw8697, unsigned char play_mod
             aw8697_i2c_write_bits(aw8697, AW8697_REG_SYSCTRL,
                     AW8697_BIT_SYSCTRL_BST_MODE_MASK, AW8697_BIT_SYSCTRL_BST_MODE_BOOST);
             }
-            mdelay(2);
+            usleep_range(2000, 2500);
             break;
         case AW8697_HAPTIC_RAM_LOOP_MODE:
             aw8697->play_mode = AW8697_HAPTIC_RAM_LOOP_MODE;
@@ -579,7 +581,7 @@ static int aw8697_haptic_play_mode(struct aw8697 *aw8697, unsigned char play_mod
                 aw8697_i2c_write_bits(aw8697, AW8697_REG_SYSCTRL,
                         AW8697_BIT_SYSCTRL_BST_MODE_MASK, AW8697_BIT_SYSCTRL_BST_MODE_BOOST);
             }
-            msleep(3);
+            usleep_range(2000, 2500);
             break;
         case AW8697_HAPTIC_TRIG_MODE:
             aw8697->play_mode = AW8697_HAPTIC_TRIG_MODE;
@@ -603,7 +605,7 @@ static int aw8697_haptic_play_mode(struct aw8697 *aw8697, unsigned char play_mod
             aw8697_i2c_write_bits(aw8697, AW8697_REG_SYSCTRL,
                     AW8697_BIT_SYSCTRL_BST_MODE_MASK, AW8697_BIT_SYSCTRL_BST_MODE_BOOST);
             }
-            msleep(3);
+            usleep_range(2000, 2500);
             break;
         case AW8697_HAPTIC_CONT_MODE:
             aw8697->play_mode = AW8697_HAPTIC_CONT_MODE;
@@ -679,7 +681,7 @@ static int aw8697_haptic_stop_delay(struct aw8697 *aw8697)
         if ((reg_val&0x0f) == 0x00) {
             return 0;
         }
-        mdelay(2);
+        usleep_range(2000, 2500);
         pr_debug("%s wait for standby, reg glb_state=0x%02x\n",
             __func__, reg_val);
     }
@@ -2533,7 +2535,7 @@ static int haptic_get_f0_defalut(struct aw8697 *aw8697)
     /* f0 trace time */
     t_f0_ms = 1000*10/aw8697->f0_pre;
     t_f0_trace_ms = t_f0_ms * (f0_pre_num + f0_wait_num + (f0_trace_num+f0_wait_num)*(f0_repeat_num-1));
-    msleep(t_f0_trace_ms);
+    usleep_range(t_f0_trace_ms * 1000, t_f0_trace_ms * 1000 + 500);
 
     for (i = 0; i < f0_cali_cnt; i++) {
         ret = aw8697_i2c_read(aw8697, AW8697_REG_SYSINT, &reg_val);
@@ -2543,7 +2545,7 @@ static int haptic_get_f0_defalut(struct aw8697 *aw8697)
             aw8697_haptic_read_beme(aw8697);
             break;
         }
-        msleep(10);
+        usleep_range(10000, 10500);
         pr_info("%s f0 cali sleep 10ms\n", __func__);
     }
 
@@ -2619,7 +2621,7 @@ static int haptic_get_f0_count_go(struct aw8697 *aw8697)
 
     /* f0 trace time */
     t_f0_trace_ms = 0xfe * 684 / 1000;
-    msleep(t_f0_trace_ms);
+    usleep_range(t_f0_trace_ms * 1000, t_f0_trace_ms * 1000 + 500);
 
     for (i = 0; i < f0_cali_cnt; i++) {
         ret = aw8697_i2c_read(aw8697, AW8697_REG_SYSINT, &reg_val);
@@ -4115,7 +4117,7 @@ static ssize_t aw8697_lra_resistance_show(struct device *dev, struct device_attr
             AW8697_BIT_DETCTRL_RL_OS_MASK, AW8697_BIT_DETCTRL_RL_DETECT);
     aw8697_i2c_write_bits(aw8697, AW8697_REG_DETCTRL,
             AW8697_BIT_DETCTRL_DIAG_GO_MASK, AW8697_BIT_DETCTRL_DIAG_GO_ENABLE);
-    msleep(3);
+    usleep_range(3000, 3500);
     aw8697_i2c_read(aw8697, AW8697_REG_RLDET, &reg_val);
     aw8697->lra = 298 * reg_val;
     len += snprintf(buf+len, PAGE_SIZE-len, "%d\n", aw8697->lra/100);
@@ -5496,9 +5498,9 @@ static int aw8697_hw_reset(struct aw8697 *aw8697)
 
     if (aw8697 && gpio_is_valid(aw8697->reset_gpio)) {
         gpio_set_value_cansleep(aw8697->reset_gpio, 0);
-        msleep(1);
+        usleep_range(1000, 2000);
         gpio_set_value_cansleep(aw8697->reset_gpio, 1);
-        msleep(1);
+        usleep_range(3500, 4000);
     } else {
         if (aw8697)
            dev_err(aw8697->dev, "%s:  failed\n", __func__);
@@ -5537,7 +5539,8 @@ static int aw8697_read_chipid(struct aw8697 *aw8697)
         }
         cnt ++;
 
-        msleep(AW_READ_CHIPID_RETRY_DELAY);
+        usleep_range(AW_READ_CHIPID_RETRY_DELAY * 1000,
+                       AW_READ_CHIPID_RETRY_DELAY * 1000 + 500);
     }
 
     return -EINVAL;
