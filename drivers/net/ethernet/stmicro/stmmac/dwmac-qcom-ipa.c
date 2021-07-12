@@ -3274,10 +3274,12 @@ void ethqos_ipa_offload_event_handler(void *data,
 	case EV_IPA_SSR_UP:
 		ethqos_ipa_offload_resume(eth_ipa_ctx.ethqos, IPA_QUEUE_CV2X,
 					  false);
+		eth_ipa_ctx.ipa_offload_susp[IPA_QUEUE_CV2X] = false;
 		break;
 	case EV_IPA_SSR_DOWN:
 		ethqos_ipa_offload_suspend(eth_ipa_ctx.ethqos, IPA_QUEUE_CV2X,
 					   false);
+		eth_ipa_ctx.ipa_offload_susp[IPA_QUEUE_CV2X] = true;
 		break;
 	case EV_PHY_LINK_DOWN:
 		if (!eth_ipa_ctx.emac_dev_ready ||

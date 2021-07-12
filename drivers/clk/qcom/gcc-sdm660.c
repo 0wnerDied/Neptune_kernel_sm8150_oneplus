@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2017, 2019-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2017, 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1906,6 +1906,7 @@ static struct clk_branch gcc_mss_cfg_ahb_clk = {
 
 static struct clk_branch gcc_mss_mnoc_bimc_axi_clk = {
 	.halt_reg = 0x8a004,
+	.halt_check = BRANCH_VOTED,
 	.clkr = {
 		.enable_reg = 0x8a004,
 		.enable_mask = BIT(0),

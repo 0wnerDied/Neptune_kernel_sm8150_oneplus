@@ -1,4 +1,4 @@
-/* Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -91,7 +91,7 @@ struct export_desc_super *habmem_add_export(
 	if (!vchan || !sizebytes)
 		return NULL;
 
-	exp_super = kzalloc(sizebytes, GFP_KERNEL);
+	exp_super = vzalloc(sizebytes);
 	if (!exp_super)
 		return NULL;
 
@@ -177,7 +177,7 @@ static void habmem_export_destroy(struct kref *refcount)
 	spin_unlock(&pchan->expid_lock);
 
 	habmem_exp_release(exp_super);
-	kfree(exp_super);
+	vfree(exp_super);
 }
 
 /*

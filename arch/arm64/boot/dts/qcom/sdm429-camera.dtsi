@@ -90,7 +90,7 @@
 			"csi0_phy_clk",
 			"csi_clk",  "csi_pix_clk",
 			"csi_rdi_clk", "camss_ahb_clk";
-		qcom,clock-rates = <0 61538461 0 200000000 0 0 0 0 0>;
+		qcom,clock-rates = <0 61538461 0 266660000 0 0 0 0 0>;
 	};
 
 	qcom,csid@1b30400 {
@@ -117,7 +117,7 @@
 			"csi1_phy_clk",
 			"csi_clk", "csi_pix_clk",
 			"csi_rdi_clk", "camss_ahb_clk";
-		qcom,clock-rates = <0 61538461 0 200000000 0 0 0 0 0>;
+		qcom,clock-rates = <0 61538461 0 266660000 0 0 0 0 0>;
 	};
 
 	qcom,csid@1b30800 {
@@ -144,7 +144,7 @@
 			"csi2_phy_clk",
 			"csi_clk", "csi_pix_clk",
 			"csi_rdi_clk", "camss_ahb_clk";
-		qcom,clock-rates = <0 61538461 0 200000000 0 0 0 0 0>;
+		qcom,clock-rates = <0 61538461 0 266660000 0 0 0 0 0>;
 	};
 
 	qcom,ispif@1b31000 {
@@ -194,20 +194,22 @@
 			"camss_csi_vfe0_clk", "vfe1_clk_src",
 			"camss_vfe_vfe1_clk", "camss_csi_vfe1_clk";
 		qcom,clock-rates = <61538461 0 0 0
-			200000000 0 0 0
-			200000000 0 0 0
-			200000000 0 0 0
+			0 0 0 0
+			0 0 0 0
+			0 0 0 0
 			0 0 0
 			0 0 0>;
 		qcom,clock-cntl-support;
 		qcom,clock-control = "SET_RATE","NO_SET_RATE", "NO_SET_RATE",
-			"NO_SET_RATE", "SET_RATE", "NO_SET_RATE",
-			"NO_SET_RATE", "NO_SET_RATE", "SET_RATE",
+			"NO_SET_RATE",
+			"INIT_RATE",
+			"NO_SET_RATE","NO_SET_RATE", "NO_SET_RATE",
+			"INIT_RATE",
 			"NO_SET_RATE", "NO_SET_RATE", "NO_SET_RATE",
-			"SET_RATE", "NO_SET_RATE", "NO_SET_RATE",
-			"NO_SET_RATE", "INIT_RATE", "NO_SET_RATE",
-			"NO_SET_RATE", "INIT_RATE", "NO_SET_RATE",
-			"NO_SET_RATE";
+			"INIT_RATE",
+			"NO_SET_RATE", "NO_SET_RATE","NO_SET_RATE",
+			"INIT_RATE", "NO_SET_RATE", "NO_SET_RATE",
+			"INIT_RATE", "NO_SET_RATE", "NO_SET_RATE";
 	};
 
 	vfe0: qcom,vfe0@1b10000 {

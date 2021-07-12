@@ -206,10 +206,12 @@
 
 	sdx_ext_ipc: qcom,sdx_ext_ipc {
 		compatible = "qcom,sdx-ext-ipc";
+		qcom,status-in-gpio = <&tlmm 112 0x00>;
 		qcom,wakeup-gpio-in = <&tlmm 14 0x00>;
 		qcom,wakeup-gpio-out = <&tlmm 79 0x00>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&sdx_ext_ipc_gpio_default>;
+		qcom,default-policy-nop;
 	};
 };
 
