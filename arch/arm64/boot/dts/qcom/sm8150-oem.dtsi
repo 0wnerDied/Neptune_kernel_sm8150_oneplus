@@ -1234,6 +1234,10 @@ tp_irq_active: tp_irq_active {
 		devinfo-size=  <0x01000>;
 		ecc-size=	   <0x0>;
 	};
+	mtp_mem: mtp_mem@ac300000 {
+		reg = <0 0xAC300000 0 0x00B00000>;
+		label = "mtp_mem";
+	};
 };
 
 &pm8009_gpios {
