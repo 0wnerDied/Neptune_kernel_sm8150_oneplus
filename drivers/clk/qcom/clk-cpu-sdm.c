@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -41,19 +41,6 @@ enum apcs_mux_clk_parent {
 	P_BI_TCXO_AO,
 	P_GPLL0_AO_OUT_MAIN,
 	P_APCS_CPU_PLL,
-};
-
-struct pll_spm_ctrl {
-	u32 offset;
-	u32 force_event_offset;
-	u32 event_bit;
-	void __iomem *spm_base;
-};
-
-static struct pll_spm_ctrl apcs_pll_spm = {
-	.offset = 0x50,
-	.force_event_offset = 0x4,
-	.event_bit = 0x4,
 };
 
 static const struct parent_map apcs_mux_clk_parent_map0[] = {
@@ -100,6 +87,20 @@ static int cpucc_clk_set_rate(struct clk_hw *hw, unsigned long rate,
 	return __mux_div_set_src_div(cpuclk, cpuclk->src, cpuclk->div);
 }
 
+static bool freq_from_gpll0(unsigned long req_rate, unsigned long gpll0_rate)
+{
+	unsigned long temp;
+	int div;
+
+	for (div = 10; div <= 40; div += 5) {
+		temp = mult_frac(gpll0_rate, 10, div);
+		if (req_rate == temp)
+			return true;
+	}
+
+	return false;
+}
+
 static int cpucc_clk_determine_rate(struct clk_hw *hw,
 					struct clk_rate_request *req)
 {
@@ -126,7 +127,7 @@ static int cpucc_clk_determine_rate(struct clk_hw *hw,
 	apcs_gpll0_rate = clk_hw_get_rate(apcs_gpll0_hw);
 	apcs_gpll0_rrate = DIV_ROUND_UP(apcs_gpll0_rate, 1000000) * 1000000;
 
-	if (rate <= apcs_gpll0_rrate) {
+	if (freq_from_gpll0(rate, apcs_gpll0_rrate)) {
 		req->best_parent_hw = apcs_gpll0_hw;
 		req->best_parent_rate = apcs_gpll0_rrate;
 		div = DIV_ROUND_CLOSEST(2 * apcs_gpll0_rrate, rate) - 1;
@@ -216,49 +217,6 @@ static u8 cpucc_clk_get_parent(struct clk_hw *hw)
 	return clk_regmap_mux_div_ops.get_parent(hw);
 }
 
-static void spm_event(struct pll_spm_ctrl *apcs_pll_spm, bool enable)
-{
-	void __iomem *base = apcs_pll_spm->spm_base;
-	u32 offset, force_event_offset, bit, val;
-
-	if (!apcs_pll_spm)
-		return;
-
-	offset = apcs_pll_spm->offset;
-	force_event_offset = apcs_pll_spm->force_event_offset;
-	bit = apcs_pll_spm->event_bit;
-
-	if (enable) {
-		/* L2_SPM_FORCE_EVENT_EN */
-		val = readl_relaxed(base + offset);
-		val |= BIT(bit);
-		writel_relaxed(val, (base + offset));
-		/* Ensure that the write above goes through. */
-		mb();
-
-		/* L2_SPM_FORCE_EVENT */
-		val = readl_relaxed(base + offset + force_event_offset);
-		val |= BIT(bit);
-		writel_relaxed(val, (base + offset + force_event_offset));
-		/* Ensure that the write above goes through. */
-		mb();
-	} else {
-		/* L2_SPM_FORCE_EVENT */
-		val = readl_relaxed(base + offset + force_event_offset);
-		val &= ~BIT(bit);
-		writel_relaxed(val, (base + offset + force_event_offset));
-		/* Ensure that the write above goes through. */
-		mb();
-
-		/* L2_SPM_FORCE_EVENT_EN */
-		val = readl_relaxed(base + offset);
-		val &= ~BIT(bit);
-		writel_relaxed(val, (base + offset));
-		/* Ensure that the write above goes through. */
-		mb();
-	}
-}
-
 /*
  * We use the notifier function for switching to a temporary safe configuration
  * (mux and divider), while the APSS pll is reconfigured.
@@ -274,11 +232,8 @@ static int cpucc_notifier_cb(struct notifier_block *nb, unsigned long event,
 	case PRE_RATE_CHANGE:
 		/* set the mux to safe source gpll0_ao_out & div */
 		ret = __mux_div_set_src_div(cpuclk, safe_src, 1);
-		spm_event(&apcs_pll_spm, true);
 		break;
 	case POST_RATE_CHANGE:
-		if (cpuclk->src != safe_src)
-			spm_event(&apcs_pll_spm, false);
 		break;
 	case ABORT_RATE_CHANGE:
 		pr_err("Error in configuring PLL - stay at safe src only\n");
@@ -321,6 +276,10 @@ static struct clk_pll apcs_cpu_pll = {
 	.config_reg = 0x10,
 	.status_reg = 0x1c,
 	.status_bit = 16,
+	.spm_ctrl = {
+		.offset = 0x50,
+		.event_bit = 0x4,
+	},
 	.clkr.hw.init = &(struct clk_init_data){
 		.name = "apcs_cpu_pll",
 		.parent_names = (const char *[]){ "bi_tcxo_ao" },
@@ -738,8 +697,6 @@ static int cpucc_driver_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to ioremap c1 spm registers\n");
 		return -ENOMEM;
 	}
-
-	apcs_pll_spm.spm_base = base;
 
 	/* Get speed bin information */
 	cpucc_clk_get_speed_bin(pdev, &speed_bin, &version);
