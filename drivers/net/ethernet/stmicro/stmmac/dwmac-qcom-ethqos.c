@@ -1089,6 +1089,9 @@ static int ethqos_mdio_read(struct stmmac_priv  *priv, int phyaddr, int phyreg)
 static int ethqos_phy_intr_config(struct qcom_ethqos *ethqos)
 {
 	int ret = 0;
+	struct platform_device *pdev = ethqos->pdev;
+	struct net_device *dev = platform_get_drvdata(pdev);
+	struct stmmac_priv *priv = netdev_priv(dev);
 
 	ethqos->phy_intr = platform_get_irq_byname(ethqos->pdev, "phy-intr");
 
@@ -1098,6 +1101,8 @@ static int ethqos_phy_intr_config(struct qcom_ethqos *ethqos)
 				"PHY IRQ configuration information not found\n");
 		}
 		ret = 1;
+	} else {
+		priv->wol_irq = ethqos->phy_intr;
 	}
 
 	return ret;
