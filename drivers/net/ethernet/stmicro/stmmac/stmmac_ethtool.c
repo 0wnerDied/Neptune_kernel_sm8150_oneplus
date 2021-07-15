@@ -666,7 +666,7 @@ static int stmmac_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 {
 	struct stmmac_priv *priv = netdev_priv(dev);
 	u32 support = WAKE_MAGIC | WAKE_UCAST;
-	int ret;
+	int ret = 0;
 
 	if (!priv->plat->pmt && !priv->phydev) {
 		pr_err("%s: %s: PHY is not registered\n",
@@ -675,12 +675,21 @@ static int stmmac_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 	}
 
 	if (!priv->plat->pmt) {
+		wol->cmd = ETHTOOL_SWOL;
 		ret = phy_ethtool_set_wol(priv->phydev, wol);
 		if (ret)
 			return ret;
 
+		device_set_wakeup_capable(priv->device, 1);
+
 		device_set_wakeup_enable(priv->device, 1);
+
 		enable_irq_wake(priv->wol_irq);
+
+		if (wol->wolopts == 0)
+			priv->en_wol = false;
+		else
+			priv->en_wol = true;
 		return ret;
 	}
 
