@@ -2871,6 +2871,10 @@ static void msm_geni_serial_shutdown(struct uart_port *uport)
 			disable_irq(msm_port->wakeup_irq);
 			free_irq(msm_port->wakeup_irq, uport);
 		}
+
+		/* Disable IRQ for hsuart with auto-suspend-disable flag. */
+		if (msm_port->pm_auto_suspend_disable)
+			disable_irq(uport->irq);
 	}
 	IPC_LOG_MSG(msm_port->ipc_log_misc, "%s: End\n", __func__);
 }
@@ -2981,11 +2985,20 @@ static int msm_geni_serial_startup(struct uart_port *uport)
 	msm_port->startup_in_progress = true;
 
 	if (likely(!uart_console(uport))) {
-		ret = msm_geni_serial_power_on(&msm_port->uport);
-		if (ret) {
-			dev_err(uport->dev, "%s:Failed to power on %d\n",
+
+		/* Start Rx.
+		 * Enable IRQ for hs-uart with auto_suspend_disable flag.
+		 */
+		if (msm_port->pm_auto_suspend_disable) {
+			start_rx_sequencer(&msm_port->uport);
+			enable_irq(uport->irq);
+		} else {
+			ret = msm_geni_serial_power_on(&msm_port->uport);
+			if (ret) {
+				dev_err(uport->dev, "%s:Failed to power on %d\n",
 							__func__, ret);
-			return ret;
+				return ret;
+			}
 		}
 	}
 
