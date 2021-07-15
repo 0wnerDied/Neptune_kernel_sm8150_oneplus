@@ -23,12 +23,6 @@ enum FP_MODE{
 	GF_DEBUG_MODE = 0x56
 };
 
-struct fp_underscreen_info {
-    uint8_t touch_state;
-    uint16_t x;
-    uint16_t y;
-};
-
 #define SUPPORT_NAV_EVENT
 
 #if defined(SUPPORT_NAV_EVENT)
@@ -185,10 +179,8 @@ int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms);
 int gf_irq_num(struct gf_dev *gf_dev);
 
 void sendnlmsg(char *msg);
-void sendnlmsg_tp(struct fp_underscreen_info *msg, int length);
 int netlink_init(void);
 void netlink_exit(void);
 extern int gf_opticalfp_irq_handler(int event);
-extern int opticalfp_irq_handler(struct fp_underscreen_info* tp_info);
 
 #endif /*__GF_SPI_H*/

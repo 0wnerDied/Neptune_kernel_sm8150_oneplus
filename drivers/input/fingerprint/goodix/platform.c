@@ -56,6 +56,7 @@ err:
 	gf_dev->gpio_state_disable = NULL;
 	return ret;
 }
+
 int gf_parse_dts(struct gf_dev* gf_dev)
 {
 	int rc = 0;
@@ -133,7 +134,7 @@ int gf_power_off(struct gf_dev* gf_dev)
 
 int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
 {
-	if(gf_dev == NULL) {
+	if (gf_dev == NULL) {
 		pr_info("Input buff is NULL.\n");
 		return -1;
 	}
@@ -147,11 +148,9 @@ int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms)
 
 int gf_irq_num(struct gf_dev *gf_dev)
 {
-	if(gf_dev == NULL) {
+	if (gf_dev == NULL) {
 		pr_info("Input buff is NULL.\n");
 		return -1;
-	} else {
+	} else
 		return gpio_to_irq(gf_dev->irq_gpio);
-	}
 }
-

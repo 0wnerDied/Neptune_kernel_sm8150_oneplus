@@ -48,36 +48,6 @@ void sendnlmsg(char *msg)
 	}
 }
 
-//#ifdef VENDOR_EDIT
-void sendnlmsg_tp(struct fp_underscreen_info *msg, int length)
-{
-	struct sk_buff *skb_1;
-	struct nlmsghdr *nlh;
-	int len = NLMSG_SPACE(MAX_MSGSIZE);
-	int ret = 0;
-	if (!msg || !gf_nl_sk || !pid) {
-		return ;
-	}
-	skb_1 = alloc_skb(len, GFP_KERNEL);
-	if (!skb_1) {
-		pr_err("alloc_skb error\n");
-		return;
-	}
-
-	nlh = nlmsg_put(skb_1, 0, 0, 0, length, 0);
-
-	NETLINK_CB(skb_1).portid = 0;
-	NETLINK_CB(skb_1).dst_group = 0;
-	memcpy(NLMSG_DATA(nlh), msg, length);//core
-	// pr_debug("send message: %d\n", *(char *)NLMSG_DATA(nlh));
-	ret = netlink_unicast(gf_nl_sk, skb_1, pid, MSG_DONTWAIT);
-	if (!ret) {
-		//kfree_skb(skb_1);
-		pr_err("send msg from kernel to usespace failed ret 0x%x\n", ret);
-	}
-}
-//#endif
-
 void nl_data_ready(struct sk_buff *__skb)
 {
 	struct sk_buff *skb;
@@ -95,7 +65,6 @@ void nl_data_ready(struct sk_buff *__skb)
 	}
 
 }
-
 
 int netlink_init(void)
 {
@@ -127,4 +96,3 @@ void netlink_exit(void)
 
 	pr_info("self module exited\n");
 }
-
