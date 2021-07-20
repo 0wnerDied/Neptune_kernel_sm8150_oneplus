@@ -491,7 +491,7 @@
 	status = "disabled";
 };
 
-&dsi_ili9881c_720p_video {
+&dsi_panel_ili988c_720p_vid_display {
 	qcom,dsi-display-active;
 	qcom,display-type = "primary";
 };
