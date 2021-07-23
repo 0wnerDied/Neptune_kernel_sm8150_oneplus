@@ -1531,14 +1531,15 @@
 			"phy-intr",	"ptp_pps_irq_0", "ptp_pps_irq_1";
 		snps,crc_strip;
 		qcom,msm-bus,name = "emac";
-		qcom,msm-bus,num-cases = <4>;
+		qcom,msm-bus,num-cases = <5>;
 		qcom,msm-bus,num-paths = <2>;
 		qcom,msm-bus,vectors-KBps =
 			<98 512 0 0>, <1 781 0 0>,  /* No vote */
-			<98 512 2500 0>, <1 781 0 400000>,  /* 10Mbps vote */
-			<98 512 25000 0>, <1 781 0 400000>,  /* 100Mbps vote */
-			<98 512 250000 0>, <1 781 0 400000>; /* 1000Mbps vote */
-		qcom,bus-vector-names = "0", "10", "100", "1000";
+			<98 512 2500 0>, <1 781 0 40000>,  /* 10Mbps vote */
+			<98 512 25000 0>, <1 781 0 40000>,  /* 100Mbps vote */
+			<98 512 250000 0>, <1 781 0 40000>, /* 1000Mbps vote */
+			<98 512 250000 0>, <1 781 0 400000>; /* Nominal vote */
+		qcom,bus-vector-names = "0", "10", "100", "1000", "Nominal";
 		snps,tso;
 		snps,pbl = <32>;
 		mac-address = [00 55 7B B5 7D f7];
