@@ -2029,22 +2029,28 @@ out:
 	return ret;
 }
 
-static void ufs_qcom_save_host_ptr(struct ufs_hba *hba)
+static int  ufs_qcom_save_host_ptr(struct ufs_hba *hba)
 {
 	struct ufs_qcom_host *host = ufshcd_get_variant(hba);
 	int id;
 
 	if (!hba->dev->of_node)
-		return;
+		return -EPROBE_DEFER;
 
 	/* Extract platform data */
 	id = of_alias_get_id(hba->dev->of_node, "ufshc");
 	if (id <= 0)
 		dev_err(hba->dev, "Failed to get host index %d\n", id);
-	else if (id <= MAX_UFS_QCOM_HOSTS)
+	else if (id <= MAX_UFS_QCOM_HOSTS) {
+		if ((id == 2) && ufs_qcom_hosts[0] == NULL)
+			return -EPROBE_DEFER;
+
 		ufs_qcom_hosts[id - 1] = host;
+	}
 	else
 		dev_err(hba->dev, "invalid host index %d\n", id);
+
+	return 0;
 }
 
 /**
@@ -2064,6 +2070,7 @@ static int ufs_qcom_init(struct ufs_hba *hba)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct ufs_qcom_host *host;
 	struct resource *res;
+	struct device_node *np = dev->of_node;
 
 	host = devm_kzalloc(dev, sizeof(*host), GFP_KERNEL);
 	if (!host) {
@@ -2092,6 +2099,16 @@ static int ufs_qcom_init(struct ufs_hba *hba)
 		err = PTR_ERR(host->generic_phy);
 		dev_err(dev, "%s: PHY get failed %d\n", __func__, err);
 		goto out_variant_clear;
+	}
+
+	/*
+	 * Check whether primary UFS boot device is probed using
+	 * primary_boot_device_probed flag, if its not set defer the probe.
+	 */
+	if ((of_property_read_bool(np, "secondary-storage")) &&
+		!ufs_qcom_hosts[0]->hba->primary_boot_device_probed) {
+		err = -EPROBE_DEFER;
+		goto out_set_load_vccq_parent;
 	}
 
 	err = ufs_qcom_pm_qos_init(host);
@@ -2190,7 +2207,9 @@ static int ufs_qcom_init(struct ufs_hba *hba)
 
 	ufs_qcom_init_sysfs(hba);
 
-	ufs_qcom_save_host_ptr(hba);
+	err = ufs_qcom_save_host_ptr(hba);
+	if (err == -EPROBE_DEFER)
+		goto out_set_load_vccq_parent;
 
 	goto out;
 
