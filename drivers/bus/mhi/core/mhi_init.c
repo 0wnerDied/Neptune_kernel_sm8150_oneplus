@@ -141,7 +141,8 @@ static ssize_t time_show(struct device *dev,
 	ret = mhi_get_remote_time_sync(mhi_dev, &t_host, &t_device);
 	if (ret) {
 		MHI_ERR("Failed to obtain time, ret:%d\n", ret);
-		return ret;
+		return scnprintf(buf, PAGE_SIZE,
+				 "Request failed or feature unsupported\n");
 	}
 
 	return scnprintf(buf, PAGE_SIZE, "local: %llu remote: %llu (ticks)\n",
@@ -161,7 +162,8 @@ static ssize_t time_us_show(struct device *dev,
 	ret = mhi_get_remote_time_sync(mhi_dev, &t_host, &t_device);
 	if (ret) {
 		MHI_ERR("Failed to obtain time, ret:%d\n", ret);
-		return ret;
+		return scnprintf(buf, PAGE_SIZE,
+				 "Request failed or feature unsupported\n");
 	}
 
 	return scnprintf(buf, PAGE_SIZE, "local: %llu remote: %llu (us)\n",
@@ -1924,7 +1926,6 @@ exit_probe:
 	mhi_unprepare_from_transfer(mhi_dev);
 
 	mhi_device_put(mhi_dev, MHI_VOTE_DEVICE);
-
 	return ret;
 }
 
