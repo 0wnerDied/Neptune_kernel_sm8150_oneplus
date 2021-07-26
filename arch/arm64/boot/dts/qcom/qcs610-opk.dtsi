@@ -68,6 +68,17 @@
 			output-low;
 		};
 	};
+
+	sdm_dp_en {
+		sdm_dp_en_default: sdm_dp_en_default {
+			pins = "gpio4";
+			function = "normal";
+			qcom,drive-strength = <2>;
+			output-high;
+			bias-pull-up;
+			power-source = <0>;
+		};
+	};
 };
 
 &soc {
@@ -472,18 +483,6 @@
 	regulator-max-microvolt = <2912000>;
 };
 
-&sde_dp {
-	status="disabled";
-};
-
-&mdss_dp_pll {
-	status="disabled";
-};
-
-&mdss_mdp {
-	connectors = <&sde_rscc &sde_wb &sde_dsi>;
-};
-
 &cont_splash_memory {
 	status = "disabled";
 };
@@ -500,6 +499,39 @@
 &sde_dsi {
 	vdd3p-supply = <&pm6150l_l7>;
 };
+
+&sde_dp {
+	status="ok";
+	/delete-property/ qcom,dp-aux-switch;
+	/delete-property/ pinctrl-2;
+	qcom,dp-aux-switch = <>;
+	qcom,dp-hpd-gpio = <&tlmm 89 0>;
+	pinctrl-2 = <&sdm_dp_en_default &sde_dp_switch_suspend
+					&sde_dp_hotplug_tlmm>;
+};
+
+&mdss_dp_pll {
+	status="ok";
+};
+
+&mdss_mdp {
+	connectors = <&sde_rscc &sde_wb &sde_dsi &sde_dp>;
+};
+
+&sde_dp_hotplug_tlmm {
+	mux {
+		pins = "gpio89";
+		function = "gpio";
+	};
+
+	config {
+		pins = "gpio89";
+		bias-disable;
+		input-enable;
+		drive-strength = <2>;
+	};
+};
+
 /*for camera*/
 &tlmm {
 	cam_sensor_rear1_active: cam_sensor_rear1_active {
