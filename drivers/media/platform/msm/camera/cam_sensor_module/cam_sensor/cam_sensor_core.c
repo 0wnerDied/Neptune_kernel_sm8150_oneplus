@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2019, 2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -367,17 +367,20 @@ int32_t cam_sensor_update_slave_info(struct cam_cmd_probe *probe_info,
 	s_ctrl->sensordata->slave_info.sensor_id_mask =
 		probe_info->data_mask;
 	/* Userspace passes the pipeline delay in reserved field */
-	s_ctrl->pipeline_delay =
-		probe_info->reserved;
+	/* right 8 bit for pipeline delay and left 8 bit for pluggable sensor */
+	s_ctrl->sensordata->slave_info.sensor_hot_plug_type =
+		(probe_info->reserved & 0xff00) >> 8;
+	s_ctrl->pipeline_delay = (probe_info->reserved & 0xff);
 
 	s_ctrl->sensor_probe_addr_type =  probe_info->addr_type;
 	s_ctrl->sensor_probe_data_type =  probe_info->data_type;
 	CAM_DBG(CAM_SENSOR,
-		"Sensor Addr: 0x%x sensor_id: 0x%x sensor_mask: 0x%x sensor_pipeline_delay:0x%x",
+		"Sensor Addr: 0x%x sensor_id: 0x%x sensor_mask: 0x%x sensor_pipeline_delay:0x%x sensor_hot_plug_type 0x%x",
 		s_ctrl->sensordata->slave_info.sensor_id_reg_addr,
 		s_ctrl->sensordata->slave_info.sensor_id,
 		s_ctrl->sensordata->slave_info.sensor_id_mask,
-		s_ctrl->pipeline_delay);
+		s_ctrl->pipeline_delay,
+		s_ctrl->sensordata->slave_info.sensor_hot_plug_type);
 	return rc;
 }
 
@@ -651,6 +654,8 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 {
 	int rc = 0;
 	struct cam_control *cmd = (struct cam_control *)arg;
+	struct cam_camera_slave_info *slave_info =
+		&(s_ctrl->sensordata->slave_info);
 	struct cam_sensor_power_ctrl_t *power_info =
 		&s_ctrl->sensordata->power_info;
 	if (!s_ctrl || !arg) {
@@ -723,9 +728,17 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 		/* Match sensor ID */
 		rc = cam_sensor_match_id(s_ctrl);
 		if (rc < 0) {
-			cam_sensor_power_down(s_ctrl);
-			msleep(20);
-			goto free_power_settings;
+			if (slave_info->sensor_hot_plug_type != 1) {
+				CAM_INFO(CAM_SENSOR,
+					"Not a hot plug sensor, match sensor id failed");
+				cam_sensor_power_down(s_ctrl);
+				msleep(20);
+				goto free_power_settings;
+			} else {
+				CAM_INFO(CAM_SENSOR,
+					"hot plug sensor not connected hence match id failed");
+				rc = 0;
+			}
 		}
 
 		CAM_INFO(CAM_SENSOR,
