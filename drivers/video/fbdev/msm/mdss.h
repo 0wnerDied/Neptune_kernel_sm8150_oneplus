@@ -517,6 +517,7 @@ struct mdss_data_type {
 	bool twm_en;
 	int handoff_pending;
 	bool idle_pc;
+	bool panel_idle_mode;
 	struct mdss_perf_tune perf_tune;
 	bool traffic_shaper_en;
 	int iommu_ref_cnt;
@@ -587,6 +588,7 @@ int mdss_update_reg_bus_vote(struct reg_bus_client *bus_client,
 				u32 usecase_ndx);
 struct reg_bus_client *mdss_reg_bus_vote_client_create(char *client_name);
 void mdss_reg_bus_vote_client_destroy(struct reg_bus_client *bus_client);
+void mdss_mdp_set_panel_idle_mode(bool enable);
 
 struct mdss_util_intf {
 	bool mdp_probe_done;
