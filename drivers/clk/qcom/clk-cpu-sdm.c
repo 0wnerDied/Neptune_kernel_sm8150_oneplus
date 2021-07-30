@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -37,23 +37,19 @@ static DEFINE_VDD_REGULATORS(vdd_hf_pll, VDD_HF_PLL_NUM, 2, vdd_hf_levels);
 static DEFINE_VDD_REGS_INIT(vdd_cpu_c1, 1);
 static DEFINE_VDD_REGS_INIT(vdd_cpu_cci, 1);
 
+struct cpu_clk {
+	u32 cpu_reg_mask;
+	cpumask_t cpumask;
+	bool hw_low_power_ctrl;
+	struct pm_qos_request req;
+	struct latency_level latency_lvl;
+	s32 cpu_latency_no_l2_pc_us;
+};
+
 enum apcs_mux_clk_parent {
 	P_BI_TCXO_AO,
 	P_GPLL0_AO_OUT_MAIN,
 	P_APCS_CPU_PLL,
-};
-
-struct pll_spm_ctrl {
-	u32 offset;
-	u32 force_event_offset;
-	u32 event_bit;
-	void __iomem *spm_base;
-};
-
-static struct pll_spm_ctrl apcs_pll_spm = {
-	.offset = 0x50,
-	.force_event_offset = 0x4,
-	.event_bit = 0x4,
 };
 
 static const struct parent_map apcs_mux_clk_parent_map0[] = {
@@ -78,13 +74,49 @@ static const char *const apcs_mux_clk_parent_name1[] = {
 	"gpll0_ao_out_main",
 };
 
+static struct cpu_clk apcs_c1_clk = {
+	.cpu_reg_mask = 0x3,
+	.latency_lvl = {
+		.affinity_level = LPM_AFF_LVL_L2,
+		.reset_level = LPM_RESET_LVL_GDHS,
+		.level_name = "perf",
+	},
+	.cpu_latency_no_l2_pc_us = 300,
+};
+
+static void do_nothing(void *unused) { }
+
 static int cpucc_clk_set_rate_and_parent(struct clk_hw *hw, unsigned long rate,
 						unsigned long prate, u8 index)
 {
+	int ret;
+	bool hw_low_ctrl;
+
 	struct clk_regmap_mux_div *cpuclk = to_clk_regmap_mux_div(hw);
 
-	return __mux_div_set_src_div(cpuclk, cpuclk->parent_map[index].cfg,
+	struct cpu_clk *cpu_c1_clk = &apcs_c1_clk;
+
+	hw_low_ctrl = cpu_c1_clk->hw_low_power_ctrl;
+
+	if (hw_low_ctrl) {
+		memset(&cpu_c1_clk->req, 0, sizeof(cpu_c1_clk->req));
+		cpumask_copy(&cpu_c1_clk->req.cpus_affine,
+				(const struct cpumask *)&cpu_c1_clk->cpumask);
+		cpu_c1_clk->req.type = PM_QOS_REQ_AFFINE_CORES;
+		pm_qos_add_request(&cpu_c1_clk->req, PM_QOS_CPU_DMA_LATENCY,
+				cpu_c1_clk->cpu_latency_no_l2_pc_us - 1);
+		smp_call_function_any(&cpu_c1_clk->cpumask, do_nothing,
+				NULL, 1);
+	}
+
+	ret =  __mux_div_set_src_div(cpuclk, cpuclk->parent_map[index].cfg,
 					cpuclk->div);
+
+	if (hw_low_ctrl)
+		pm_qos_remove_request(&cpu_c1_clk->req);
+
+	return ret;
+
 }
 
 static int cpucc_clk_set_parent(struct clk_hw *hw, u8 index)
@@ -98,6 +130,20 @@ static int cpucc_clk_set_rate(struct clk_hw *hw, unsigned long rate,
 	struct clk_regmap_mux_div *cpuclk = to_clk_regmap_mux_div(hw);
 
 	return __mux_div_set_src_div(cpuclk, cpuclk->src, cpuclk->div);
+}
+
+static bool freq_from_gpll0(unsigned long req_rate, unsigned long gpll0_rate)
+{
+	unsigned long temp;
+	int div;
+
+	for (div = 10; div <= 40; div += 5) {
+		temp = mult_frac(gpll0_rate, 10, div);
+		if (req_rate == temp)
+			return true;
+	}
+
+	return false;
 }
 
 static int cpucc_clk_determine_rate(struct clk_hw *hw,
@@ -126,7 +172,7 @@ static int cpucc_clk_determine_rate(struct clk_hw *hw,
 	apcs_gpll0_rate = clk_hw_get_rate(apcs_gpll0_hw);
 	apcs_gpll0_rrate = DIV_ROUND_UP(apcs_gpll0_rate, 1000000) * 1000000;
 
-	if (rate <= apcs_gpll0_rrate) {
+	if (freq_from_gpll0(rate, apcs_gpll0_rrate)) {
 		req->best_parent_hw = apcs_gpll0_hw;
 		req->best_parent_rate = apcs_gpll0_rrate;
 		div = DIV_ROUND_CLOSEST(2 * apcs_gpll0_rrate, rate) - 1;
@@ -216,49 +262,6 @@ static u8 cpucc_clk_get_parent(struct clk_hw *hw)
 	return clk_regmap_mux_div_ops.get_parent(hw);
 }
 
-static void spm_event(struct pll_spm_ctrl *apcs_pll_spm, bool enable)
-{
-	void __iomem *base = apcs_pll_spm->spm_base;
-	u32 offset, force_event_offset, bit, val;
-
-	if (!apcs_pll_spm)
-		return;
-
-	offset = apcs_pll_spm->offset;
-	force_event_offset = apcs_pll_spm->force_event_offset;
-	bit = apcs_pll_spm->event_bit;
-
-	if (enable) {
-		/* L2_SPM_FORCE_EVENT_EN */
-		val = readl_relaxed(base + offset);
-		val |= BIT(bit);
-		writel_relaxed(val, (base + offset));
-		/* Ensure that the write above goes through. */
-		mb();
-
-		/* L2_SPM_FORCE_EVENT */
-		val = readl_relaxed(base + offset + force_event_offset);
-		val |= BIT(bit);
-		writel_relaxed(val, (base + offset + force_event_offset));
-		/* Ensure that the write above goes through. */
-		mb();
-	} else {
-		/* L2_SPM_FORCE_EVENT */
-		val = readl_relaxed(base + offset + force_event_offset);
-		val &= ~BIT(bit);
-		writel_relaxed(val, (base + offset + force_event_offset));
-		/* Ensure that the write above goes through. */
-		mb();
-
-		/* L2_SPM_FORCE_EVENT_EN */
-		val = readl_relaxed(base + offset);
-		val &= ~BIT(bit);
-		writel_relaxed(val, (base + offset));
-		/* Ensure that the write above goes through. */
-		mb();
-	}
-}
-
 /*
  * We use the notifier function for switching to a temporary safe configuration
  * (mux and divider), while the APSS pll is reconfigured.
@@ -274,11 +277,8 @@ static int cpucc_notifier_cb(struct notifier_block *nb, unsigned long event,
 	case PRE_RATE_CHANGE:
 		/* set the mux to safe source gpll0_ao_out & div */
 		ret = __mux_div_set_src_div(cpuclk, safe_src, 1);
-		spm_event(&apcs_pll_spm, true);
 		break;
 	case POST_RATE_CHANGE:
-		if (cpuclk->src != safe_src)
-			spm_event(&apcs_pll_spm, false);
 		break;
 	case ABORT_RATE_CHANGE:
 		pr_err("Error in configuring PLL - stay at safe src only\n");
@@ -321,6 +321,10 @@ static struct clk_pll apcs_cpu_pll = {
 	.config_reg = 0x10,
 	.status_reg = 0x1c,
 	.status_bit = 16,
+	.spm_ctrl = {
+		.offset = 0x50,
+		.event_bit = 0x4,
+	},
 	.clkr.hw.init = &(struct clk_init_data){
 		.name = "apcs_cpu_pll",
 		.parent_names = (const char *[]){ "bi_tcxo_ao" },
@@ -739,8 +743,6 @@ static int cpucc_driver_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	apcs_pll_spm.spm_base = base;
-
 	/* Get speed bin information */
 	cpucc_clk_get_speed_bin(pdev, &speed_bin, &version);
 
@@ -820,6 +822,11 @@ static int cpucc_driver_probe(struct platform_device *pdev)
 		clk_prepare_enable(apcs_mux_cci_clk.clkr.hw.clk);
 	}
 	put_online_cpus();
+
+	for_each_possible_cpu(cpu)
+		cpumask_set_cpu(cpu, &apcs_c1_clk.cpumask);
+
+	apcs_c1_clk.hw_low_power_ctrl = true;
 
 	register_pm_notifier(&clock_pm_notifier);
 
@@ -924,6 +931,26 @@ static int __init cpu_clock_init(void)
 	return 0;
 }
 early_initcall(cpu_clock_init);
+
+static int __init clock_cpu_lpm_get_latency(void)
+{
+	int rc;
+	struct device_node *ofnode = of_find_compatible_node(NULL, NULL,
+					"qcom,cpu-clock-sdm429");
+
+	if (!ofnode)
+		return 0;
+
+	rc = lpm_get_latency(&apcs_c1_clk.latency_lvl,
+			&apcs_c1_clk.cpu_latency_no_l2_pc_us);
+	if (rc < 0)
+		pr_err("Failed to get the L2 PC value for perf\n");
+	pr_debug("Latency for perf cluster %d\n",
+			apcs_c1_clk.cpu_latency_no_l2_pc_us);
+
+	return rc;
+}
+late_initcall_sync(clock_cpu_lpm_get_latency);
 
 MODULE_ALIAS("platform:cpu");
 MODULE_DESCRIPTION("SDM CPU clock Driver");
