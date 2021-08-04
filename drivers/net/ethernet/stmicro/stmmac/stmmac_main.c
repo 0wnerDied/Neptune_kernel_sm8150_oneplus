@@ -5222,7 +5222,7 @@ int stmmac_resume(struct device *dev)
 		if (priv->plat->clk_ptp_ref)
 			clk_prepare_enable(priv->plat->clk_ptp_ref);
 		/* reset the phy so that it's ready */
-		if (priv->mii)
+		if (priv->mii && !priv->boot_kpi)
 			stmmac_mdio_reset(priv->mii);
 	}
 
