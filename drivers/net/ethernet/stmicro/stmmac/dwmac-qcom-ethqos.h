@@ -235,6 +235,10 @@ do {\
 #define VOTE_IDX_10MBPS 1
 #define VOTE_IDX_100MBPS 2
 #define VOTE_IDX_1000MBPS 3
+#define VOTE_IDX_MDIO_NOM_CLK 4
+
+#define ETH_AHB_BUS_CFG_NOMINAL 1
+#define ETH_AHB_BUS_CFG_RECOVER 0
 
 /* Clock rates */
 #define RGMII_1000_NOM_CLK_FREQ			(250 * 1000 * 1000UL)
@@ -539,6 +543,7 @@ struct qcom_ethqos {
 	unsigned long avb_class_a_intr_cnt;
 	unsigned long avb_class_b_intr_cnt;
 	struct dentry *debugfs_dir;
+	bool skip_mdio_vote;
 
 	/* saving state for Wake-on-LAN */
 	int wolopts;
