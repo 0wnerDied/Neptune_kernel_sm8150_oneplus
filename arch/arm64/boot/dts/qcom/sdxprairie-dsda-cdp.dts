@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -20,6 +20,18 @@
 	compatible = "qcom,sdxprairie-cdp",
 		"qcom,sdxprairie", "qcom,cdp";
 	qcom,board-id = <0x6010001 0x0>;
+};
+
+&pmxprairie_vadc {
+	xo_therm {
+		qcom,hw-settle-time = <800>;
+	};
+};
+
+&pmxprairie_adc_tm_iio {
+	xo_therm {
+		qcom,hw-settle-time = <1>;
+	};
 };
 
 /* delete pm8150b nodes */

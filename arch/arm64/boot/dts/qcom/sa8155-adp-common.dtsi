@@ -215,9 +215,36 @@
 	status = "ok";
 };
 
+&pm8150_1_gpios {
+	usb1_oc {
+		usb1_oc_default: usb1_oc_default {
+			pins = "gpio10";
+			function = "normal";
+			input-enable;
+			bias-pull-up;
+			power-source = <0>;
+		};
+	};
+};
+
+&pm8150_2_gpios {
+	usb0_oc {
+		usb0_oc_default: usb0_oc_default {
+			pins = "gpio10";
+			function = "normal";
+			input-enable;
+			bias-pull-up;
+			power-source = <0>;
+		};
+	};
+};
+
 &usb0 {
 	qcom,default-mode-none;
 	qcom,ignore-wakeup-src-in-hostmode;
+	oc-gpio = <&pm8150_2_gpios 10 GPIO_ACTIVE_LOW>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&usb0_oc_default>;
 	dwc3@a600000 {
 		usb-phy = <&usb2_phy0>, <&usb_nop_phy>;
 		maximum-speed = "high-speed";
@@ -243,6 +270,9 @@
 	status = "ok";
 	qcom,default-mode-host;
 	qcom,ignore-wakeup-src-in-hostmode;
+	oc-gpio = <&pm8150_1_gpios 10 GPIO_ACTIVE_LOW>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&usb1_oc_default>;
 	dwc3@a800000 {
 		snps,dis_u3_susphy_quirk;
 	};

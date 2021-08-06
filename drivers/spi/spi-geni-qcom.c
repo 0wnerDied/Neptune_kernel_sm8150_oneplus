@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -686,7 +686,7 @@ static int setup_gsi_xfer(struct spi_transfer *xfer,
 		if (IS_ERR_OR_NULL(c0_tre)) {
 			dev_err(mas->dev, "%s:Err setting c0tre:%d\n",
 							__func__, ret);
-			return PTR_ERR(c0_tre);
+			return PTR_ERR(c0_tre) ?: -EINVAL;
 		}
 	}
 
@@ -735,7 +735,7 @@ static int setup_gsi_xfer(struct spi_transfer *xfer,
 		rx_tre = setup_dma_tre(rx_tre, xfer->rx_dma, xfer->len, mas, 0);
 		if (IS_ERR_OR_NULL(rx_tre)) {
 			dev_err(mas->dev, "Err setting up rx tre\n");
-			return PTR_ERR(rx_tre);
+			return PTR_ERR(rx_tre) ?: -EINVAL;
 		}
 		sg_set_buf(xfer_rx_sg, rx_tre, sizeof(*rx_tre));
 		mas->gsi[mas->num_xfers].rx_desc =
@@ -760,7 +760,7 @@ static int setup_gsi_xfer(struct spi_transfer *xfer,
 		tx_tre = setup_dma_tre(tx_tre, xfer->tx_dma, xfer->len, mas, 1);
 		if (IS_ERR_OR_NULL(tx_tre)) {
 			dev_err(mas->dev, "Err setting up tx tre\n");
-			return PTR_ERR(tx_tre);
+			return PTR_ERR(tx_tre) ?: -EINVAL;
 		}
 		sg_set_buf(xfer_tx_sg++, tx_tre, sizeof(*tx_tre));
 		mas->num_tx_eot++;
@@ -1710,14 +1710,14 @@ static int spi_geni_probe(struct platform_device *pdev)
 	wrapper_ph_node = of_parse_phandle(pdev->dev.of_node,
 					"qcom,wrapper-core", 0);
 	if (IS_ERR_OR_NULL(wrapper_ph_node)) {
-		ret = PTR_ERR(wrapper_ph_node);
+		ret = PTR_ERR(wrapper_ph_node) ?: -ENODEV;
 		dev_err(&pdev->dev, "No wrapper core defined\n");
 		goto spi_geni_probe_err;
 	}
 	wrapper_pdev = of_find_device_by_node(wrapper_ph_node);
 	of_node_put(wrapper_ph_node);
 	if (IS_ERR_OR_NULL(wrapper_pdev)) {
-		ret = PTR_ERR(wrapper_pdev);
+		ret = PTR_ERR(wrapper_pdev) ?: -ENODEV;
 		dev_err(&pdev->dev, "Cannot retrieve wrapper device\n");
 		goto spi_geni_probe_err;
 	}
@@ -1734,7 +1734,7 @@ static int spi_geni_probe(struct platform_device *pdev)
 	rsc->geni_pinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR_OR_NULL(rsc->geni_pinctrl)) {
 		dev_err(&pdev->dev, "No pinctrl config specified!\n");
-		ret = PTR_ERR(rsc->geni_pinctrl);
+		ret = PTR_ERR(rsc->geni_pinctrl) ?: -EINVAL;
 		goto spi_geni_probe_err;
 	}
 
@@ -1742,7 +1742,7 @@ static int spi_geni_probe(struct platform_device *pdev)
 							PINCTRL_DEFAULT);
 	if (IS_ERR_OR_NULL(rsc->geni_gpio_active)) {
 		dev_err(&pdev->dev, "No default config specified!\n");
-		ret = PTR_ERR(rsc->geni_gpio_active);
+		ret = PTR_ERR(rsc->geni_gpio_active) ?: -EINVAL;
 		goto spi_geni_probe_err;
 	}
 
@@ -1750,7 +1750,7 @@ static int spi_geni_probe(struct platform_device *pdev)
 							PINCTRL_SLEEP);
 	if (IS_ERR_OR_NULL(rsc->geni_gpio_sleep)) {
 		dev_err(&pdev->dev, "No sleep config specified!\n");
-		ret = PTR_ERR(rsc->geni_gpio_sleep);
+		ret = PTR_ERR(rsc->geni_gpio_sleep) ?: -EINVAL;
 		goto spi_geni_probe_err;
 	}
 
@@ -1768,21 +1768,21 @@ static int spi_geni_probe(struct platform_device *pdev)
 
 	rsc->se_clk = devm_clk_get(&pdev->dev, "se-clk");
 	if (IS_ERR(rsc->se_clk)) {
-		ret = PTR_ERR(rsc->se_clk);
+		ret = PTR_ERR(rsc->se_clk) ?: -ENODEV;
 		dev_err(&pdev->dev, "Err getting SE Core clk %d\n", ret);
 		goto spi_geni_probe_err;
 	}
 
 	rsc->m_ahb_clk = devm_clk_get(&pdev->dev, "m-ahb");
 	if (IS_ERR(rsc->m_ahb_clk)) {
-		ret = PTR_ERR(rsc->m_ahb_clk);
+		ret = PTR_ERR(rsc->m_ahb_clk) ?: -ENODEV;
 		dev_err(&pdev->dev, "Err getting M AHB clk %d\n", ret);
 		goto spi_geni_probe_err;
 	}
 
 	rsc->s_ahb_clk = devm_clk_get(&pdev->dev, "s-ahb");
 	if (IS_ERR(rsc->s_ahb_clk)) {
-		ret = PTR_ERR(rsc->s_ahb_clk);
+		ret = PTR_ERR(rsc->s_ahb_clk) ?: -ENODEV;
 		dev_err(&pdev->dev, "Err getting S AHB clk %d\n", ret);
 		goto spi_geni_probe_err;
 	}
