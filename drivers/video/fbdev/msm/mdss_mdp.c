@@ -1784,6 +1784,15 @@ void mdss_bus_bandwidth_ctrl(int enable)
 }
 EXPORT_SYMBOL(mdss_bus_bandwidth_ctrl);
 
+void mdss_mdp_set_panel_idle_mode(bool enable)
+{
+	struct mdss_data_type *mdata = mdss_mdp_get_mdata();
+
+	mdata->panel_idle_mode = enable;
+
+}
+EXPORT_SYMBOL(mdss_mdp_set_panel_idle_mode);
+
 void mdss_mdp_clk_ctrl(int enable)
 {
 	struct mdss_data_type *mdata = mdss_mdp_get_mdata();
@@ -3274,6 +3283,8 @@ static int mdss_mdp_probe(struct platform_device *pdev)
 			(mdata->mdp_rev < MDSS_MDP_HW_REV_200))
 		mdss_res->mdp_irq_export[0] = MDSS_MDP_INTR_WB_0_DONE |
 						MDSS_MDP_INTR_WB_1_DONE;
+
+	mdss_res->panel_idle_mode = false;
 
 	pr_info("mdss version = 0x%x, bootloader display is %s, num %d, intf_sel=0x%08x\n",
 		mdata->mdp_rev, num_of_display_on ? "on" : "off",
@@ -5290,6 +5301,18 @@ void mdss_mdp_footswitch_ctrl(struct mdss_data_type *mdata, int on)
 			}
 			mdata->mem_retain = true;
 			regulator_disable(mdata->fs);
+
+			if (mdata->panel_idle_mode) {
+				/*
+				 * Re-enable and disable MDP footswitch
+				 * controller when panel is in idle mode
+				 * to ensure proper MDSS power collapse.
+				 */
+
+				regulator_enable(mdata->fs);
+				regulator_disable(mdata->fs);
+			}
+
 			if (mdata->core_gdsc)
 				regulator_disable(mdata->core_gdsc);
 

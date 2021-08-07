@@ -1019,14 +1019,14 @@ static int geni_i2c_probe(struct platform_device *pdev)
 	wrapper_ph_node = of_parse_phandle(pdev->dev.of_node,
 				"qcom,wrapper-core", 0);
 	if (IS_ERR_OR_NULL(wrapper_ph_node)) {
-		ret = PTR_ERR(wrapper_ph_node);
+		ret = PTR_ERR(wrapper_ph_node) ?: -ENODEV;
 		dev_err(&pdev->dev, "No wrapper core defined\n");
 		return ret;
 	}
 	wrapper_pdev = of_find_device_by_node(wrapper_ph_node);
 	of_node_put(wrapper_ph_node);
 	if (IS_ERR_OR_NULL(wrapper_pdev)) {
-		ret = PTR_ERR(wrapper_pdev);
+		ret = PTR_ERR(wrapper_pdev) ?: -ENODEV;
 		dev_err(&pdev->dev, "Cannot retrieve wrapper device\n");
 		return ret;
 	}
@@ -1042,31 +1042,31 @@ static int geni_i2c_probe(struct platform_device *pdev)
 	gi2c->i2c_rsc.ctrl_dev = gi2c->dev;
 	gi2c->i2c_rsc.se_clk = devm_clk_get(&pdev->dev, "se-clk");
 	if (IS_ERR(gi2c->i2c_rsc.se_clk)) {
-		ret = PTR_ERR(gi2c->i2c_rsc.se_clk);
+		ret = PTR_ERR(gi2c->i2c_rsc.se_clk) ?: -ENODEV;
 		dev_err(&pdev->dev, "Err getting SE Core clk %d\n", ret);
 		return ret;
 	}
 	gi2c->i2c_rsc.m_ahb_clk = devm_clk_get(&pdev->dev, "m-ahb");
 	if (IS_ERR(gi2c->i2c_rsc.m_ahb_clk)) {
-		ret = PTR_ERR(gi2c->i2c_rsc.m_ahb_clk);
+		ret = PTR_ERR(gi2c->i2c_rsc.m_ahb_clk) ?: -ENODEV;
 		dev_err(&pdev->dev, "Err getting M AHB clk %d\n", ret);
 		return ret;
 	}
 	gi2c->i2c_rsc.s_ahb_clk = devm_clk_get(&pdev->dev, "s-ahb");
 	if (IS_ERR(gi2c->i2c_rsc.s_ahb_clk)) {
-		ret = PTR_ERR(gi2c->i2c_rsc.s_ahb_clk);
+		ret = PTR_ERR(gi2c->i2c_rsc.s_ahb_clk) ?: -ENODEV;
 		dev_err(&pdev->dev, "Err getting S AHB clk %d\n", ret);
 		return ret;
 	}
 
 	gi2c->base = devm_ioremap_resource(gi2c->dev, res);
 	if (IS_ERR(gi2c->base))
-		return PTR_ERR(gi2c->base);
+		return PTR_ERR(gi2c->base) ?: -ENODEV;
 
 	gi2c->i2c_rsc.geni_pinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR_OR_NULL(gi2c->i2c_rsc.geni_pinctrl)) {
 		dev_err(&pdev->dev, "No pinctrl config specified\n");
-		ret = PTR_ERR(gi2c->i2c_rsc.geni_pinctrl);
+		ret = PTR_ERR(gi2c->i2c_rsc.geni_pinctrl) ?: -EINVAL;
 		return ret;
 	}
 	gi2c->i2c_rsc.geni_gpio_active =
@@ -1074,7 +1074,7 @@ static int geni_i2c_probe(struct platform_device *pdev)
 							PINCTRL_DEFAULT);
 	if (IS_ERR_OR_NULL(gi2c->i2c_rsc.geni_gpio_active)) {
 		dev_err(&pdev->dev, "No default config specified\n");
-		ret = PTR_ERR(gi2c->i2c_rsc.geni_gpio_active);
+		ret = PTR_ERR(gi2c->i2c_rsc.geni_gpio_active) ?: -EINVAL;
 		return ret;
 	}
 	gi2c->i2c_rsc.geni_gpio_sleep =
@@ -1082,7 +1082,7 @@ static int geni_i2c_probe(struct platform_device *pdev)
 							PINCTRL_SLEEP);
 	if (IS_ERR_OR_NULL(gi2c->i2c_rsc.geni_gpio_sleep)) {
 		dev_err(&pdev->dev, "No sleep config specified\n");
-		ret = PTR_ERR(gi2c->i2c_rsc.geni_gpio_sleep);
+		ret = PTR_ERR(gi2c->i2c_rsc.geni_gpio_sleep) ?: -EINVAL;
 		return ret;
 	}
 

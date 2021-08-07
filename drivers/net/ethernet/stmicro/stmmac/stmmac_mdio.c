@@ -86,21 +86,32 @@ static int stmmac_mdio_read(struct mii_bus *bus, int phyaddr, int phyreg)
 			stmmac_mdio_c45_setup(priv, phyreg, &value, &data);
 	}
 
+	if (priv->plat->update_ahb_clk_cfg)
+		priv->plat->update_ahb_clk_cfg(priv, 1, 0);
+
 	if (readl_poll_timeout(priv->ioaddr + mii_address, v, !(v & MII_BUSY),
 			       100, 10000))
-		return -EBUSY;
+		goto out;
 
 	writel_relaxed(data, priv->ioaddr + mii_data);
 	writel(value, priv->ioaddr + mii_address);
 
 	if (readl_poll_timeout(priv->ioaddr + mii_address, v, !(v & MII_BUSY),
 			       100, 10000))
-		return -EBUSY;
+		goto out;
+
+	if (priv->plat->update_ahb_clk_cfg)
+		priv->plat->update_ahb_clk_cfg(priv, 0, 0);
 
 	/* Read the data from the MII data register */
 	data = (int)readl_relaxed(priv->ioaddr + mii_data) & MII_DATA_MASK;
 
 	return data;
+
+out:
+	if (priv->plat->update_ahb_clk_cfg)
+		priv->plat->update_ahb_clk_cfg(priv, 0, 0);
+	return -EBUSY;
 }
 
 /**
@@ -121,6 +132,7 @@ static int stmmac_mdio_write(struct mii_bus *bus, int phyaddr, int phyreg,
 	u32 v;
 	u32 value = MII_BUSY;
 	int data = phydata;
+	int ret;
 
 	value |= (phyaddr << priv->hw->mii.addr_shift)
 		& priv->hw->mii.addr_mask;
@@ -136,18 +148,33 @@ static int stmmac_mdio_write(struct mii_bus *bus, int phyaddr, int phyreg,
 		value |= MII_WRITE;
 	}
 
+	if (priv->plat->update_ahb_clk_cfg)
+		priv->plat->update_ahb_clk_cfg(priv, 1, 0);
+
 	/* Wait until any existing MII operation is complete */
 	if (readl_poll_timeout(priv->ioaddr + mii_address, v, !(v & MII_BUSY),
 			       100, 10000))
-		return -EBUSY;
+		goto out;
 
 	/* Set the MII address register to write */
 	writel_relaxed(data, priv->ioaddr + mii_data);
 	writel(value, priv->ioaddr + mii_address);
 
 	/* Wait until any existing MII operation is complete */
-	return readl_poll_timeout(priv->ioaddr + mii_address, v, !(v & MII_BUSY),
-				  100, 10000);
+	ret = readl_poll_timeout(priv->ioaddr + mii_address, v, !(v & MII_BUSY),
+				 100, 10000);
+	if (ret)
+		goto out;
+
+	if (priv->plat->update_ahb_clk_cfg)
+		priv->plat->update_ahb_clk_cfg(priv, 0, 0);
+
+	return ret;
+
+out:
+	if (priv->plat->update_ahb_clk_cfg)
+		priv->plat->update_ahb_clk_cfg(priv, 0, 0);
+	return -EBUSY;
 }
 
 /**

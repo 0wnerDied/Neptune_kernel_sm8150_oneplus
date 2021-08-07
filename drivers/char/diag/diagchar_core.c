@@ -468,6 +468,10 @@ void diag_clear_masks(int pid)
 	char cmd_disable_log_mask[] = { 0x73, 0, 0, 0, 0, 0, 0, 0};
 	char cmd_disable_msg_mask[] = { 0x7D, 0x05, 0, 0, 0, 0, 0, 0};
 	char cmd_disable_event_mask[] = { 0x60, 0};
+	char cmd_disable_qtrace_mask[] = { 0x4B, 0x44, 0x01, 0x90, 0x03, 0x00,
+					0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00};
 
 	DIAG_LOG(DIAG_DEBUG_PERIPHERALS,
 	"diag: %s: masks clear request upon %s\n", __func__,
@@ -479,6 +483,8 @@ void diag_clear_masks(int pid)
 			sizeof(cmd_disable_msg_mask), pid);
 	ret = diag_process_apps_masks(cmd_disable_event_mask,
 			sizeof(cmd_disable_event_mask), pid);
+	ret = diag_process_apps_pkt(cmd_disable_qtrace_mask,
+			sizeof(cmd_disable_qtrace_mask), pid);
 	DIAG_LOG(DIAG_DEBUG_PERIPHERALS,
 	"diag:%s: masks cleared successfully\n", __func__);
 }

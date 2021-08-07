@@ -560,7 +560,7 @@ static int ais_ife_csid_config_rdi_path(
 	path_cfg = &csid_hw->rdi_cfg[id];
 	path_cfg->vc = res->csi_cfg.vc;
 	path_cfg->dt = res->csi_cfg.dt;
-	path_cfg->cid = id;
+	path_cfg->cid = res->csi_cfg.dt_id;
 	path_cfg->in_format = res->in_cfg.format;
 	path_cfg->out_format = res->out_cfg.format;
 	path_cfg->crop_enable = res->in_cfg.crop_enable;

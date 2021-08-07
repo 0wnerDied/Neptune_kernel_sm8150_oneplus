@@ -2839,6 +2839,9 @@ static int stmmac_open(struct net_device *dev)
 	struct stmmac_priv *priv = netdev_priv(dev);
 	int ret;
 
+	if (priv->plat->update_ahb_clk_cfg)
+		priv->plat->update_ahb_clk_cfg(priv, 1, 1);
+
 	if (!priv->plat->mac2mac_en &&
 	    (priv->hw->pcs != STMMAC_PCS_RGMII &&
 	     priv->hw->pcs != STMMAC_PCS_TBI &&
@@ -2937,6 +2940,9 @@ static int stmmac_open(struct net_device *dev)
 		netif_carrier_on(dev);
 	}
 
+	if (priv->plat->update_ahb_clk_cfg)
+		priv->plat->update_ahb_clk_cfg(priv, 0, 0);
+
 	return 0;
 
 lpiirq_error:
@@ -2955,6 +2961,9 @@ init_error:
 dma_desc_error:
 	if (dev->phydev)
 		phy_disconnect(dev->phydev);
+
+	if (priv->plat->update_ahb_clk_cfg)
+		priv->plat->update_ahb_clk_cfg(priv, 0, 0);
 
 	return ret;
 }
