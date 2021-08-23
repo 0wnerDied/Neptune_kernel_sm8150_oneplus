@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2016-2017, Linaro Ltd
- * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2018-2019, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -233,6 +233,7 @@ struct glink_channel {
 
 	struct mutex intent_req_lock;
 	bool intent_req_result;
+	bool channel_ready;
 	atomic_t intent_req_comp;
 	wait_queue_head_t intent_req_event;
 };
@@ -916,7 +917,7 @@ static void qcom_glink_handle_intent_req(struct qcom_glink *glink,
 
 	ept = &channel->ept;
 	intent = qcom_glink_alloc_intent(glink, channel, size, false);
-	if (intent && ept->cb)
+	if (intent && channel->channel_ready)
 		qcom_glink_advertise_intent(glink, channel, intent);
 
 	qcom_glink_send_intent_req_ack(glink, channel, !!intent);
@@ -1421,6 +1422,8 @@ static int qcom_glink_announce_create(struct rpmsg_device *rpdev)
 	if (glink->intentless || !completion_done(&channel->open_ack))
 		return 0;
 
+	channel->channel_ready = true;
+
 	/*Serve any pending intent request*/
 	spin_lock_irqsave(&channel->intent_lock, flags);
 	idr_for_each_entry(&channel->liids, tmp, iid) {
@@ -1686,9 +1689,7 @@ static const struct rpmsg_endpoint_ops glink_endpoint_ops = {
 static void qcom_glink_rpdev_release(struct device *dev)
 {
 	struct rpmsg_device *rpdev = to_rpmsg_device(dev);
-	struct glink_channel *channel = to_glink_channel(rpdev->ept);
 
-	channel->rpdev = NULL;
 	kfree(rpdev);
 }
 

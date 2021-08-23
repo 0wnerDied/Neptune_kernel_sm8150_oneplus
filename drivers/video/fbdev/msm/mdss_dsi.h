@@ -26,6 +26,7 @@
 #include "mdss_panel.h"
 #include "mdss_dsi_cmd.h"
 #include "mdss_dsi_clk.h"
+#include "mdss_mdp.h"
 
 #define MMSS_SERDES_BASE_PHY 0x04f01000 /* mmss (De)Serializer CFG */
 
@@ -971,6 +972,12 @@ static inline enum dsi_logical_lane_id mdss_dsi_physical_to_logical_lane(
 	return i;
 }
 
+static inline bool mdss_dsi_is_twm_en(void)
+{
+	struct mdss_data_type *mdata = mdss_mdp_get_mdata();
+
+	return (mdata && mdata->twm_en);
+}
 static inline enum dsi_physical_lane_id mdss_dsi_logical_to_physical_lane(
 		struct mdss_dsi_ctrl_pdata *ctrl, enum dsi_logical_lane_id id)
 {

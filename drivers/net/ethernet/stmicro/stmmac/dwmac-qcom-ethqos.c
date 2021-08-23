@@ -518,6 +518,7 @@ place_marker("M - Etherent Assigned IPv4 address");
 	return res;
 }
 
+#ifdef CONFIG_IPV6
 static int qcom_ethqos_add_ipv6addr(struct ip_params *ip_info,
 				    struct net_device *dev)
 {
@@ -565,6 +566,7 @@ static int qcom_ethqos_add_ipv6addr(struct ip_params *ip_info,
 		}
 	return ret;
 }
+#endif
 
 static int rgmii_readl(struct qcom_ethqos *ethqos, unsigned int offset)
 {
@@ -1139,6 +1141,9 @@ static int ethqos_mdio_read(struct stmmac_priv  *priv, int phyaddr, int phyreg)
 static int ethqos_phy_intr_config(struct qcom_ethqos *ethqos)
 {
 	int ret = 0;
+	struct platform_device *pdev = ethqos->pdev;
+	struct net_device *dev = platform_get_drvdata(pdev);
+	struct stmmac_priv *priv = netdev_priv(dev);
 
 	ethqos->phy_intr = platform_get_irq_byname(ethqos->pdev, "phy-intr");
 
@@ -1148,6 +1153,8 @@ static int ethqos_phy_intr_config(struct qcom_ethqos *ethqos)
 				"PHY IRQ configuration information not found\n");
 		}
 		ret = 1;
+	} else {
+		priv->wol_irq = ethqos->phy_intr;
 	}
 
 	return ret;
@@ -2870,6 +2877,7 @@ static void qcom_ethqos_request_phy_wol(void *plat_n)
 	struct plat_stmmacenet_data *plat = plat_n;
 	struct qcom_ethqos *ethqos;
 	struct stmmac_priv *priv;
+	int ret = 0;
 
 	if (!plat)
 		return;
@@ -2877,47 +2885,33 @@ static void qcom_ethqos_request_phy_wol(void *plat_n)
 	ethqos = plat->bsp_priv;
 	priv = qcom_ethqos_get_priv(ethqos);
 
-	if (!priv)
+	if (!priv || !priv->en_wol)
 		return;
 
-	ethqos->phy_wol_supported = 0;
-	ethqos->phy_wol_wolopts = 0;
 	/* Check if phydev is valid*/
 	/* Check and enable Wake-on-LAN functionality in PHY*/
-
 	if (priv->phydev) {
 		struct ethtool_wolinfo wol = {.cmd = ETHTOOL_GWOL};
-
-		wol.supported = 0;
-		wol.wolopts = 0;
-		ETHQOSDBG("phydev addr: %x\n", priv->phydev);
 		phy_ethtool_get_wol(priv->phydev, &wol);
-		ethqos->phy_wol_supported = wol.supported;
-		ETHQOSDBG("Get WoL[0x%x] in %s\n", wol.supported,
-			  priv->phydev->drv->name);
 
-	/* Try to enable supported Wake-on-LAN features in PHY*/
-		if (wol.supported) {
-			device_set_wakeup_capable(&ethqos->pdev->dev, 1);
+		wol.cmd = ETHTOOL_SWOL;
+		wol.wolopts = wol.supported;
+		ret = phy_ethtool_set_wol(priv->phydev, &wol);
 
-			wol.cmd = ETHTOOL_SWOL;
-			wol.wolopts = wol.supported;
-
-			if (!phy_ethtool_set_wol(priv->phydev, &wol)) {
-				ethqos->phy_wol_wolopts = wol.wolopts;
-
-				enable_irq_wake(ethqos->phy_intr);
-				device_set_wakeup_enable(&ethqos->pdev->dev, 1);
-
-				ETHQOSDBG("Enabled WoL[0x%x] in %s\n",
-					  wol.wolopts,
-					  priv->phydev->drv->name);
-			} else {
-				ETHQOSINFO("Disabled WoL[0x%x] in %s\n",
-					   wol.wolopts,
-					   priv->phydev->drv->name);
-			}
+		if (ret) {
+			ETHQOSERR("set wol in PHY failed\n");
+			return;
 		}
+
+		if (ret == EOPNOTSUPP) {
+			ETHQOSERR("WOL not supported\n");
+			return;
+		}
+
+		device_set_wakeup_capable(priv->device, 1);
+
+		enable_irq_wake(ethqos->phy_intr);
+		device_set_wakeup_enable(&ethqos->pdev->dev, 1);
 	}
 }
 
@@ -2951,6 +2945,7 @@ static void ethqos_is_ipv4_NW_stack_ready(struct work_struct *work)
 	flush_delayed_work(&ethqos->ipv4_addr_assign_wq);
 }
 
+#ifdef CONFIG_IPV6
 static void ethqos_is_ipv6_NW_stack_ready(struct work_struct *work)
 {
 	struct delayed_work *dwork;
@@ -2980,6 +2975,7 @@ static void ethqos_is_ipv6_NW_stack_ready(struct work_struct *work)
 	cancel_delayed_work_sync(&ethqos->ipv6_addr_assign_wq);
 	flush_delayed_work(&ethqos->ipv6_addr_assign_wq);
 }
+#endif
 
 static void ethqos_set_early_eth_param(
 				struct stmmac_priv *priv,
@@ -3000,6 +2996,7 @@ static void ethqos_set_early_eth_param(
 		schedule_delayed_work(&ethqos->ipv4_addr_assign_wq, 0);
 	}
 
+#ifdef CONFIG_IPV6
 	if (pparams.is_valid_ipv6_addr) {
 		INIT_DELAYED_WORK(&ethqos->ipv6_addr_assign_wq,
 				  ethqos_is_ipv6_NW_stack_ready);
@@ -3008,6 +3005,7 @@ static void ethqos_set_early_eth_param(
 			schedule_delayed_work(&ethqos->ipv6_addr_assign_wq,
 					      msecs_to_jiffies(1000));
 	}
+#endif
 	return;
 }
 
@@ -3989,6 +3987,9 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	ndev = dev_get_drvdata(&ethqos->pdev->dev);
 	priv = netdev_priv(ndev);
 	priv->clk_csr = STMMAC_CSR_100_150M;
+
+	/* Read en_wol from device tree */
+	priv->en_wol = of_property_read_bool(np, "enable-wol");
 
 	if (pparams.is_valid_mac_addr) {
 		ether_addr_copy(dev_addr, pparams.mac_addr);

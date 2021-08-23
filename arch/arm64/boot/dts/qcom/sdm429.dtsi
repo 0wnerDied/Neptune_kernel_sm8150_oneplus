@@ -122,7 +122,7 @@
 		dump_mem: mem_dump_region {
 			compatible = "shared-dma-pool";
 			reusable;
-			size = <0x400000>;
+			size = <0 0x400000>;
 		};
 
 		gpu_mem: gpu_region@0 {
@@ -839,6 +839,7 @@
 		vdd_mx-supply = <&pm660_s2_level_ao>;
 		vdd_mx-uV = <RPM_SMD_REGULATOR_LEVEL_TURBO>;
 		vdd_pll-supply = <&L12A>;
+		qcom,smem-id = <421>;
 		qcom,vdd_pll = <1800000>;
 		vdd_mss-uV = <RPM_SMD_REGULATOR_LEVEL_TURBO>;
 
