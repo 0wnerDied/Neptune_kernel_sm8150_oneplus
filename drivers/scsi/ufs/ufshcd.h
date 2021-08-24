@@ -1096,6 +1096,7 @@ struct ufs_hba {
 #endif /* CONFIG_SCSI_UFS_CRYPTO */
 
 	bool wb_enabled;
+	bool primary_boot_device_probed;
 };
 
 static inline void ufshcd_mark_shutdown_ongoing(struct ufs_hba *hba)
