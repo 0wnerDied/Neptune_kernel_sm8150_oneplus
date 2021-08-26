@@ -274,7 +274,10 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&usb1_oc_default>;
 	dwc3@a800000 {
+		reg = <0x0a800000 0xd941>;
+		snps,force-gen1;
 		snps,dis_u3_susphy_quirk;
+		maximum-speed = "super-speed";
 	};
 };
 

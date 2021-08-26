@@ -292,6 +292,11 @@
 &usb2 {
 	qcom,ignore-wakeup-src-in-hostmode;
 	status = "ok";
+	dwc3@a400000 {
+		reg = <0x0a400000 0xd941>;
+		snps,force-gen1;
+		maximum-speed = "super-speed";
+	};
 };
 
 &slpi_tlmm {
