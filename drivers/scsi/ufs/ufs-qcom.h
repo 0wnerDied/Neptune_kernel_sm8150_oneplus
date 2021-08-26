@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -366,6 +366,7 @@ struct ufs_qcom_host {
 	/* FlashPVL entries */
 	atomic_t scale_up;
 	atomic_t clks_on;
+	bool disable_wb_support;
 };
 
 static inline u32
