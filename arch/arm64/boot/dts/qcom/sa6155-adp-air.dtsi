@@ -246,6 +246,9 @@
 	qcom,vddp-ref-clk-min-uV = <1232000>;
 	qcom,vddp-ref-clk-max-uV = <1260000>;
 
+	/* Disable Write Booster Feature */
+	qcom,disable-wb-support;
+
 	status = "ok";
 };
 
