@@ -277,7 +277,7 @@ static void mdss_dsi_panel_set_idle_mode(struct mdss_panel_data *pdata,
 			pr_debug("Idle on\n");
 		}
 	} else {
-		if (ctrl->idle_off_cmds.cmd_cnt) {
+		if (ctrl->idle_off_cmds.cmd_cnt && !mdss_dsi_is_twm_en()) {
 			mdss_dsi_panel_cmds_send(ctrl, &ctrl->idle_off_cmds,
 					CMD_REQ_COMMIT);
 			ctrl->idle = false;
@@ -1104,7 +1104,7 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 			goto end;
 	}
 
-	if (ctrl->off_cmds.cmd_cnt)
+	if (ctrl->off_cmds.cmd_cnt && !mdss_dsi_is_twm_en())
 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->off_cmds, CMD_REQ_COMMIT);
 
 	if (ctrl->ds_registered && pinfo->is_pluggable) {

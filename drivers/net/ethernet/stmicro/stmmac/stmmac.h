@@ -188,6 +188,7 @@ struct stmmac_priv {
 	struct dentry *dbgfs_dma_cap;
 #endif
 	bool hw_offload_enabled;
+	bool en_wol;
 };
 
 #define GET_MEM_PDEV_DEV (priv->plat->stmmac_emb_smmu_ctx.valid ? \

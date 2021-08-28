@@ -1,4 +1,4 @@
-/* Copyright (c) 2018-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -288,7 +288,7 @@ static ssize_t vchan_store(struct kobject *kobj, struct kobj_attribute *attr,
 		pr_err("failed to read anything from input %d", ret);
 		return 0;
 	} else
-		return vchan_stat;
+		return count;
 }
 
 static ssize_t ctx_show(struct kobject *kobj, struct kobj_attribute *attr,
@@ -307,7 +307,7 @@ static ssize_t ctx_store(struct kobject *kobj, struct kobj_attribute *attr,
 		pr_err("failed to read anything from input %d", ret);
 		return 0;
 	} else
-		return context_stat;
+		return count;
 }
 
 static ssize_t expimp_show(struct kobject *kobj, struct kobj_attribute *attr,
@@ -319,25 +319,31 @@ static ssize_t expimp_show(struct kobject *kobj, struct kobj_attribute *attr,
 static ssize_t expimp_store(struct kobject *kobj, struct kobj_attribute *attr,
 						const char *buf, size_t count)
 {
-	int ret;
+	int ret = -1;
 	char str[36] = {0};
+	unsigned long temp;
 
-	ret = sscanf(buf, "%35s", str);
-	if (ret < 1)
-		pr_err("failed to read anything from input %d", ret);
+	if (buf) {
+		ret = sscanf(buf, "%s", str);
+		if (ret < 1)
+			pr_err("failed to read anything from input %d", ret);
 
-	if (strnlen(str, strlen("dump_pipe")) == strlen("dump_pipe") &&
-		strcmp(str, "dump_pipe") == 0) {
-		/* string terminator is ignored */
-		dump_hab();
-		return strlen("dump_pipe");
+		if (strnlen(str, strlen("dump_pipe")) == strlen("dump_pipe") &&
+			strcmp(str, "dump_pipe") == 0) {
+			/* string terminator is ignored */
+			dump_hab();
+			return strlen("dump_pipe");
+		}
+
+		ret = kstrtol(buf, 10, &temp);
+		pid_stat = temp;
+
+		if (ret < 0)
+			pr_err("failed to read anything from input %d\n", ret);
+		else
+			return count; /* good result stored */
 	}
 
-	ret = sscanf(buf, "%du", &pid_stat);
-	if (ret < 1)
-		pr_err("failed to read anything from input %d", ret);
-	else
-		return pid_stat; /* good result stored */
 	return -EEXIST;
 }
 
