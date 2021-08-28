@@ -665,74 +665,60 @@ static void stmmac_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 static int stmmac_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
 {
 	struct stmmac_priv *priv = netdev_priv(dev);
-	struct qcom_ethqos *ethqos = priv->plat->bsp_priv;
-	u32 emac_wol_support = 0;
-	int ret;
+	u32 support = WAKE_MAGIC | WAKE_UCAST;
+	int ret = 0;
 
-	if (!priv->phydev) {
+	if (!priv->plat->pmt && !priv->phydev) {
 		pr_err("%s: %s: PHY is not registered\n",
 		       __func__, dev->name);
 		return -ENODEV;
 	}
 
-	if (ethqos->phy_state == PHY_IS_OFF) {
-		pr_info("Phy is in off state Wol set not possible\n");
-		return -EOPNOTSUPP;
+	if (!priv->plat->pmt) {
+		wol->cmd = ETHTOOL_SWOL;
+		ret = phy_ethtool_set_wol(priv->phydev, wol);
+		if (ret)
+			return ret;
+
+		device_set_wakeup_capable(priv->device, 1);
+
+		device_set_wakeup_enable(priv->device, 1);
+
+		enable_irq_wake(priv->wol_irq);
+
+		if (wol->wolopts == 0)
+			priv->en_wol = false;
+		else
+			priv->en_wol = true;
+		return ret;
 	}
+
 	/* By default almost all GMAC devices support the WoL via
 	 * magic frame but we can disable it if the HW capability
 	 * register shows no support for pmt_magic_frame. */
-	if (priv->hw_cap_support && priv->dma_cap.pmt_magic_frame)
-		wol->wolopts |= WAKE_MAGIC;
-	if (priv->hw_cap_support && priv->dma_cap.pmt_remote_wake_up)
-		wol->wolopts |= WAKE_UCAST;
-
-	if (wol->wolopts & ~(emac_wol_support | ethqos->phy_wol_supported))
-		return -EOPNOTSUPP;
+	if (priv->hw_cap_support && !priv->dma_cap.pmt_magic_frame)
+		wol->wolopts &= ~WAKE_MAGIC;
 
 	if (!device_can_wakeup(priv->device))
 		return -EINVAL;
 
+	if (wol->wolopts & ~support)
+		return -EINVAL;
+
+	if (wol->wolopts) {
+		pr_info("stmmac: wakeup enable\n");
+		device_set_wakeup_enable(priv->device, 1);
+		enable_irq_wake(priv->wol_irq);
+	} else {
+		device_set_wakeup_enable(priv->device, 0);
+		disable_irq_wake(priv->wol_irq);
+	}
+
 	mutex_lock(&priv->lock);
-	if (priv->hw_cap_support && priv->dma_cap.pmt_magic_frame)
-		priv->wolopts |= WAKE_MAGIC;
-	if (priv->hw_cap_support && priv->dma_cap.pmt_remote_wake_up)
-		priv->wolopts |= WAKE_UCAST;
+	priv->wolopts = wol->wolopts;
+
 	mutex_unlock(&priv->lock);
 
-	if (emac_wol_support && priv->wolopts != wol->wolopts) {
-		if (priv->wolopts) {
-			pr_info("stmmac: wakeup enable\n");
-			device_set_wakeup_enable(&ethqos->pdev->dev, 1);
-			enable_irq_wake(ethqos->phy_intr);
-		} else {
-			device_set_wakeup_enable(&ethqos->pdev->dev, 0);
-			disable_irq_wake(ethqos->phy_intr);
-		}
-	}
-
-	if (ethqos->phy_wol_wolopts != wol->wolopts) {
-		if (priv->plat->phy_intr_en_extn_stm &&
-		    ethqos->phy_wol_supported) {
-			ethqos->phy_wol_wolopts = 0;
-
-			ret = phy_ethtool_set_wol(priv->phydev, wol);
-
-			if (ret) {
-				pr_err("set wol in PHY failed\n");
-				return ret;
-	}
-			ethqos->phy_wol_wolopts = wol->wolopts;
-
-			if (ethqos->phy_wol_wolopts) {
-				enable_irq_wake(ethqos->phy_intr);
-				device_set_wakeup_enable(&ethqos->pdev->dev, 1);
-			} else {
-				disable_irq_wake(ethqos->phy_intr);
-				device_set_wakeup_enable(&ethqos->pdev->dev, 0);
-			}
-		}
-	}
 	return 0;
 }
 

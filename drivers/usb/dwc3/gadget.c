@@ -2350,6 +2350,8 @@ static int dwc3_gadget_pullup(struct usb_gadget *g, int is_on)
 		dwc->err_evt_seen = true;
 		dwc3_notify_event(dwc, DWC3_CONTROLLER_ERROR_EVENT, 0);
 		dwc3_notify_event(dwc, DWC3_CONTROLLER_NOTIFY_CLEAR_DB, 0);
+		/* Return zero as error recovery is triggered for timeout */
+		ret = 0;
 	}
 	enable_irq(dwc->irq);
 
