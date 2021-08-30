@@ -19,6 +19,7 @@
 #include <linux/syscalls.h>
 #include <linux/file.h>
 #include <linux/mm_inline.h>
+#include <linux/file_map.h>
 
 #include "internal.h"
 
@@ -159,12 +160,22 @@ int __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
 	int ret = 0;
 	loff_t isize = i_size_read(inode);
 	gfp_t gfp_mask = readahead_gfp_mask(mapping);
+#ifdef CONFIG_FILE_MAP
+	bool badpted = false;
+	unsigned long old_nr_to_read = nr_to_read;
+#endif
 
 	if (isize == 0)
 		goto out;
 
 	end_index = ((isize - 1) >> PAGE_SHIFT);
 
+#ifdef CONFIG_FILE_MAP
+	badpted = file_map_ra_adapt();
+	if (badpted)
+		nr_to_read = file_map_data_analysis(inode, offset,
+					nr_to_read, end_index, false);
+#endif
 	/*
 	 * Preallocate as many pages as we will need.
 	 */
@@ -173,6 +184,13 @@ int __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
 
 		if (page_offset > end_index)
 			break;
+
+#ifdef CONFIG_FILE_MAP
+		if (badpted && (old_nr_to_read == nr_to_read) && !file_map_is_set(inode, page_offset)){
+			file_map_stat_ignore_inc(1);
+			continue;
+		}
+#endif
 
 		rcu_read_lock();
 		page = radix_tree_lookup(&mapping->page_tree, page_offset);
@@ -189,6 +207,11 @@ int __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
 			SetPageReadahead(page);
 		ret++;
 	}
+
+#ifdef CONFIG_FILE_MAP
+	if (badpted)
+		file_map_stat_total_inc((long)ret);
+#endif
 
 	/*
 	 * Now start the IO.  We ignore I/O errors - if the page is not
