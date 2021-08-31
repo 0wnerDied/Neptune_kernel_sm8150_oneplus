@@ -258,6 +258,7 @@ static void default_options(struct erofs_sb_info *sbi)
 	set_opt(sbi, POSIX_ACL);
 #endif
 
+	set_opt(sbi, LZ4ASM);
 }
 
 static bool force_disable_erofs = false;
