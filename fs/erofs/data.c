@@ -81,13 +81,8 @@ repeat:
 			goto err_out;
 		}
 
-#if defined(CONFIG_EROFS_FS_HUAWEI_EXTENSION) && defined(REQ_FG)
-		__submit_bio(bio, REQ_OP_READ,
-			     REQ_META | (prio ? REQ_PRIO | REQ_FG : 0));
-#else
 		__submit_bio(bio, REQ_OP_READ,
 			     REQ_META | (prio ? REQ_PRIO : 0));
-#endif
 
 		lock_page(page);
 
@@ -367,26 +362,9 @@ static int erofs_raw_access_readpages(struct file *filp,
 	struct bio *bio = NULL;
 	gfp_t gfp = readahead_gfp_mask(mapping);
 	struct page *page = list_last_entry(pages, struct page, lru);
-#ifdef CONFIG_BLK_DEV_THROTTLING
-	struct block_device *const bdev = mapping->host->i_sb->s_bdev;
-#endif
 	unsigned int io_submitted = 0;
 
 	trace_erofs_readpages(mapping->host, page, nr_pages, true);
-
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
-#ifdef CONFIG_BLK_DEV_THROTTLING
-	if (pages) {
-		/*
-		 * Get one quota before read pages, when this ends,
-		 * get the rest of quotas according to how many bios
-		 * we submited in this routine.
-		 */
-		blk_throtl_get_quota(bdev, PAGE_SIZE,
-				     msecs_to_jiffies(100), true);
-	}
-#endif
-#endif
 
 	for (; nr_pages; --nr_pages) {
 		page = list_entry(pages->prev, struct page, lru);
@@ -418,14 +396,6 @@ static int erofs_raw_access_readpages(struct file *filp,
 	if (unlikely(bio))
 		__submit_bio(bio, REQ_OP_READ, 0);
 
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
-#ifdef CONFIG_BLK_DEV_THROTTLING
-	if (io_submitted)
-		while (--io_submitted)
-			blk_throtl_get_quota(bdev, PAGE_SIZE,
-					     msecs_to_jiffies(100), true);
-#endif
-#endif
 	return 0;
 }
 

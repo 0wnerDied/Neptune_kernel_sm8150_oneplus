@@ -243,22 +243,12 @@ struct z_erofs_map_header {
  *        di_u.delta[0] = distance to its corresponding head cluster
  *        di_u.delta[1] = distance to its corresponding tail cluster
  *                (di_advise could be 0, 1 or 2)
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
- *     or di_advise[3:0]       = 3  (for 4K, max 1M / 4K = 256)
- *        {di_advise[7:4], di_pageofs[15:12]} =
- *                               distance to its corresponding head cluster
- *        di_advise[15:8]      = distance to its corresponding tail cluster
-#endif
  */
 enum {
 	Z_EROFS_VLE_CLUSTER_TYPE_PLAIN,
 	Z_EROFS_VLE_CLUSTER_TYPE_HEAD,
 	Z_EROFS_VLE_CLUSTER_TYPE_NONHEAD,
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
-	Z_EROFS_VLE_CLUSTER_TYPE_HUAWEI_COMPAT,
-#else
 	Z_EROFS_VLE_CLUSTER_TYPE_RESERVED,
-#endif
 	Z_EROFS_VLE_CLUSTER_TYPE_MAX
 };
 

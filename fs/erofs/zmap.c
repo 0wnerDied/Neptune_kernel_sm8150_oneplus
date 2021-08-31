@@ -172,23 +172,6 @@ static int vle_legacy_load_cluster_from_disk(struct z_erofs_maprecorder *m,
 		m->delta[0] = le16_to_cpu(di->di_u.delta[0]);
 		m->delta[1] = le16_to_cpu(di->di_u.delta[1]);
 		break;
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
-#define HW_COMPAT_DELTA0_LO_BITS		4
-#define HW_COMPAT_DELTA0_HI_MASK		((1 << 4) - 1)
-#define HW_COMPAT_ADVISE_DELTA0_HI_SHIFT	4
-
-	case Z_EROFS_VLE_CLUSTER_TYPE_HUAWEI_COMPAT:
-		m->pblk = le32_to_cpu(di->di_u.blkaddr);
-		m->delta[0] = (((advise >> HW_COMPAT_ADVISE_DELTA0_HI_SHIFT) &
-				HW_COMPAT_DELTA0_HI_MASK) <<
-				HW_COMPAT_DELTA0_LO_BITS) |
-				(le16_to_cpu((di)->di_clusterofs) >>
-				 vi->z_logical_clusterbits);
-		m->clusterofs = le16_to_cpu((di)->di_clusterofs) &
-				((1 << vi->z_logical_clusterbits) - 1);
-		break;
-		/* fallthrough */
-#endif
 	case Z_EROFS_VLE_CLUSTER_TYPE_PLAIN:
 	case Z_EROFS_VLE_CLUSTER_TYPE_HEAD:
 		m->clusterofs = le16_to_cpu(di->di_clusterofs);
@@ -372,11 +355,6 @@ static int vle_extent_lookback(struct z_erofs_maprecorder *m,
 	case Z_EROFS_VLE_CLUSTER_TYPE_PLAIN:
 		map->m_flags &= ~EROFS_MAP_ZIPPED;
 		/* fallthrough */
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
-	case Z_EROFS_VLE_CLUSTER_TYPE_HUAWEI_COMPAT:
-		lcn -= m->delta[0];
-		/* fallthrough */
-#endif
 	case Z_EROFS_VLE_CLUSTER_TYPE_HEAD:
 		map->m_la = (lcn << lclusterbits) | m->clusterofs;
 		break;
@@ -433,12 +411,6 @@ int z_erofs_map_blocks_iter(struct inode *inode,
 		if (endoff >= m.clusterofs)
 			map->m_flags &= ~EROFS_MAP_ZIPPED;
 		/* fallthrough */
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
-	case Z_EROFS_VLE_CLUSTER_TYPE_HUAWEI_COMPAT:
-		if (m.delta[0])
-			goto nonhead;
-		/* fallthrough */
-#endif
 	case Z_EROFS_VLE_CLUSTER_TYPE_HEAD:
 		if (endoff >= m.clusterofs) {
 			map->m_la = (m.lcn << lclusterbits) | m.clusterofs;

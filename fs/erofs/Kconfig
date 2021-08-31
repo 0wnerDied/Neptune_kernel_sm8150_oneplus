@@ -149,11 +149,3 @@ config EROFS_FS_ZIP_CACHE_BIPOLAR
 
 endchoice
 
-config EROFS_FS_HUAWEI_EXTENSION
-	bool "EROFS HUAWEI Extension"
-	depends on EROFS_FS && EROFS_FS_ZIP
-	help
-	  Targeted optimizations for HUAWEI Mobile phone.
-
-	  If unsure, say N.
-

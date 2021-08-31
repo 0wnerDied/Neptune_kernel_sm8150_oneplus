@@ -19,10 +19,6 @@
 #include "internal.h"
 #include "xattr.h"
 
-#ifdef CONFIG_MTK_BOOT
-#include <mt-plat/mtk_boot_common.h>
-#endif
-
 #define CREATE_TRACE_POINTS
 #include <trace/events/erofs.h>
 
@@ -262,9 +258,6 @@ static void default_options(struct erofs_sb_info *sbi)
 	set_opt(sbi, POSIX_ACL);
 #endif
 
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
-	set_opt(sbi, LZ4ASM);
-#endif
 }
 
 static bool force_disable_erofs = false;
@@ -275,14 +268,6 @@ enum {
 	Opt_acl,
 	Opt_noacl,
 	Opt_fault_injection,
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
-	Opt_fmount,
-	Opt_barrier,
-	Opt_nobarrier,
-	Opt_lz4asm,
-	Opt_nolz4asm,
-	Opt_decompcache,
-#endif
 	Opt_err
 };
 
@@ -292,15 +277,6 @@ static match_table_t erofs_tokens = {
 	{Opt_acl, "acl"},
 	{Opt_noacl, "noacl"},
 	{Opt_fault_injection, "fault_injection=%u"},
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
-	{Opt_fmount, "fmount"},
-	{Opt_barrier, "barrier=%u"},
-	{Opt_barrier, "barrier"},
-	{Opt_nobarrier, "nobarrier"},
-	{Opt_lz4asm,    "lz4asm"},
-	{Opt_nolz4asm,  "nolz4asm"},
-	{Opt_decompcache, "decompcache=%s"},
-#endif
 	{Opt_err, NULL}
 };
 
@@ -359,28 +335,6 @@ static int parse_options(struct super_block *sb, char *options)
 			if (err)
 				return err;
 			break;
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
-		case Opt_fmount:
-			force_panic_mount = true;
-			break;
-		case Opt_barrier:
-			infoln("skip the unneeded ext4 \"barrier\" option");
-			break;
-		case Opt_nobarrier:
-			infoln("skip the unneeded ext4 \"nobarrier\" option");
-			break;
-		case Opt_lz4asm:
-			set_opt(EROFS_SB(sb), LZ4ASM);
-			break;
-		case Opt_nolz4asm:
-			clear_opt(EROFS_SB(sb), LZ4ASM);
-			break;
-		case Opt_decompcache:
-			err = handle_decompcache_args(EROFS_SB(sb), args);
-			if (err)
-				return err;
-			break;
-#endif
 		default:
 			errln("Unrecognized mount option \"%s\" "
 					"or missing value", p);
@@ -697,20 +651,6 @@ static int __init erofs_module_init(void)
 
 	infoln("successfully to initialize erofs");
 
-#ifdef CONFIG_EROFS_FS_HUAWEI_EXTENSION
-
-#ifdef CONFIG_HISI_CMDLINE_PARSE
-	if (get_boot_into_recovery_flag() &&
-	    strstr(saved_command_line, "reboot_reason=AP_S_PANIC"))
-		force_disable_erofs = true;
-#endif
-#ifdef CONFIG_MTK_BOOT
-	if (get_boot_mode() == RECOVERY_BOOT &&
-	    strstr(saved_command_line, "reboot_reason=AP_S_PANIC"))
-		force_disable_erofs = true;
-#endif
-
-#endif
 	return 0;
 
 fs_err:
