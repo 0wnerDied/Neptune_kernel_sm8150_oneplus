@@ -79,8 +79,8 @@ LOCAL Cond_offset_ge_matchlength, Copy_offset_ge_match_loop
 	stp	x3, x0, [sp, #-16]!		/* push src and dst in stack */
 	ldr	x3, [x3]				/* x3 = *src_ptr */
 	ldr	x0, [x0]				/* x0 = *dst_ptr */
-	adr	permtable_addr, Permtable
-	adr	cplen_table_addr, Copylength_table
+	adr_l	permtable_addr, Permtable
+	adr_l	cplen_table_addr, Copylength_table
 
 Lz4_decompress_begin:
 	/*
@@ -253,7 +253,6 @@ Exit_here:
 	ldp     x29, x30, [sp], #16
 	ret     x30
 
-
 /*
  * In case of offset <= 31 < matchlength ,expand the pattern and store in
  * repeating pattern size(RPS),store the RPS in Copylength_table.
@@ -264,7 +263,7 @@ Exit_here:
  * read the pattern and store in q0 q1.
  * RPS = offset.
  */
-.text
+.pushsection	".rodata", "a"
 .p2align 8
 Permtable:
 .byte 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  //offset = 0
@@ -288,7 +287,7 @@ Permtable:
 Copylength_table:
 .byte 32,32,32,30,32,30,30,28,32,27,30,22,24,26,28,30  // 0  .. 15
 .byte 16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31  // 16 .. 31
-
+.popsection
 
 .text
 .p2align 4
