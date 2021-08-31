@@ -207,17 +207,6 @@ config HUGETLB_PAGE
 config ARCH_HAS_GIGANTIC_PAGE
 	bool
 
-config FILE_MAP
-	bool "file map support"
-	default n
-	depends on (F2FS_FS || EROFS_FS) && BLK_CGROUP
-
-	---help---
-	  This selects file map support.
-
-	  Select this if you want to optimize your Android system.
-	  If unsure, say N.
-
 source "fs/configfs/Kconfig"
 source "fs/efivarfs/Kconfig"
 

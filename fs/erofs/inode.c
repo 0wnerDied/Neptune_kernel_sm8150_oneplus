@@ -14,10 +14,6 @@
 
 #include <trace/events/erofs.h>
 
-#ifdef CONFIG_FILE_MAP
-#include <linux/file_map.h>
-#endif
-
 /* no locking */
 static int read_inode(struct inode *inode, void *data)
 {
@@ -113,11 +109,6 @@ static int read_inode(struct inode *inode, void *data)
 		inode->i_blocks = roundup(inode->i_size, EROFS_BLKSIZ) >> 9;
 	else
 		inode->i_blocks = nblks << LOG_SECTORS_PER_BLOCK;
-
-#ifdef CONFIG_FILE_MAP
-	inode->i_file_map = NULL;
-	file_map_entry_attach_unused(inode);
-#endif
 
 	return 0;
 }

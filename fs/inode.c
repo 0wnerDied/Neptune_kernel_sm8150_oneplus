@@ -167,10 +167,6 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
 	inode->i_wb_frn_history = 0;
 #endif
 
-#ifdef CONFIG_FILE_MAP
-	inode->i_file_map = NULL;
-#endif
-
 	if (security_inode_alloc(inode))
 		goto out;
 	spin_lock_init(&inode->i_lock);

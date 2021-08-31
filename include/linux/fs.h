@@ -682,10 +682,6 @@ struct inode {
 	struct fsverity_info	*i_verity_info;
 #endif
 
-#ifdef CONFIG_FILE_MAP
-	struct file_map_entry	*i_file_map;
-#endif
-
 	void			*i_private; /* fs or device private pointer */
 } __randomize_layout;
 

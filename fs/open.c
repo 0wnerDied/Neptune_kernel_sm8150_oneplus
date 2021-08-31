@@ -31,7 +31,6 @@
 #include <linux/ima.h>
 #include <linux/dnotify.h>
 #include <linux/compat.h>
-#include <linux/file_map.h>
 
 #include "internal.h"
 
@@ -1097,9 +1096,6 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 			put_unused_fd(fd);
 			fd = PTR_ERR(f);
 		} else {
-#ifdef CONFIG_FILE_MAP
-			file_map_filter(f, tmp->name);
-#endif
 			fsnotify_open(f);
 			fd_install(fd, f);
 		}

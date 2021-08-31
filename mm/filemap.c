@@ -36,7 +36,6 @@
 #include <linux/memcontrol.h>
 #include <linux/cleancache.h>
 #include <linux/rmap.h>
-#include <linux/file_map.h>
 #include <linux/delayacct.h>
 #include <linux/psi.h>
 #include "internal.h"
@@ -2039,10 +2038,6 @@ find_page:
 			goto out;
 		}
 
-#ifdef CONFIG_FILE_MAP
-		file_map_page_offset_update(filp, index, last_index);
-#endif
-
 		page = find_get_page(mapping, index);
 		if (!page) {
 			if (iocb->ki_flags & IOCB_NOWAIT)
@@ -2506,10 +2501,6 @@ int filemap_fault(struct vm_fault *vmf)
 	max_off = DIV_ROUND_UP(i_size_read(inode), PAGE_SIZE);
 	if (unlikely(offset >= max_off))
 		return VM_FAULT_SIGBUS;
-
-#ifdef CONFIG_FILE_MAP
-	file_map_page_offset_update(file, offset, offset + 1);
-#endif
 
 	/*
 	 * Do we have something in the page cache already?

@@ -45,7 +45,6 @@
 
 #include <linux/kthread.h>
 #include <linux/freezer.h>
-#include <linux/file_map.h>
 
 #include "ext4.h"
 #include "ext4_extents.h"	/* Needed for trace points definition */
@@ -1072,10 +1071,6 @@ static void ext4_i_callback(struct rcu_head *head)
 
 static void ext4_destroy_inode(struct inode *inode)
 {
-#ifdef CONFIG_FILE_MAP
-	file_map_entry_del_inode(inode);
-#endif
-
 	if (!list_empty(&(EXT4_I(inode)->i_orphan))) {
 		ext4_msg(inode->i_sb, KERN_ERR,
 			 "Inode %lu (%p): orphan list check failed!",

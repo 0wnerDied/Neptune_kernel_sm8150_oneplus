@@ -24,7 +24,6 @@
 #include <linux/sysfs.h>
 #include <linux/quota.h>
 #include <linux/unicode.h>
-#include <linux/file_map.h>
 #include <linux/zstd.h>
 #include <linux/lz4.h>
 
@@ -1449,9 +1448,6 @@ static void f2fs_i_callback(struct rcu_head *head)
 
 static void f2fs_destroy_inode(struct inode *inode)
 {
-#ifdef CONFIG_FILE_MAP
-	file_map_entry_del_inode(inode);
-#endif
 	call_rcu(&inode->i_rcu, f2fs_i_callback);
 }
 

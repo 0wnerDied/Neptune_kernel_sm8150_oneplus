@@ -16,10 +16,6 @@
 #include <linux/parser.h>
 #include <linux/seq_file.h>
 
-#ifdef CONFIG_FILE_MAP
-#include <linux/file_map.h>
-#endif
-
 #include "internal.h"
 #include "xattr.h"
 
@@ -83,9 +79,6 @@ static void i_callback(struct rcu_head *head)
 
 static void destroy_inode(struct inode *inode)
 {
-#ifdef CONFIG_FILE_MAP
-	file_map_entry_del_inode(inode);
-#endif
 	call_rcu(&inode->i_rcu, i_callback);
 }
 
