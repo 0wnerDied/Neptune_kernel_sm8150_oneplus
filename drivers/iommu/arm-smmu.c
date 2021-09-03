@@ -497,6 +497,9 @@ static size_t msm_secure_smmu_map_sg(struct iommu_domain *domain,
 				     struct scatterlist *sg,
 				     unsigned int nents, int prot);
 
+static int arm_smmu_enable_config_clocks(struct iommu_domain *domain);
+static void arm_smmu_disable_config_clocks(struct iommu_domain *domain);
+
 static struct arm_smmu_domain *to_smmu_domain(struct iommu_domain *dom)
 {
 	return container_of(dom, struct arm_smmu_domain, domain);
@@ -4066,7 +4069,10 @@ static void arm_smmu_reg_write(struct iommu_domain *domain,
 
 static void arm_smmu_tlbi_domain(struct iommu_domain *domain)
 {
+	if (arm_smmu_enable_config_clocks(domain))
+		return;
 	arm_smmu_tlb_inv_context_s1(to_smmu_domain(domain));
+	arm_smmu_disable_config_clocks(domain);
 }
 
 static int arm_smmu_enable_config_clocks(struct iommu_domain *domain)
