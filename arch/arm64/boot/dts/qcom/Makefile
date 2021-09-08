@@ -306,16 +306,16 @@ sa6155-adp-air-overlay.dtbo-base := sa6155.dtb
 sa6155p-adp-air-overlay.dtbo-base := sa6155p.dtb
 sa6155p-v2-adp-air-overlay.dtbo-base := sa6155p.dtb
 sa6155p-v3-adp-air-overlay.dtbo-base := sa6155p.dtb
-qcs610-iot-overlay.dtbo-base := qcs610.dtb
-qcs610-ipc-overlay.dtbo-base := qcs610.dtb
-qcs610-opk-overlay.dtbo-base := qcs610.dtb
-qcs410-iot-overlay.dtbo-base := qcs410.dtb
-qcs410-ipc-overlay.dtbo-base := qcs410.dtb
-prairie-iot-idp-overlay.dtbo-base := qcs610.dtb
-prairie-iot-external-codec-idp-overlay.dtbo-base := qcs610.dtb
-prairie-iot-usbc-idp-overlay.dtbo-base := qcs610.dtb
-prairie-iot-cmd-mode-display-idp-overlay.dtbo-base := qcs610.dtb
-prairie-iot-usbc-minidp-idp-overlay.dtbo-base := qcs610.dtb
+qcs610-iot-overlay.dtbo-base := qcs610.dtb qcs610-2gb.dtb
+qcs610-ipc-overlay.dtbo-base := qcs610.dtb qcs610-2gb.dtb
+qcs610-opk-overlay.dtbo-base := qcs610.dtb qcs610-2gb.dtb
+qcs410-iot-overlay.dtbo-base := qcs410.dtb qcs410-2gb.dtb
+qcs410-ipc-overlay.dtbo-base := qcs410.dtb qcs410-2gb.dtb
+prairie-iot-idp-overlay.dtbo-base := qcs610.dtb qcs610-2gb.dtb
+prairie-iot-external-codec-idp-overlay.dtbo-base := qcs610.dtb qcs610-2gb.dtb
+prairie-iot-usbc-idp-overlay.dtbo-base := qcs610.dtb qcs610-2gb.dtb
+prairie-iot-cmd-mode-display-idp-overlay.dtbo-base := qcs610.dtb qcs610-2gb.dtb
+prairie-iot-usbc-minidp-idp-overlay.dtbo-base := qcs610.dtb qcs610-2gb.dtb
 else
 dtb-$(CONFIG_ARCH_SM6150)	+= sm6150-rumi.dtb \
 	sm6150-qrd.dtb \
