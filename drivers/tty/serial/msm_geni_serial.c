@@ -288,6 +288,8 @@ static void msm_geni_serial_ssr_down(struct device *dev);
 static void msm_geni_serial_ssr_up(struct device *dev);
 static bool handle_rx_dma_xfer(u32 s_irq_status, struct uart_port *uport);
 
+static bool is_earlycon;
+
 #define GET_DEV_PORT(uport) \
 	container_of(uport, struct msm_geni_serial_port, uport)
 
@@ -335,7 +337,14 @@ static int msm_geni_serial_spinlocked(struct uart_port *uport)
 static void msm_geni_serial_enable_interrupts(struct uart_port *uport)
 {
 	unsigned int geni_m_irq_en, geni_s_irq_en;
-	struct msm_geni_serial_port *port = GET_DEV_PORT(uport);
+	struct msm_geni_serial_port *port = NULL;
+
+	/*
+	 * Earlyconsole also uses this API and finds port is NULL,
+	 * hence add a protective check.
+	 */
+	if (!is_earlycon)
+		port = GET_DEV_PORT(uport);
 
 	geni_m_irq_en = geni_read_reg_nolog(uport->membase,
 						SE_GENI_M_IRQ_EN);
@@ -347,7 +356,7 @@ static void msm_geni_serial_enable_interrupts(struct uart_port *uport)
 
 	geni_write_reg_nolog(geni_m_irq_en, uport->membase, SE_GENI_M_IRQ_EN);
 	geni_write_reg_nolog(geni_s_irq_en, uport->membase, SE_GENI_S_IRQ_EN);
-	if (port->xfer_mode == SE_DMA) {
+	if (port && port->xfer_mode == SE_DMA) {
 		geni_write_reg_nolog(DMA_TX_IRQ_BITS, uport->membase,
 							SE_DMA_TX_IRQ_EN_SET);
 		geni_write_reg_nolog(DMA_RX_IRQ_BITS |
@@ -490,7 +499,7 @@ static bool device_pending_suspend(struct uart_port *uport)
 {
 	int usage_count = atomic_read(&uport->dev->power.usage_count);
 
-	return (pm_runtime_status_suspended(uport->dev) || !usage_count);
+	return (pm_runtime_status_suspended(uport->dev) && !usage_count);
 }
 
 static bool check_transfers_inflight(struct uart_port *uport)
@@ -3489,6 +3498,7 @@ msm_geni_serial_earlycon_setup(struct earlycon_device *dev,
 	unsigned long clk_rate;
 	unsigned long cfg0, cfg1;
 
+	is_earlycon = true;
 	if (!uport->membase) {
 		ret = -ENOMEM;
 		goto exit_geni_serial_earlyconsetup;
@@ -4114,6 +4124,13 @@ static int msm_geni_serial_probe(struct platform_device *pdev)
 		snprintf(boot_marker, sizeof(boot_marker),
 			"M - DRIVER GENI_HS_UART_%d Ready", line);
 	place_marker(boot_marker);
+
+	/*
+	 * Earlyconsole to kernel console will switch happen after
+	 * uart_add_one_port. Hence marking is_earlycon to false here.
+	 */
+	if (is_console)
+		is_earlycon = false;
 
 	IPC_LOG_MSG(dev_port->ipc_log_misc, "%s: port:%s irq:%d\n", __func__,
 		    uport->name, uport->irq);

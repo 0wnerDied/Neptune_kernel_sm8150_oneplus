@@ -292,6 +292,11 @@
 &usb2 {
 	qcom,ignore-wakeup-src-in-hostmode;
 	status = "ok";
+	dwc3@a400000 {
+		reg = <0x0a400000 0xd941>;
+		snps,force-gen1;
+		maximum-speed = "super-speed";
+	};
 };
 
 &slpi_tlmm {
@@ -343,6 +348,9 @@
 	qcom,vccq-parent-supply = <&pm8195_1_s2>;
 	qcom,vccq-parent-max-microamp = <210000>;
 
+	/* Disable Write Booster Feature for 1st UFS */
+	qcom,disable-wb-support;
+
 	status= "ok";
 };
 
@@ -372,6 +380,9 @@
 	qcom,vddp-ref-clk-max-microamp = <100>;
 	qcom,vccq-parent-supply = <&pm8195_1_s2>;
 	qcom,vccq-parent-max-microamp = <210000>;
+
+	/* Disable Write Booster Feature 2nd UFS */
+	qcom,disable-wb-support;
 
 	status= "ok";
 };

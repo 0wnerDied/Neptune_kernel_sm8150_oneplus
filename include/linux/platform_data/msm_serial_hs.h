@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2008 Google, Inc.
- * Copyright (C) 2010-2018, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2010-2018, 2021 The Linux Foundation. All rights reserved.
  * Author: Nick Pelly <npelly@google.com>
  *
  * This software is licensed under the terms of the GNU General Public
@@ -35,6 +35,7 @@
  * @no_suspend_delay : Flag used to make system go to suspend
  * immediately or not
  * @obs: Flag to enable out of band sleep feature support
+ * @rx_brk_detect : Flag used to disable the bits to detect RX Break condition
  */
 struct msm_serial_hs_platform_data {
 	int wakeup_irq;  /* wakeup irq */
@@ -51,6 +52,7 @@ struct msm_serial_hs_platform_data {
 	unsigned int bam_rx_ep_pipe_index;
 	bool no_suspend_delay;
 	bool obs;
+	bool rx_brk_detect;
 };
 
 /* return true when tx is empty */

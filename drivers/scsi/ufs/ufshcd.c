@@ -6832,10 +6832,13 @@ out:
 
 static bool ufshcd_wb_sup(struct ufs_hba *hba)
 {
+	struct ufs_qcom_host *host = ufshcd_get_variant(hba);
+
 	return ((hba->dev_info.d_ext_ufs_feature_sup &
 		   UFS_DEV_WRITE_BOOSTER_SUP) &&
 		  (hba->dev_info.b_wb_buffer_type
-		   || hba->dev_info.wb_config_lun));
+		   || hba->dev_info.wb_config_lun) &&
+			!host->disable_wb_support);
 }
 
 static int ufshcd_wb_ctrl(struct ufs_hba *hba, bool enable)
@@ -9284,7 +9287,8 @@ static int ufshcd_extcon_unregister(struct ufs_hba *hba)
 static void ufshcd_async_scan(void *data, async_cookie_t cookie)
 {
 	struct ufs_hba *hba = (struct ufs_hba *)data;
-
+	struct device *dev = hba->dev;
+	struct device_node *np = dev->of_node;
 	/*
 	 * Don't allow clock gating and hibern8 enter for faster device
 	 * detection.
@@ -9292,6 +9296,9 @@ static void ufshcd_async_scan(void *data, async_cookie_t cookie)
 	ufshcd_hold_all(hba);
 	ufshcd_probe_hba(hba);
 	ufshcd_release_all(hba);
+
+	if (!of_property_read_bool(np, "secondary-storage"))
+		hba->primary_boot_device_probed = true;
 
 	ufshcd_extcon_register(hba);
 }

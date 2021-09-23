@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -562,6 +562,8 @@ static int qpnp_pon_reset_config(struct qpnp_pon *pon,
 	bool disable = false;
 	u16 rst_en_reg;
 	struct qpnp_pon_config *cfg;
+	u8 pon_kpd_rt_bit = (QPNP_PON_KPDPWR_N_SET | QPNP_PON_CBLPWR_N_SET);
+	uint pon_rt_sts = 0;
 
 	/* Ignore the PS_HOLD reset config if TWM ENTRY is enabled */
 	if (pon->support_twm_config && pon->twm_state == PMIC_TWM_ENABLE) {
@@ -583,6 +585,14 @@ static int qpnp_pon_reset_config(struct qpnp_pon *pon,
 				pr_err("Unable to config KPDPWR_N S2 for hard-reset rc=%d\n",
 					rc);
 		}
+
+		do {
+			/* make sure no key is pressed */
+			rc = qpnp_pon_read(pon, QPNP_PON_RT_STS(pon),
+							&pon_rt_sts);
+			if (rc < 0)
+				pr_err("Unable to read PON_RT_STS rc=%d\n", rc);
+		} while (pon_rt_sts & pon_kpd_rt_bit);
 
 		pr_crit("PMIC configured for TWM entry\n");
 		return 0;
