@@ -1602,6 +1602,7 @@ static void ipa3_q6_clnt_svc_arrive(struct work_struct *work)
 	if ((rc == -ENETRESET) || (rc == -ENODEV) || (rc == -ECONNRESET)) {
 		IPAWANERR(
 		"ipa3_qmi_init_modem_send_sync_msg failed due to SSR!\n");
+
 		/* Cleanup when ipa3_wwan_remove is called */
 		mutex_lock(&ipa3_qmi_lock);
 		if (ipa_q6_clnt != NULL) {
