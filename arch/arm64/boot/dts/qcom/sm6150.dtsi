@@ -1,4 +1,4 @@
- /* Copyright (c) 2018-2020, The Linux Foundation.All rights reserved.
+ /* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -798,7 +798,7 @@
 			clock-output-names = "scc_pll_out_aux";
 			clocks = <&scc_pll_out_aux2>;
 			clock-mult = <1>;
-			clock-div = <2>;
+			clock-div = <3>;
 			#clock-cells = <0>;
 		};
 	};
