@@ -311,7 +311,6 @@ struct ais_ife_rdi_out_cfg {
  * @csiphy_id : CSIPHY id
  * @vc : Virtual Channel
  * @dt : Data Type
- * @dt_id : Data Type ID
  * @num_lanes : Number of lanes
  * @lane_assign : Lane mapping
  * @is_3Phase : DPHY or CPHY
@@ -320,7 +319,6 @@ struct ais_ife_csid_csi_info {
 	uint32_t csiphy_id;
 	uint32_t vc;
 	uint32_t dt;
-	uint32_t dt_id;
 	uint32_t num_lanes;
 	uint32_t lane_assign;
 	uint32_t is_3Phase;

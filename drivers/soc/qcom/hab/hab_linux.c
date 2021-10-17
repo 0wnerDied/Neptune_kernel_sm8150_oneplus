@@ -122,8 +122,7 @@ static long hab_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 		break;
 	case IOCTL_HAB_SEND:
 		send_param = (struct hab_send *)data;
-		if (send_param->sizebytes > (uint32_t)(HAB_HEADER_SIZE_MASK) ||
-				send_param->sizebytes == 0) {
+		if (send_param->sizebytes > (uint32_t)(HAB_HEADER_SIZE_MASK)) {
 			ret = -EINVAL;
 			break;
 		}

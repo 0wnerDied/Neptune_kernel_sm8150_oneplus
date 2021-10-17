@@ -95,26 +95,24 @@ static void _create_boot_marker(const char *name,
 void update_marker(const char *name)
 {
 	unsigned long long timer_value = msm_timer_get_sclk_ticks();
-	unsigned long flags;
 
-	spin_lock_irqsave(&boot_marker_list.slock, flags);
+	spin_lock(&boot_marker_list.slock);
 
 	delete_boot_marker(name);
 	_create_boot_marker(name, timer_value);
 
-	spin_unlock_irqrestore(&boot_marker_list.slock, flags);
+	spin_unlock(&boot_marker_list.slock);
 }
 EXPORT_SYMBOL(update_marker);
 
 static void set_bootloader_stats(bool hibernation_restore)
 {
-	unsigned long flags;
 	if (IS_ERR_OR_NULL(boot_stats)) {
 		pr_err("boot_marker: imem not initialized!\n");
 		return;
 	}
 
-	spin_lock_irqsave(&boot_marker_list.slock, flags);
+	spin_lock(&boot_marker_list.slock);
 	_create_boot_marker("M - APPSBL Start - ",
 		readl_relaxed(&boot_stats->bootloader_start));
 	if (!hibernation_restore) {
@@ -134,27 +132,25 @@ static void set_bootloader_stats(bool hibernation_restore)
 	}
 	_create_boot_marker("M - APPSBL End - ",
 		readl_relaxed(&boot_stats->bootloader_end));
-	spin_unlock_irqrestore(&boot_marker_list.slock, flags);
+	spin_unlock(&boot_marker_list.slock);
 }
 
 static void boot_marker_cleanup(void)
 {
 	struct boot_marker *marker;
 	struct boot_marker *temp_addr;
-	unsigned long flags;
 
-	spin_lock_irqsave(&boot_marker_list.slock, flags);
+	spin_lock(&boot_marker_list.slock);
 	list_for_each_entry_safe(marker, temp_addr, &boot_marker_list.list,
 			list) {
 		list_del(&marker->list);
 		kfree(marker);
 	}
-	spin_unlock_irqrestore(&boot_marker_list.slock, flags);
+	spin_unlock(&boot_marker_list.slock);
 }
 
 void place_marker(const char *name)
 {
-	unsigned long flags;
 #ifdef CONFIG_HIBERNATION
 	if (!strcmp(name, "M - Image Kernel Start")) {
 		/* In restore phase, remove Cold Boot KPIs */
@@ -162,9 +158,9 @@ void place_marker(const char *name)
 		set_bootloader_stats(true);
 	}
 #endif /* CONFIG_HIBERNATION */
-	spin_lock_irqsave(&boot_marker_list.slock, flags);
+	spin_lock(&boot_marker_list.slock);
 	_create_boot_marker((char *)name, msm_timer_get_sclk_ticks());
-	spin_unlock_irqrestore(&boot_marker_list.slock, flags);
+	spin_unlock(&boot_marker_list.slock);
 }
 EXPORT_SYMBOL(place_marker);
 
@@ -179,7 +175,6 @@ void measure_wake_up_time(void)
 {
 	u64 wake_up_time, deep_sleep_exit_time, current_time;
 	char wakeup_marker[50] = {0,};
-	unsigned long flags;
 
 	current_time = arch_counter_get_cntvct();
 	deep_sleep_exit_time = get_sleep_exit_time();
@@ -190,14 +185,14 @@ void measure_wake_up_time(void)
 			current_time, deep_sleep_exit_time, wake_up_time);
 		snprintf(wakeup_marker, sizeof(wakeup_marker),
 				"M - STR Wakeup : %llu ms", wake_up_time);
-		spin_lock_irqsave(&boot_marker_list.slock, flags);
+		spin_lock(&boot_marker_list.slock);
 		delete_boot_marker("M - STR Wakeup");
-		spin_unlock_irqrestore(&boot_marker_list.slock, flags);
+		spin_unlock(&boot_marker_list.slock);
 		place_marker(wakeup_marker);
 	} else {
-		spin_lock_irqsave(&boot_marker_list.slock, flags);
+		spin_lock(&boot_marker_list.slock);
 		delete_boot_marker("M - STR Wakeup");
-		spin_unlock_irqrestore(&boot_marker_list.slock, flags);
+		spin_unlock(&boot_marker_list.slock);
 	}
 }
 EXPORT_SYMBOL(measure_wake_up_time);
@@ -209,13 +204,12 @@ static ssize_t bootkpi_reader(struct file *fp, char __user *user_buffer,
 	char *buf;
 	int temp = 0;
 	struct boot_marker *marker;
-	unsigned long flags;
 
 	buf = kmalloc(BOOTKPI_BUF_SIZE, GFP_KERNEL);
 	if (!buf)
 		return -ENOMEM;
 
-	spin_lock_irqsave(&boot_marker_list.slock, flags);
+	spin_lock(&boot_marker_list.slock);
 	list_for_each_entry(marker, &boot_marker_list.list, list) {
 		WARN_ON((BOOTKPI_BUF_SIZE - temp) <= 0);
 		temp += scnprintf(buf + temp, BOOTKPI_BUF_SIZE - temp,
@@ -225,7 +219,7 @@ static ssize_t bootkpi_reader(struct file *fp, char __user *user_buffer,
 				(((marker->timer_value % TIMER_KHZ)
 				  * 1000) / TIMER_KHZ));
 	}
-	spin_unlock_irqrestore(&boot_marker_list.slock, flags);
+	spin_unlock(&boot_marker_list.slock);
 	rc = simple_read_from_buffer(user_buffer, count, position, buf, temp);
 	kfree(buf);
 	return rc;

@@ -150,7 +150,8 @@ struct cam_cmd_ois_info {
  * @data_mask       :   Data mask if only few bits are valid
  * @camera_id       :   Indicates the slot to which camera
  *                      needs to be probed
- * @reserved
+ * @reserved        :   right 8 bit for pipeline delay and left 8 bit for
+ *                      pluggable sensor
  */
 struct cam_cmd_probe {
 	uint8_t     data_type;

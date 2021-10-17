@@ -1631,6 +1631,19 @@ static int mdss_fb_pm_suspend(struct device *dev)
 
 	rc = mdss_fb_suspend_sub(mfd);
 
+	/*
+	 * Call MDSS footswitch control to ensure GDSC is
+	 * off after pm suspend call. There are cases when
+	 * mdss runtime call doesn't trigger even when clock
+	 * ref count is zero after fb pm suspend.
+	 */
+	if (!rc) {
+		if (mfd->mdp.footswitch_ctrl)
+			mfd->mdp.footswitch_ctrl(false);
+	} else {
+		pr_err("fb pm suspend failed, rc: %d\n", rc);
+	}
+
 	return rc;
 
 }
@@ -1651,6 +1664,9 @@ static int mdss_fb_pm_resume(struct device *dev)
 	pm_runtime_disable(dev);
 	pm_runtime_set_suspended(dev);
 	pm_runtime_enable(dev);
+
+	if (mfd->mdp.footswitch_ctrl)
+		mfd->mdp.footswitch_ctrl(true);
 
 	return mdss_fb_resume_sub(mfd);
 }

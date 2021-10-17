@@ -74,13 +74,17 @@ static int scsi_dev_type_resume(struct device *dev,
 		int (*cb)(struct device *, const struct dev_pm_ops *))
 {
 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+	struct scsi_device *sdev = to_scsi_device(dev);
 	int err = 0;
 
 	if (cb == do_scsi_runtime_resume || pm_runtime_active(dev)) {
 		err = cb(dev, pm);
-		scsi_device_resume(to_scsi_device(dev));
+		scsi_device_resume(sdev);
 		dev_dbg(dev, "scsi resume: %d\n", err);
 	}
+
+	if (sdev->request_queue->nr_pending)
+		pm_request_resume(dev);
 
 	return err;
 }
