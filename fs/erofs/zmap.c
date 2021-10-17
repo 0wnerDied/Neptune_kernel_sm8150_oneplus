@@ -428,7 +428,6 @@ int z_erofs_map_blocks_iter(struct inode *inode,
 		m.delta[0] = 1;
 		/* fallthrough */
 	case Z_EROFS_VLE_CLUSTER_TYPE_NONHEAD:
-nonhead:
 		/* get the correspoinding first chunk */
 		err = vle_extent_lookback(&m, m.delta[0]);
 		if (unlikely(err))

@@ -241,7 +241,7 @@ int erofs_try_to_free_all_cached_pages(struct erofs_sb_info *sbi,
 {
 	struct z_erofs_vle_workgroup *const grp =
 		container_of(egrp, struct z_erofs_vle_workgroup, obj);
-	struct address_space *const mapping = MNGD_MAPPING(sbi);
+	struct address_space *const mapping __maybe_unused = MNGD_MAPPING(sbi);
 	const int clusterpages = erofs_clusterpages(sbi);
 	int i;
 

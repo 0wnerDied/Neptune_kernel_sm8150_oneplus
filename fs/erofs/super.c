@@ -218,29 +218,6 @@ static unsigned int erofs_get_fault_rate(struct erofs_sb_info *sbi)
 }
 #endif
 
-static int handle_decompcache_args(struct erofs_sb_info *sbi,
-				   substring_t *args)
-{
-#ifdef EROFS_FS_HAS_MANAGED_CACHE
-	if (args->from) {
-		const int count = args->to - args->from;
-
-		if (!strncmp(args->from, "tryalloc", count)) {
-			set_opt(sbi, Z_CACHE_TRYALLOC);
-			return 0;
-		}
-		if (!strncmp(args->from, "delalloc", count)) {
-			clear_opt(sbi, Z_CACHE_TRYALLOC);
-			return 0;
-		}
-	}
-	return -EINVAL;
-#else
-	infoln("managed decompression cache disabled");
-#endif
-	return 0;
-}
-
 static void default_options(struct erofs_sb_info *sbi)
 {
 	/* set up some FS parameters */
