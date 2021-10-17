@@ -71,6 +71,7 @@ Optional properties:
  - snps,disable-clk-gating: If present, disable controller's internal clock gating.
    Default it is enabled.
  - num-gsi-eps: Number of GSI based hardware accelerated endpoints
+ - snps,force-gen1: If present, limit the speed of gen2 link to gen1
 
  - in addition all properties from usb-xhci.txt from the current directory are
    supported as well

@@ -6319,7 +6319,7 @@ static int msm_pcie_probe(struct platform_device *pdev)
 			"PCIe: RC%d is not enabled during bootup; it will be enumerated upon client request.\n",
 			rc_idx);
 	else
-		PCIE_ERR(&msm_pcie_dev[rc_idx], "RC%d is enabled in bootup\n",
+		PCIE_DBG(&msm_pcie_dev[rc_idx], "RC%d is enabled in bootup\n",
 			rc_idx);
 
 	PCIE_DBG(&msm_pcie_dev[rc_idx], "PCIE probed %s\n",

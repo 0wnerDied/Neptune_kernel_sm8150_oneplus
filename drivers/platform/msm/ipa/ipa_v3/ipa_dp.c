@@ -264,19 +264,21 @@ static void ipa3_send_nop_desc(struct work_struct *work)
 		return;
 	}
 	list_add_tail(&tx_pkt->link, &sys->head_desc_list);
-	sys->nop_pending = false;
 
 	memset(&nop_xfer, 0, sizeof(nop_xfer));
 	nop_xfer.type = GSI_XFER_ELEM_NOP;
 	nop_xfer.flags = GSI_XFER_FLAG_EOT;
 	nop_xfer.xfer_user_data = tx_pkt;
 	if (gsi_queue_xfer(sys->ep->gsi_chan_hdl, 1, &nop_xfer, true)) {
+		list_del(&tx_pkt->link);
+		kmem_cache_free(ipa3_ctx->tx_pkt_wrapper_cache, tx_pkt);
 		spin_unlock_bh(&sys->spinlock);
 		IPAERR("gsi_queue_xfer for ch:%lu failed\n",
 			sys->ep->gsi_chan_hdl);
 		queue_work(sys->wq, &sys->work);
 		return;
 	}
+	sys->nop_pending = false;
 	spin_unlock_bh(&sys->spinlock);
 
 	/* make sure TAG process is sent before clocks are gated */
@@ -351,6 +353,12 @@ int ipa3_send(struct ipa3_sys_context *sys,
 	memset(gsi_xfer, 0, sizeof(gsi_xfer[0]) * num_desc);
 
 	spin_lock_bh(&sys->spinlock);
+
+	if (unlikely(atomic_read(&sys->ep->disconnect_in_progress))) {
+		IPAERR("Pipe disconnect in progress dropping the packet\n");
+		spin_unlock_bh(&sys->spinlock);
+		return -EFAULT;
+	}
 
 	for (i = 0; i < num_desc; i++) {
 		tx_pkt = kmem_cache_zalloc(ipa3_ctx->tx_pkt_wrapper_cache,
@@ -1359,6 +1367,7 @@ int ipa3_teardown_sys_pipe(u32 clnt_hdl)
 	if (IPA_CLIENT_IS_PROD(ep->client)) {
 		do {
 			spin_lock_bh(&ep->sys->spinlock);
+			atomic_set(&ep->disconnect_in_progress, 1);
 			empty = list_empty(&ep->sys->head_desc_list);
 			spin_unlock_bh(&ep->sys->spinlock);
 			if (!empty)
