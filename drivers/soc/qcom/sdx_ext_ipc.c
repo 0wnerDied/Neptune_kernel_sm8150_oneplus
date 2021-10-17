@@ -206,13 +206,13 @@ static irqreturn_t ap_status_change(int irq, void *dev_id)
 	if ((!active_low && !state) || (active_low && state)) {
 		if (mdm->policy) {
 			evt = '0';
-			dev_info(mdm->dev, "Remote-end went down, leaving local-end as it is\n");
+			dev_info(mdm->dev, "Host undergoing SSR, leaving SDX as it is\n");
 			sb_notifier_call_chain(EVENT_REMOTE_STATUS_DOWN, NULL);
 		} else
-			panic("Remote-end went down, panicking local-end\n");
+			panic("Host undergoing SSR, panicking SDX\n");
 	} else {
 		evt = '1';
-		dev_info(mdm->dev, "Remote-end went up\n");
+		dev_info(mdm->dev, "HOST booted\n");
 		sb_notifier_call_chain(EVENT_REMOTE_STATUS_UP, NULL);
 	}
 

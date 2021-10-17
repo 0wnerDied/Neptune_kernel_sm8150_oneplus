@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -2799,7 +2799,7 @@ static struct clk_branch mmss_snoc_dvm_axi_clk = {
 
 static struct clk_branch mmss_video_ahb_clk = {
 	.halt_reg = 0x1030,
-	.halt_check = BRANCH_HALT_VOTED,
+	.halt_check = BRANCH_HALT,
 	.clkr = {
 		.enable_reg = 0x1030,
 		.enable_mask = BIT(0),
