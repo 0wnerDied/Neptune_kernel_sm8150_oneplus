@@ -1,4 +1,4 @@
-/* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -80,7 +80,8 @@ void diag_pcie_read_work_fn(struct work_struct *work)
 	unsigned int bytes_avail = 0;
 
 	if (!pcie_info || !atomic_read(&pcie_info->enabled) ||
-		!atomic_read(&pcie_info->diag_state))
+		!atomic_read(&pcie_info->diag_state) ||
+		driver->transport_set != DIAG_ROUTE_TO_PCIE)
 		return;
 
 	ureq.chan = pcie_info->in_chan;

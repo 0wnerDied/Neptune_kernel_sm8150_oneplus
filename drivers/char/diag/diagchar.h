@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -623,6 +623,7 @@ struct diagchar_dev {
 	int supports_pd_buffering;
 	int peripheral_untag[NUM_PERIPHERALS];
 	int supports_sockets;
+	int driver_initialized;
 	/* The state requested in the STM command */
 	int stm_state_requested[NUM_STM_PROCESSORS];
 	/* The current STM state */
