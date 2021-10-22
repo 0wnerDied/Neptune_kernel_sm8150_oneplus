@@ -332,6 +332,7 @@ struct cnss_plat_data {
 	bool enumerate_done;
 	int qrtr_node_id;
 	unsigned int wlfw_service_instance_id;
+	enum cnss_suspend_mode suspend_mode;
 };
 
 struct cnss_plat_data *cnss_get_plat_priv(struct platform_device *plat_dev);
