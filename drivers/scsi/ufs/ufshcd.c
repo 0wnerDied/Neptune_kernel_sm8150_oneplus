@@ -10640,6 +10640,15 @@ static int ufshcd_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 
 	ufshcd_wb_buf_flush_disable(hba);
 	if (!ufshcd_is_ufs_dev_active(hba)) {
+		/*
+		 * QCS610 UFS 3.x uses PMIC Buck regulator which requires
+		 * additional delay to settle its voltage back to normal 2.5
+		 * volts from the power down, so below delay_ssu flag is
+		 * used to enable delay before sending start stop unit command.
+		 */
+		if (hba->delay_ssu && hba->dev_info.w_spec_version >= 0x300)
+			usleep_range(20, 25);
+
 		ret = ufshcd_set_dev_pwr_mode(hba, UFS_ACTIVE_PWR_MODE);
 		if (ret)
 			goto set_old_link_state;
@@ -10674,8 +10683,18 @@ skip_dev_ops:
 	goto out;
 
 set_old_dev_pwr_mode:
-	if (old_pwr_mode != hba->curr_dev_pwr_mode)
+	if (old_pwr_mode != hba->curr_dev_pwr_mode) {
+		/*
+		 * QCS610 UFS 3.x uses PMIC Buck regulator which requires
+		 * additional delay to settle its voltage back to normal 2.5
+		 * volts from the power down, so below delay_ssu flag is
+		 * used to enable delay before sending start stop unit command.
+		 */
+		if (hba->delay_ssu && hba->dev_info.w_spec_version >= 0x300)
+			usleep_range(20, 25);
+
 		ufshcd_set_dev_pwr_mode(hba, old_pwr_mode);
+	}
 set_old_link_state:
 	ufshcd_link_state_transition(hba, old_link_state, 0);
 	if (ufshcd_is_link_hibern8(hba) &&
