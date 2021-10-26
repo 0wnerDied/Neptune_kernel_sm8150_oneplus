@@ -250,10 +250,15 @@ int dwmac_qcom_program_avb_algorithm(
 	 * 2 for CLASS B traffic
 	 * Configure right channel accordingly
 	 */
-	if (l_avb_struct.qinx == 1)
+	if (l_avb_struct.qinx == 1) {
 		l_avb_struct.qinx = CLASS_A_TRAFFIC_TX_CHANNEL;
-	else if (l_avb_struct.qinx == 2)
+	} else if (l_avb_struct.qinx == 2) {
 		l_avb_struct.qinx = CLASS_B_TRAFFIC_TX_CHANNEL;
+	} else {
+		ETHQOSERR("Invalid index [%u] in AVB struct from user\n",
+			  l_avb_struct.qinx);
+		return -EFAULT;
+	}
 
 	priv->plat->tx_queues_cfg[l_avb_struct.qinx].mode_to_use =
 		MTL_QUEUE_AVB;
