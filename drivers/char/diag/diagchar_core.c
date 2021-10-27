@@ -4478,6 +4478,7 @@ static int __init diagchar_init(void)
 		return -ENOMEM;
 	kmemleak_not_leak(driver);
 
+	driver->driver_initialized = 0;
 	timer_in_progress = 0;
 	diag_init_locks();
 	diag_init_transport();
@@ -4591,6 +4592,7 @@ static int __init diagchar_init(void)
 	pr_debug("diagchar initialized now");
 	if (IS_ENABLED(CONFIG_DIAGFWD_BRIDGE_CODE))
 		diag_register_with_bridge();
+	driver->driver_initialized = 1;
 	return 0;
 
 fail:

@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2019, 2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -74,6 +74,7 @@ static ssize_t diag_dbgfs_read_status(struct file *file, char __user *ubuf,
 		"Apps Supports Header Untagging: %d\n"
 		"Apps Supports Sockets: %d\n"
 		"Logging Mode: %d\n"
+		"transport_set: %d\n"
 		"RSP Buffer is Busy: %d\n"
 		"HDLC Disabled: %d\n"
 		"Time Sync Enabled: %d\n"
@@ -90,6 +91,7 @@ static ssize_t diag_dbgfs_read_status(struct file *file, char __user *ubuf,
 		driver->supports_apps_header_untagging,
 		driver->supports_sockets,
 		driver->logging_mode[DIAG_LOCAL_PROC],
+		driver->transport_set,
 		driver->rsp_buf_busy,
 		driver->hdlc_disabled,
 		driver->time_sync_enabled,
