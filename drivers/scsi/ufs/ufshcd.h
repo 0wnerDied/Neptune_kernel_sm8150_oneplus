@@ -1083,6 +1083,7 @@ struct ufs_hba {
 	bool force_g4;
 	/* distinguish between resume and restore */
 	bool restore;
+	bool delay_ssu;
 
 #ifdef CONFIG_SCSI_UFS_CRYPTO
 	/* crypto */

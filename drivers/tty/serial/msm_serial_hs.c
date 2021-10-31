@@ -2004,7 +2004,20 @@ static void msm_hs_sps_rx_callback(struct sps_event_notify *notify)
  */
 static unsigned int msm_hs_get_mctrl_locked(struct uart_port *uport)
 {
-	return TIOCM_DSR | TIOCM_CAR | TIOCM_CTS;
+	struct msm_hs_port *msm_uport = UARTDM_TO_MSM(uport);
+	unsigned int mctrl = TIOCM_DSR | TIOCM_CAR;
+	unsigned int status;
+
+	if (msm_uport->pm_state != MSM_HS_PM_ACTIVE) {
+		MSM_HS_WARN("%s(): Clocks are off\n", __func__);
+		return (mctrl | TIOCM_CTS);
+	}
+
+	status = msm_hs_read(uport, UART_DM_ISR);
+	if (!(status & UARTDM_ISR_CURRENT_CTS_BMSK))
+		mctrl |= TIOCM_CTS;
+
+	return mctrl;
 }
 
 /*
