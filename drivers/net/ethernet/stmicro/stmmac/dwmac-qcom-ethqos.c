@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2018-19, Linaro Limited
-// Copyright (c) 2020-21, The Linux Foundation. All rights reserved.
+// Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
 
 #include <linux/module.h>
 #include <linux/of.h>
@@ -4018,6 +4018,16 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 					       "emac");
 	}
 
+	if (priv->plat->mac2mac_en)
+		priv->plat->mac2mac_link = -1;
+
+#ifdef CONFIG_ETH_IPA_OFFLOAD
+	priv->plat->offload_event_handler(ethqos, EV_PROBE_INIT);
+#endif
+
+	if (pethqos->cv2x_mode != CV2X_MODE_DISABLE)
+		qcom_ethqos_register_listener();
+
 	if (ethqos->early_eth_enabled) {
 		/* Initialize work*/
 		INIT_WORK(&ethqos->early_eth,
@@ -4027,15 +4037,6 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		/*Set early eth parameters*/
 		ethqos_set_early_eth_param(priv, ethqos);
 	}
-
-	if (priv->plat->mac2mac_en)
-		priv->plat->mac2mac_link = -1;
-
-#ifdef CONFIG_ETH_IPA_OFFLOAD
-	priv->plat->offload_event_handler(ethqos, EV_PROBE_INIT);
-#endif
-	if (pethqos->cv2x_mode != CV2X_MODE_DISABLE)
-		qcom_ethqos_register_listener();
 
 	if (qcom_ethos_init_panic_notifier(ethqos))
 		atomic_notifier_chain_register(&panic_notifier_list,
