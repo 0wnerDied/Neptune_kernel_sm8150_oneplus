@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2017 Linaro Ltd.
+ * Copyright (c) 2021 The Linux Foundation. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -408,7 +409,7 @@ static void qmi_invoke_handler(struct qmi_handle *qmi, struct sockaddr_qrtr *sq,
 			break;
 	}
 
-	if (!handler->fn)
+	if (!handler->fn || !handler->decoded_size)
 		return;
 
 	dest = vzalloc(handler->decoded_size);
