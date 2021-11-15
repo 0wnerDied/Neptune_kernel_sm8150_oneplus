@@ -3537,7 +3537,7 @@ void ethqos_ipa_offload_event_handler(void *data,
 		break;
 	case EV_QTI_GET_CONN_STATUS:
 		if (eth_ipa_ctx.queue_enabled[IPA_QUEUE_CV2X])
-			*(u8 *)data = eth_ipa_ctx.ipa_offload_conn ?
+			*(u8 *)data = eth_ipa_ctx.ipa_offload_conn_cv2x ?
 			ETH_EVT_CV2X_PIPE_CONNECTED :
 			ETH_EVT_CV2X_PIPE_DISCONNECTED;
 		else
@@ -3579,7 +3579,8 @@ void ethqos_ipa_offload_event_handler(void *data,
 	if (eth_ipa_ctx.queue_enabled[IPA_QUEUE_CV2X] &&
 	    (ev == EV_USR_SUSPEND || ev == EV_USR_RESUME ||
 	     ev == EV_DEV_CLOSE || ev == EV_DEV_OPEN ||
-	     ev == EV_PHY_LINK_DOWN || ev ==  EV_PHY_LINK_UP)) {
+	     ev == EV_PHY_LINK_DOWN || ev ==  EV_PHY_LINK_UP ||
+	     ev == EV_IPA_SSR_DOWN || ev ==  EV_IPA_SSR_UP)) {
 		if (eth_ipa_ctx.ipa_offload_conn_prev_cv2x !=
 		    eth_ipa_ctx.ipa_offload_conn_cv2x)
 			ETHQOSDBG("need-status-updated\n");
