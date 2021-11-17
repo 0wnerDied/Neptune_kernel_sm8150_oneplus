@@ -678,6 +678,7 @@ struct dwc3_ep {
 	struct dwc3_ep_events	dbg_ep_events_diff;
 	struct timespec		dbg_ep_events_ts;
 	int			fifo_depth;
+	bool			disable_in_progress;
 };
 
 enum dwc3_phy {
