@@ -5239,7 +5239,13 @@ int stmmac_resume(struct device *dev)
 
 	stmmac_clear_descriptors(priv);
 
+	if (!device_can_wakeup(dev) && priv->plat->rgmii_loopback_cfg)
+		priv->plat->rgmii_loopback_cfg(priv, 1);
+
 	stmmac_hw_setup(ndev, false);
+
+	if (!device_can_wakeup(dev) && priv->plat->rgmii_loopback_cfg)
+		priv->plat->rgmii_loopback_cfg(priv, 0);
 
 	if (!priv->tx_coal_timer_disable)
 		stmmac_init_tx_coalesce(priv);

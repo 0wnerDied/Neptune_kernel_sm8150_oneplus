@@ -1360,6 +1360,12 @@ void diag_process_hdlc_pkt(void *data, unsigned int len, int pid)
 		return;
 	}
 
+	if (!driver->driver_initialized) {
+		pr_err("diag: %s: returning, driver is not initialized: %d\n",
+		 __func__, driver->driver_initialized);
+		return;
+	}
+
 	mutex_lock(&driver->diag_hdlc_mutex);
 	pr_debug("diag: In %s, received packet of length: %d, req_buf_len: %d\n",
 		 __func__, len, driver->hdlc_buf_len);
@@ -1742,6 +1748,12 @@ void diag_process_non_hdlc_pkt(unsigned char *buf, int len, int pid)
 	struct diag_pkt_frame_t *actual_pkt = NULL;
 	unsigned char *data_ptr = NULL;
 	struct diag_partial_pkt_t *partial_pkt = NULL;
+
+	if (!driver->driver_initialized) {
+		pr_err("diag: %s: returning, driver is not initialized: %d\n",
+		 __func__, driver->driver_initialized);
+		return;
+	}
 
 	mutex_lock(&driver->hdlc_recovery_mutex);
 	if (!buf || len <= 0) {
