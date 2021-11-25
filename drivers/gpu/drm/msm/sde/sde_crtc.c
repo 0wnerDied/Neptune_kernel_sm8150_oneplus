@@ -127,8 +127,10 @@ static struct sde_crtc_custom_events custom_events[] = {
 #define MAX_VPADDING_RATIO_M		63
 #define MAX_VPADDING_RATIO_N		15
 
-static unsigned int is_stock = 1;
+unsigned int is_stock = 1;
 module_param(is_stock, uint, 0444);
+unsigned int is_a12 = 0;
+module_param(is_a12, uint, 0444);
 
 static inline struct sde_kms *_sde_crtc_get_kms(struct drm_crtc *crtc)
 {
@@ -3576,7 +3578,7 @@ int oneplus_aod_dc = 0;
 	dsi_connector = dsi_display->drm_conn;
 	mode_config = &drm_dev->mode_config;
 	sscanf(buf, "%du", &dim_status);
-	if (oneplus_panel_status == 0)
+	if ((oneplus_panel_status == 0) && is_a12 && !is_stock)
 		dim_status = 0;
 
 	if (dsi_display->panel->aod_status == 0 && (dim_status == 2)) {
@@ -5823,9 +5825,11 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 	aod_mode = oneplus_aod_hid;
 	if (oneplus_dim_status == 5 && display->panel->aod_status == 0) {
 		dim_mode = 0;
-		oneplus_dim_status = 0;
-		oneplus_dimlayer_hbm_enable = false;
-		pr_err("current dim = %d, oneplus_dimlayer_hbm_enable = %d\n", oneplus_dim_status, oneplus_dimlayer_hbm_enable);
+		if (is_a12 && !is_stock) {
+			oneplus_dim_status = 0;
+			oneplus_dimlayer_hbm_enable = false;
+			pr_err("current dim = %d, oneplus_dimlayer_hbm_enable = %d\n", oneplus_dim_status, oneplus_dimlayer_hbm_enable);
+		}
 	}
 
 	for (i = 0; i < cnt; i++) {
