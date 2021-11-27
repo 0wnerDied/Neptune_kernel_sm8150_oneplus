@@ -265,6 +265,44 @@
 	qcom,smb-temp-max = <800>;
 };
 
+&ufsphy_mem {
+	compatible = "qcom,ufs-phy-qmp-v3-660";
+
+	vdda-phy-supply = <&pm6150_l4>; /* 0.9v */
+	vdda-phy-always-on;
+	vdda-pll-supply = <&pm6150_l11>;
+	vdda-phy-max-microamp = <30000>;
+	vdda-pll-max-microamp = <12000>;
+
+	status = "ok";
+};
+
+&ufshc_mem {
+	vdd-hba-supply = <&ufs_phy_gdsc>;
+	vdd-hba-fixed-regulator;
+	vcc-supply = <&pm6150l_l11>;
+	vcc-voltage-level = <2960000 2960000>;
+	vccq2-supply = <&pm6150_l12>;
+	vccq2-voltage-level = <1800000 1800000>;
+	vcc-max-microamp = <600000>;
+	vccq2-max-microamp = <600000>;
+
+	qcom,vddp-ref-clk-supply = <&pm6150l_l3>;
+	qcom,vddp-ref-clk-max-microamp = <100>;
+	qcom,vddp-ref-clk-min-uV = <1232000>;
+	qcom,vddp-ref-clk-max-uV = <1260000>;
+
+	/*
+	 * QCS610 UFS 3.x uses PMIC Buck regulator which requires additional
+	 * delay to settle its voltage back to normal 2.5volts from
+	 * the power down, so below property is used to enable delay
+	 * before sending start stop unit command.
+	 */
+	qcom,delay-ssu;
+
+	status = "ok";
+};
+
 &smb1390 {
 	/delete-property/ interrupts;
 	interrupts = <0x0 0xc2 0x0 IRQ_TYPE_LEVEL_LOW>;

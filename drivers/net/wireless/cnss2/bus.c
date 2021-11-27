@@ -52,6 +52,7 @@ enum cnss_dev_bus_type cnss_get_bus_type(struct cnss_plat_data *plat_priv)
 	case QCA6174_DEVICE_ID:
 	case QCA6290_DEVICE_ID:
 	case QCA6390_DEVICE_ID:
+	case QCA6490_DEVICE_ID:
 	case QCN7605_DEVICE_ID:
 		bus_type = CNSS_BUS_PCI;
 		break;
