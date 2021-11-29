@@ -127,8 +127,10 @@ static struct sde_crtc_custom_events custom_events[] = {
 #define MAX_VPADDING_RATIO_M		63
 #define MAX_VPADDING_RATIO_N		15
 
-static unsigned int is_stock = 1;
+unsigned int is_stock = 1;
 module_param(is_stock, uint, 0444);
+unsigned int is_a12 = 0;
+module_param(is_a12, uint, 0444);
 
 static inline struct sde_kms *_sde_crtc_get_kms(struct drm_crtc *crtc)
 {
@@ -1852,6 +1854,9 @@ static int pstate_cmp(const void *a, const void *b)
 	int rc = 0;
 	int pa_zpos, pb_zpos;
 
+	if ((!pa || !pa->sde_pstate) || (!pb || !pb->sde_pstate))
+		return rc;
+
 	pa_zpos = sde_plane_get_property(pa->sde_pstate, PLANE_PROP_ZPOS);
 	pb_zpos = sde_plane_get_property(pb->sde_pstate, PLANE_PROP_ZPOS);
 
@@ -2800,12 +2805,12 @@ static void sde_crtc_frame_event_cb(void *data, u32 event)
 	SDE_DEBUG("crtc%d\n", crtc->base.id);
 	SDE_EVT32_VERBOSE(DRMID(crtc), event);
 
-	spin_lock_irqsave(&sde_crtc->spin_lock, flags);
+	spin_lock_irqsave(&sde_crtc->fevent_spin_lock, flags);
 	fevent = list_first_entry_or_null(&sde_crtc->frame_event_list,
 			struct sde_crtc_frame_event, list);
 	if (fevent)
 		list_del_init(&fevent->list);
-	spin_unlock_irqrestore(&sde_crtc->spin_lock, flags);
+	spin_unlock_irqrestore(&sde_crtc->fevent_spin_lock, flags);
 
 	if (!fevent) {
 		SDE_ERROR("crtc%d event %d overflow\n",
@@ -3063,9 +3068,9 @@ static void sde_crtc_frame_event_work(struct kthread_work *work)
 		SDE_ERROR("crtc%d ts:%lld received panel dead event\n",
 				crtc->base.id, ktime_to_ns(fevent->ts));
 
-	spin_lock_irqsave(&sde_crtc->spin_lock, flags);
+	spin_lock_irqsave(&sde_crtc->fevent_spin_lock, flags);
 	list_add_tail(&fevent->list, &sde_crtc->frame_event_list);
-	spin_unlock_irqrestore(&sde_crtc->spin_lock, flags);
+	spin_unlock_irqrestore(&sde_crtc->fevent_spin_lock, flags);
 	SDE_ATRACE_END("crtc_frame_event");
 }
 
@@ -3536,6 +3541,9 @@ ssize_t oneplus_display_notify_fp_press(struct device *dev,
 	return count;
 }
 extern int aod_layer_hide;
+extern int oneplus_panel_status;
+extern int backup_dim_status;
+extern bool backup_dimlayer_hbm;
 extern bool HBM_flag;
 extern int dsi_panel_tx_cmd_set (struct dsi_panel *panel, enum dsi_cmd_set_type type);
 int oneplus_dim_status = 0;
@@ -3570,6 +3578,8 @@ int oneplus_aod_dc = 0;
 	dsi_connector = dsi_display->drm_conn;
 	mode_config = &drm_dev->mode_config;
 	sscanf(buf, "%du", &dim_status);
+	if ((oneplus_panel_status == 0) && is_a12 && !is_stock)
+		dim_status = 0;
 
 	if (dsi_display->panel->aod_status == 0 && (dim_status == 2)) {
 		pr_err("fp set it in normal status\n");
@@ -3598,6 +3608,8 @@ int oneplus_aod_dc = 0;
 			oneplus_dim_status, dsi_display->panel->aod_status, oneplus_onscreenfp_status, aod_layer_hide);
 	} else {
 		oneplus_dimlayer_hbm_enable = oneplus_dim_status != 0;
+		backup_dimlayer_hbm = oneplus_dimlayer_hbm_enable;
+		backup_dim_status = oneplus_dim_status;
 		pr_debug("notify dim %d,aod = %d press= %d aod_hide =%d oneplus_dimlayer_hbm_enable = %d\n",
 			oneplus_dim_status, dsi_display->panel->aod_status, oneplus_onscreenfp_status, aod_layer_hide, oneplus_dimlayer_hbm_enable);
 	}
@@ -5811,8 +5823,14 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 	}
 
 	aod_mode = oneplus_aod_hid;
-	if (oneplus_dim_status == 5 && display->panel->aod_status == 0)
+	if (oneplus_dim_status == 5 && display->panel->aod_status == 0) {
 		dim_mode = 0;
+		if (is_a12 && !is_stock) {
+			oneplus_dim_status = 0;
+			oneplus_dimlayer_hbm_enable = false;
+			pr_err("current dim = %d, oneplus_dimlayer_hbm_enable = %d\n", oneplus_dim_status, oneplus_dimlayer_hbm_enable);
+		}
+	}
 
 	for (i = 0; i < cnt; i++) {
 		mode = sde_plane_check_fingerprint_layer(pstates[i].drm_pstate);
@@ -7658,6 +7676,7 @@ struct drm_crtc *sde_crtc_init(struct drm_device *dev, struct drm_plane *plane)
 
 	mutex_init(&sde_crtc->crtc_lock);
 	spin_lock_init(&sde_crtc->spin_lock);
+	spin_lock_init(&sde_crtc->fevent_spin_lock);
 	atomic_set(&sde_crtc->frame_pending, 0);
 
 	mutex_init(&sde_crtc->rp_lock);

@@ -22,7 +22,7 @@ device.name9=OnePlus7TPro
 device.name10=hotdog
 device.name11=OnePlus7TProNR
 device.name12=hotdogg
-supported.versions=11
+supported.versions=11 - 12
 '; } # end properties
 
 # shell variables
@@ -33,6 +33,8 @@ ramdisk_compression=auto;
 ## AnyKernel methods (DO NOT CHANGE)
 # import patching functions/variables - see for reference
 . tools/ak3-core.sh;
+
+android_version="$(file_getprop /system/build.prop "ro.build.version.release")";
 
 # Detect device and system
 if [ -e /system/etc/buildinfo/oem_build.prop ]; then
@@ -59,6 +61,11 @@ dump_boot;
 # Unified with custom ROMs
 if [ $os == "custom" ]; then
   patch_cmdline "msm_drm.is_stock" "msm_drm.is_stock=0"
+  if [ $android_version == "11" ]; then
+    patch_cmdline "msm_drm.is_a12" "msm_drm.is_a12=0"
+  else
+    patch_cmdline "msm_drm.is_a12" "msm_drm.is_a12=1"
+  fi
 else
   patch_cmdline "msm_drm.is_stock" "msm_drm.is_stock=1"
 fi

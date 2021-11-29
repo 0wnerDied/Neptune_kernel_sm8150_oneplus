@@ -444,6 +444,7 @@ static struct a6xx_protected_regs {
 	{ 0x8D0, 0x23, 0 },
 	{ 0x980, 0x4, 0 },
 	{ 0xA630, 0x0, 1 },
+	{ 0x1b400, 0x1fff, 1 },
 };
 
 /* IFPC & Preemption static powerup restore list */

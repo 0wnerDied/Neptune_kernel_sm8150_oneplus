@@ -78,3 +78,10 @@ config CNSS_SUPPORT_DUAL_DEV
        ---help---
          This enables the changes from cnss platform driver to support dual
          wlan card attach
+config CNSS_QCA6490
+	bool "Enable CNSS QCA6490 chipset specific changes"
+	help
+	  This enables the changes from WLAN host driver that are specific to
+	  CNSS QCA6490 chipset.
+	  These changes are needed to support the new hardware architecture
+	  for CNSS QCA6490 chipset.

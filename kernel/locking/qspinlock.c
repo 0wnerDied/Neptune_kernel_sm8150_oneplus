@@ -342,7 +342,7 @@ void queued_spin_lock_slowpath(struct qspinlock *lock, u32 val)
 	 */
 	if (val == _Q_PENDING_VAL) {
 		int cnt = _Q_PENDING_LOOPS;
-		val = smp_cond_load_acquire(&lock->val.counter,
+		val = atomic_cond_read_relaxed(&lock->val,
 					       (VAL != _Q_PENDING_VAL) || !cnt--);
 	}
 
@@ -387,7 +387,8 @@ void queued_spin_lock_slowpath(struct qspinlock *lock, u32 val)
 	 * barriers.
 	 */
 	if (val & _Q_LOCKED_MASK)
-		atomic_cond_read_acquire(&lock->val, !(VAL & _Q_LOCKED_MASK));
+			atomic_cond_read_acquire(&lock->val,
+						 !(VAL & _Q_LOCKED_MASK));
 
 	/*
 	 * take ownership and clear the pending bit.
