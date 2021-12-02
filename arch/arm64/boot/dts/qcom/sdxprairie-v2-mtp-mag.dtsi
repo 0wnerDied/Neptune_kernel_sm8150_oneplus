@@ -50,3 +50,8 @@
 	status = "ok";
 };
 
+&cnss_qca6390 {
+	clock-names = "rf_clk";
+	clocks = <&clock_rpmh RPMH_RF_CLK3>;
+};
+
