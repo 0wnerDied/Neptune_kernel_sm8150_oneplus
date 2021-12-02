@@ -1616,7 +1616,7 @@
 		reg = <0x07A80000 0x10000>,
 			  <0x7A96000 0x100>;
 		emac-phy-addr = <3>;
-		reg-names = "stmmaceth", "rgmii";
+		reg-names = "stmmaceth", "iomacro";
 		dma-bit-mask = <32>;
 		emac-core-version = <0x20030000>;
 		interrupts-extended = <&wakegic 0 56 4>, <&wakegic 0 55 4>,

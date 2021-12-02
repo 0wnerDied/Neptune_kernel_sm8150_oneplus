@@ -223,6 +223,7 @@ struct plat_stmmacenet_data {
 		(struct sk_buff *skb);
 	int (*handle_mac_err)(void *priv, int type, int chan);
 	void (*update_ahb_clk_cfg)(void *priv, bool bus_cfg, bool skip_vote);
+	void (*rgmii_loopback_cfg)(void *priv, int loopback_en);
 	bool early_eth;
 	bool crc_strip_en;
 	bool phy_intr_en;

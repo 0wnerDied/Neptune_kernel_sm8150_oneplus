@@ -603,6 +603,9 @@ static void ethqos_free_ipa_tx_queue_struct(struct qcom_ethqos *ethqos,
 
 	kfree(eth_ipa_ctx.tx_queue[type]->skb);
 	eth_ipa_ctx.tx_queue[type]->skb = NULL;
+
+	kfree(eth_ipa_ctx.tx_queue[type]);
+	eth_ipa_ctx.tx_queue[type] = NULL;
 }
 
 static int ethqos_alloc_ipa_rx_queue_struct(struct qcom_ethqos *ethqos,
@@ -754,6 +757,40 @@ static void ethqos_free_ipa_rx_queue_struct(struct qcom_ethqos *ethqos,
 
 	kfree(eth_ipa_ctx.rx_queue[type]->skb);
 	eth_ipa_ctx.rx_queue[type]->skb = NULL;
+
+	kfree(eth_ipa_ctx.rx_queue[type]);
+	eth_ipa_ctx.rx_queue[type] = NULL;
+}
+
+static void ethqos_rx_skb_free_mem(struct qcom_ethqos *ethqos,
+				   enum ipa_queue_type type)
+{
+	struct net_device *ndev;
+	struct stmmac_priv *priv;
+	int i;
+	struct ethqos_rx_queue *rx_queue = eth_ipa_ctx.rx_queue[type];
+
+	if (!ethqos) {
+		ETHQOSERR("Null parameter");
+		return;
+	}
+
+	ndev = dev_get_drvdata(&ethqos->pdev->dev);
+	priv = netdev_priv(ndev);
+
+	for (i = 0; i < rx_queue->desc_cnt; i++) {
+		if (rx_queue->ipa_rx_buff_pool_va_addrs_base[i] &&
+		    rx_queue->ipa_rx_pa_addrs_base[i]) {
+			dma_free_coherent
+			 (GET_MEM_PDEV_DEV,
+			 eth_ipa_queue_type_to_buf_length(type),
+			 rx_queue->ipa_rx_buff_pool_va_addrs_base[i],
+			 rx_queue->ipa_rx_pa_addrs_base[i]);
+		} else {
+			break;
+		}
+	}
+	ETHQOSDBG("Freed Rx SKB Buffer Pool Structure for IPA\n");
 }
 
 static void ethqos_rx_buf_free_mem(struct qcom_ethqos *ethqos,
@@ -798,8 +835,7 @@ static void ethqos_rx_desc_free_mem(struct qcom_ethqos *ethqos,
 		 eth_ipa_ctx.rx_queue[type]->rx_desc_dma_addrs[0]);
 		eth_ipa_ctx.rx_queue[type]->rx_desc_ptrs[0] = NULL;
 	}
-
-	ETHQOSDBG("\n");
+	ETHQOSDBG("Freed Rx descriptor memeory for IPA\n");
 }
 
 static void ethqos_tx_buf_free_mem(struct qcom_ethqos *ethqos,
@@ -808,29 +844,34 @@ static void ethqos_tx_buf_free_mem(struct qcom_ethqos *ethqos,
 	unsigned int i = 0;
 	struct net_device *ndev = dev_get_drvdata(&ethqos->pdev->dev);
 	struct stmmac_priv *priv = netdev_priv(ndev);
+	struct ethqos_tx_queue *tx_queue = eth_ipa_ctx.tx_queue[type];
 
 	ETHQOSDBG("tx_queue = %d\n", eth_ipa_queue_type_to_tx_queue(type));
 
-	for (i = 0; i < eth_ipa_ctx.tx_queue[type]->desc_cnt; i++) {
-		dma_free_coherent
-		(GET_MEM_PDEV_DEV,
-		 eth_ipa_queue_type_to_buf_length(type),
-		 eth_ipa_ctx.tx_queue[type]->ipa_tx_buff_pool_va_addrs_base[i],
-		 eth_ipa_ctx.tx_queue[type]->ipa_tx_pa_addrs_base[i]);
+	for (i = 0; i < tx_queue->desc_cnt; i++) {
+		if (tx_queue->ipa_tx_buff_pool_va_addrs_base[i] &&
+		    tx_queue->ipa_tx_pa_addrs_base[i]) {
+			dma_free_coherent
+			(GET_MEM_PDEV_DEV,
+			 eth_ipa_queue_type_to_buf_length(type),
+			 tx_queue->ipa_tx_buff_pool_va_addrs_base[i],
+			 tx_queue->ipa_tx_pa_addrs_base[i]);
+		} else {
+			break;
+		}
 	}
 	ETHQOSDBG("Freed the memory allocated for %d\n",
 		  eth_ipa_queue_type_to_tx_queue(type));
 	/* De-Allocate TX DMA Buffer Pool Structure */
-	if (eth_ipa_ctx.tx_queue[type]->ipa_tx_pa_addrs_base) {
+	if (tx_queue->ipa_tx_pa_addrs_base) {
 		dma_free_coherent
 		(GET_MEM_PDEV_DEV,
 		 sizeof(dma_addr_t) *
-		 eth_ipa_ctx.tx_queue[type]->desc_cnt,
-		 eth_ipa_ctx.tx_queue[type]->ipa_tx_pa_addrs_base,
-		 eth_ipa_ctx.tx_queue[type]->ipa_tx_pa_addrs_base_dmahndl);
+		 tx_queue->desc_cnt, tx_queue->ipa_tx_pa_addrs_base,
+		 tx_queue->ipa_tx_pa_addrs_base_dmahndl);
 
-		eth_ipa_ctx.tx_queue[type]->ipa_tx_pa_addrs_base = NULL;
-		eth_ipa_ctx.tx_queue[type]->ipa_tx_pa_addrs_base_dmahndl
+		tx_queue->ipa_tx_pa_addrs_base = NULL;
+		tx_queue->ipa_tx_pa_addrs_base_dmahndl
 		= (dma_addr_t)NULL;
 		ETHQOSERR("Freed TX Buffer Pool Structure for IPA\n");
 		} else {
@@ -857,8 +898,7 @@ static void ethqos_tx_desc_free_mem(struct qcom_ethqos *ethqos,
 
 		eth_ipa_ctx.tx_queue[type]->tx_desc_ptrs[0] = NULL;
 	}
-
-	ETHQOSDBG("\n");
+	ETHQOSDBG("Freed tx descriptor memory for IPA\n");
 }
 
 static int allocate_ipa_buffer_and_desc(
@@ -1050,11 +1090,11 @@ static int ethqos_alloc_ipa_rx_buf(
 	ETHQOSDBG("\n");
 }
 
-static void ethqos_wrapper_tx_descriptor_init_single_q(
+static int ethqos_wrapper_tx_descriptor_init_single_q(
 			struct qcom_ethqos *ethqos,
 			enum ipa_queue_type type)
 {
-	int i;
+	int i, _ret = 0;
 	struct dma_desc *desc = eth_ipa_ctx.tx_queue[type]->tx_desc_ptrs[0];
 	dma_addr_t desc_dma = eth_ipa_ctx.tx_queue[type]->tx_desc_dma_addrs[0];
 	void *ipa_tx_buf_vaddr;
@@ -1076,7 +1116,7 @@ static void ethqos_wrapper_tx_descriptor_init_single_q(
 	 GFP_KERNEL);
 	if (!eth_ipa_ctx.tx_queue[type]->ipa_tx_pa_addrs_base) {
 		ETHQOSERR("ERROR: Unable to allocate IPA TX Buff structure\n");
-		return;
+		return -ENOMEM;
 	}
 
 	ETHQOSDBG("IPA tx_dma_buff_addrs = %pK\n",
@@ -1086,7 +1126,6 @@ static void ethqos_wrapper_tx_descriptor_init_single_q(
 		eth_ipa_ctx.tx_queue[type]->tx_desc_ptrs[i] = &desc[i];
 		eth_ipa_ctx.tx_queue[type]->tx_desc_dma_addrs[i] =
 		    (desc_dma + sizeof(struct dma_desc) * i);
-
 		/* Create a memory pool for TX offload path */
 		ipa_tx_buf_vaddr
 		= dma_alloc_coherent(
@@ -1095,7 +1134,8 @@ static void ethqos_wrapper_tx_descriptor_init_single_q(
 			&ipa_tx_buf_dma_addr, GFP_KERNEL);
 		if (!ipa_tx_buf_vaddr) {
 			ETHQOSERR("Failed to allocate TX buf for IPA\n");
-			return;
+			_ret = -ENOMEM;
+			goto err_out_tx_buf_alloc_failed;
 		}
 		eth_ipa_ctx.tx_queue[type]->ipa_tx_buff_pool_va_addrs_base[i]
 		= ipa_tx_buf_vaddr;
@@ -1127,13 +1167,18 @@ static void ethqos_wrapper_tx_descriptor_init_single_q(
 			  eth_ipa_ctx.tx_queue[type]->desc_cnt);
 
 	ethqos_ipa_tx_desc_init(ethqos, type);
+	return _ret;
+
+err_out_tx_buf_alloc_failed:
+	ethqos_tx_buf_free_mem(ethqos, type);
+	return _ret;
 }
 
-static void ethqos_wrapper_rx_descriptor_init_single_q(
+static int ethqos_wrapper_rx_descriptor_init_single_q(
 			struct qcom_ethqos *ethqos,
 			enum ipa_queue_type type)
 {
-	int i;
+	int i, ret = 0;
 	struct dma_desc *desc = eth_ipa_ctx.rx_queue[type]->rx_desc_ptrs[0];
 	dma_addr_t desc_dma = eth_ipa_ctx.rx_queue[type]->rx_desc_dma_addrs[0];
 	struct platform_device *pdev = ethqos->pdev;
@@ -1153,10 +1198,10 @@ static void ethqos_wrapper_rx_descriptor_init_single_q(
 		 GFP_KERNEL);
 		if (!eth_ipa_ctx.rx_queue[type]->ipa_rx_pa_addrs_base) {
 			ETHQOSERR("Unable to allocate structure\n");
-			return;
+			return -ENOMEM;
 		}
 
-		ETHQOSERR
+		ETHQOSDBG
 		("IPA rx_buff_addrs %pK\n",
 		 eth_ipa_ctx.rx_queue[type]->ipa_rx_pa_addrs_base);
 	}
@@ -1167,8 +1212,10 @@ static void ethqos_wrapper_rx_descriptor_init_single_q(
 		    (desc_dma + sizeof(struct dma_desc) * i);
 
 		/* allocate skb & assign to each desc */
-		if (ethqos_alloc_ipa_rx_buf(ethqos, i, GFP_KERNEL, type))
-			break;
+		ret = ethqos_alloc_ipa_rx_buf(ethqos, i, GFP_KERNEL, type);
+
+		if (ret)
+			goto err_out_rx_skb_buf_alloc_failed;
 
 		/* Assign the RX memory pool for offload data path */
 		eth_ipa_ctx.rx_queue[type]->ipa_rx_buff_pool_va_addrs_base[i]
@@ -1188,30 +1235,12 @@ static void ethqos_wrapper_rx_descriptor_init_single_q(
 		eth_ipa_ctx.rx_queue[type]->desc_cnt);
 
 	ethqos_ipa_rx_desc_init(ethqos, type);
-}
+	return ret;
 
-static void ethqos_rx_skb_free_mem(struct qcom_ethqos *ethqos,
-				   enum ipa_queue_type type)
-{
-	struct net_device *ndev;
-	struct stmmac_priv *priv;
-	int i;
-
-	if (!ethqos) {
-		ETHQOSERR("Null parameter");
-		return;
-	}
-
-	ndev = dev_get_drvdata(&ethqos->pdev->dev);
-	priv = netdev_priv(ndev);
-
-	for (i = 0; i < eth_ipa_ctx.rx_queue[type]->desc_cnt; i++) {
-		dma_free_coherent
-		 (GET_MEM_PDEV_DEV,
-		 eth_ipa_queue_type_to_buf_length(type),
-		 eth_ipa_ctx.rx_queue[type]->ipa_rx_buff_pool_va_addrs_base[i],
-		 eth_ipa_ctx.rx_queue[type]->ipa_rx_pa_addrs_base[i]);
-	}
+err_out_rx_skb_buf_alloc_failed:
+	ethqos_rx_skb_free_mem(ethqos, type);
+	ethqos_rx_buf_free_mem(ethqos, type);
+	return ret;
 }
 
 static void ethqos_free_ipa_queue_mem(struct qcom_ethqos *ethqos)
@@ -1417,21 +1446,55 @@ static int enable_rx_dma_interrupts(
 	return 0;
 }
 
-static void ethqos_ipa_config_queues(struct qcom_ethqos *ethqos)
+static int ethqos_ipa_config_queues(struct qcom_ethqos *ethqos)
 {
-	int type;
+	int type, ret = 0;
 
 	for (type = 0; type < IPA_QUEUE_MAX; type++) {
 		if (eth_ipa_queue_type_enabled(type)) {
-			ethqos_alloc_ipa_tx_queue_struct(ethqos, type);
-			ethqos_alloc_ipa_rx_queue_struct(ethqos, type);
-			allocate_ipa_buffer_and_desc(ethqos, type);
-			ethqos_wrapper_tx_descriptor_init_single_q(
-				ethqos, type);
-			ethqos_wrapper_rx_descriptor_init_single_q(
-				ethqos, type);
+			if (ethqos_alloc_ipa_tx_queue_struct(ethqos, type)) {
+				ret = -ENOMEM;
+				goto err_out_tx_queue_struct_alloc_failed;
+			}
+			if (ethqos_alloc_ipa_rx_queue_struct(ethqos, type)) {
+				ret = -ENOMEM;
+				goto err_out_rx_queue_struct_alloc_failed;
+			}
+			if (allocate_ipa_buffer_and_desc(ethqos, type)) {
+				ret = -ENOMEM;
+				goto err_out_ipa_buff_and_desc_alloc_failed;
+			}
+			if (ethqos_wrapper_tx_descriptor_init_single_q(
+				ethqos, type)) {
+				ret = -ENOMEM;
+				goto err_out_tx_dexc_init_failed;
+			}
+			if (ethqos_wrapper_rx_descriptor_init_single_q(
+				ethqos, type)) {
+				ret = -ENOMEM;
+				goto err_out_rx_desc_init_failed;
+			}
 		}
 	}
+
+	return ret;
+
+err_out_rx_desc_init_failed:
+	ethqos_tx_buf_free_mem(ethqos, type);
+
+err_out_tx_dexc_init_failed:
+	ethqos_tx_desc_free_mem(ethqos, type);
+	ethqos_rx_desc_free_mem(ethqos, type);
+
+err_out_ipa_buff_and_desc_alloc_failed:
+	ethqos_free_ipa_rx_queue_struct(ethqos, type);
+
+err_out_rx_queue_struct_alloc_failed:
+	ethqos_free_ipa_tx_queue_struct(ethqos, type);
+
+err_out_tx_queue_struct_alloc_failed:
+	return ret;
+
 }
 
 static void ethqos_configure_ipa_tx_dma_channel(
@@ -3339,7 +3402,10 @@ void ethqos_ipa_offload_event_handler(void *data,
 		eth_ipa_ctx.ipa_offload_link_down = false;
 		break;
 	case EV_DEV_OPEN:
-		ethqos_ipa_config_queues(eth_ipa_ctx.ethqos);
+		if (ethqos_ipa_config_queues(eth_ipa_ctx.ethqos)) {
+			ETHQOSERR("IPA queue configuration failed\n");
+			break;
+		}
 
 		eth_ipa_ctx.emac_dev_ready = true;
 

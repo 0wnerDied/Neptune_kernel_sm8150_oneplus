@@ -1517,7 +1517,7 @@
 		reg = <0x20000 0x10000>,
 			<0x36000 0x100>,
 			<0xf100000 0x300000>;
-		reg-names = "stmmaceth", "rgmii","tlmm-central-base";
+		reg-names = "stmmaceth", "iomacro","tlmm-central-base";
 		clocks = <&clock_gcc GCC_ETH_AXI_CLK>,
 			<&clock_gcc GCC_ETH_SLAVE_AHB_CLK>,
 			<&clock_gcc GCC_ETH_PTP_CLK>,
@@ -1567,7 +1567,7 @@
 		ethqos_emb_smmu: ethqos_emb_smmu {
 			compatible = "qcom,emac-smmu-embedded";
 			iommus = <&apps_smmu 0x1c0 0xf>;
-			qcom,iova-mapping = <0x80000000 0x40000000>;
+			qcom,iova-mapping = <0x80000000 0x0FE40000>;
 			qcom,smmu-fastmap;
 			qcom,smmu-geometry;
 		};
@@ -1633,7 +1633,7 @@
 		emac_emb_smmu: emac_emb_smmu {
 			compatible = "qcom,emac-smmu-embedded";
 			iommus = <&apps_smmu 0x1c0 0xf>;
-			qcom,iova-mapping = <0x80000000 0x40000000>;
+			qcom,iova-mapping = <0x80000000 0x0FE40000>;
 			qcom,smmu-geometry;
 		};
 	};

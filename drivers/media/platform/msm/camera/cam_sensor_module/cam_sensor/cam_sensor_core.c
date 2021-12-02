@@ -929,6 +929,11 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			if (rc < 0) {
 				CAM_ERR(CAM_SENSOR,
 				"cannot apply streamoff settings");
+				if (slave_info->sensor_hot_plug_type == 1) {
+					CAM_ERR(CAM_SENSOR,
+					"hot plug sensor not connected, apply streamoff settings failed");
+					rc = 0;
+				}
 			}
 		}
 
