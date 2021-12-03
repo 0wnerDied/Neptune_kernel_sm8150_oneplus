@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -379,14 +379,14 @@ static int qmp_send_data(struct mbox_chan *chan, void *data)
 	u32 size;
 	int i;
 
-	if (!mbox || !data || !completion_done(&mbox->ch_complete))
+	if (!mbox || !data)
 		return -EINVAL;
 
 	mdev = mbox->mdev;
 
 	spin_lock_irqsave(&mbox->tx_lock, flags);
 	addr = mbox->desc + mbox->mcore_mbox_offset;
-	if (mbox->tx_sent) {
+	if (mbox->tx_sent || !completion_done(&mbox->ch_complete)) {
 		spin_unlock_irqrestore(&mbox->tx_lock, flags);
 		return -EAGAIN;
 	}
