@@ -34,7 +34,7 @@
 #define ICACHE_POLICY_VIPT	2
 #define ICACHE_POLICY_PIPT	3
 
-#define L1_CACHE_SHIFT		(6)
+#define L1_CACHE_SHIFT		7
 #define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
 
 /*
@@ -79,11 +79,14 @@ static inline u32 cache_type_cwg(void)
 
 #define __read_mostly __attribute__((__section__(".data..read_mostly")))
 
-static inline int cache_line_size(void)
+static inline int cache_line_size_of_cpu(void)
 {
 	u32 cwg = cache_type_cwg();
-	return cwg ? 4 << cwg : L1_CACHE_BYTES;
+
+	return cwg ? 4 << cwg : ARCH_DMA_MINALIGN;
 }
+
+int cache_line_size(void);
 
 #endif	/* __ASSEMBLY__ */
 

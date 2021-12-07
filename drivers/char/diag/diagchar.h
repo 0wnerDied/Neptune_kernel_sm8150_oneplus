@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -62,6 +62,9 @@
 #define DIAG_CTRL_MSG_LOG_MASK	9
 #define DIAG_CTRL_MSG_EVENT_MASK	10
 #define DIAG_CTRL_MSG_F3_MASK	11
+
+#define NON_HDLC_VERSION	1
+#define NON_HDLC_HEADER_SIZE	4
 #define CONTROL_CHAR	0x7E
 
 #define DIAG_ID_ROOT_STRING "root"
@@ -623,6 +626,7 @@ struct diagchar_dev {
 	int supports_pd_buffering;
 	int peripheral_untag[NUM_PERIPHERALS];
 	int supports_sockets;
+	int driver_initialized;
 	/* The state requested in the STM command */
 	int stm_state_requested[NUM_STM_PROCESSORS];
 	/* The current STM state */
@@ -692,6 +696,7 @@ struct diagchar_dev {
 	unsigned char *buf_feature_mask_update;
 	uint8_t hdlc_disabled;
 	uint8_t p_hdlc_disabled[NUM_MD_SESSIONS];
+	uint8_t proc_hdlc_disabled[NUM_DIAG_MD_DEV];
 	struct mutex hdlc_disable_mutex;
 	struct mutex hdlc_recovery_mutex;
 	struct timer_list hdlc_reset_timer;

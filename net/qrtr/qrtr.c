@@ -219,15 +219,19 @@ static void qrtr_log_tx_msg(struct qrtr_node *node, struct qrtr_hdr_v1 *hdr,
 {
 	struct qrtr_ctrl_pkt pkt = {0,};
 	u64 pl_buf = 0;
+	u32 data_size;
 	u32 type;
 
 	if (!hdr || !skb)
 		return;
 
 	type = le32_to_cpu(hdr->type);
+	data_size = sizeof(pl_buf);
 
 	if (type == QRTR_TYPE_DATA) {
-		skb_copy_bits(skb, QRTR_HDR_MAX_SIZE, &pl_buf, sizeof(pl_buf));
+		if (hdr->size < data_size)
+			data_size = hdr->size;
+		skb_copy_bits(skb, QRTR_HDR_MAX_SIZE, &pl_buf, data_size);
 		QRTR_INFO(node->ilc,
 			  "TX DATA: Len:0x%x CF:0x%x src[0x%x:0x%x] dst[0x%x:0x%x] [%08x %08x] [%s]\n",
 			  hdr->size, hdr->confirm_rx,
@@ -273,14 +277,18 @@ static void qrtr_log_rx_msg(struct qrtr_node *node, struct sk_buff *skb)
 	struct qrtr_ctrl_pkt pkt = {0,};
 	struct qrtr_cb *cb;
 	u64 pl_buf = 0;
+	u32 data_size;
 
 	if (!skb || !skb->data)
 		return;
 
 	cb = (struct qrtr_cb *)skb->cb;
+	data_size = sizeof(pl_buf);
 
 	if (cb->type == QRTR_TYPE_DATA) {
-		skb_copy_bits(skb, 0, &pl_buf, sizeof(pl_buf));
+		if (skb->len < data_size)
+			data_size = skb->len;
+		skb_copy_bits(skb, 0, &pl_buf, data_size);
 		QRTR_INFO(node->ilc,
 			  "RX DATA: Len:0x%x CF:0x%x src[0x%x:0x%x] dst[0x%x:0x%x] [%08x %08x]\n",
 			  skb->len, cb->confirm_rx, cb->src_node, cb->src_port,

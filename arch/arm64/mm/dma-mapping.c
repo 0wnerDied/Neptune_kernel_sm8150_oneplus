@@ -1082,6 +1082,14 @@ static void __iommu_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
 void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
 			const struct iommu_ops *iommu, bool coherent)
 {
+	int cls = cache_line_size_of_cpu();
+
+	WARN_TAINT(!coherent && cls > ARCH_DMA_MINALIGN,
+		   TAINT_CPU_OUT_OF_SPEC,
+		   "%s %s: ARCH_DMA_MINALIGN smaller than CTR_EL0.CWG (%d < %d)",
+		   dev_driver_string(dev), dev_name(dev),
+		   ARCH_DMA_MINALIGN, cls);
+	
 	if (!dev->dma_ops) {
 		if (dev->removed_mem)
 			set_dma_ops(dev, &removed_dma_ops);

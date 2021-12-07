@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2018-19, Linaro Limited
-// Copyright (c) 2020-21, The Linux Foundation. All rights reserved.
+// Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
 
 #include <linux/module.h>
 #include <linux/of.h>
@@ -250,10 +250,15 @@ int dwmac_qcom_program_avb_algorithm(
 	 * 2 for CLASS B traffic
 	 * Configure right channel accordingly
 	 */
-	if (l_avb_struct.qinx == 1)
+	if (l_avb_struct.qinx == 1) {
 		l_avb_struct.qinx = CLASS_A_TRAFFIC_TX_CHANNEL;
-	else if (l_avb_struct.qinx == 2)
+	} else if (l_avb_struct.qinx == 2) {
 		l_avb_struct.qinx = CLASS_B_TRAFFIC_TX_CHANNEL;
+	} else {
+		ETHQOSERR("Invalid index [%u] in AVB struct from user\n",
+			  l_avb_struct.qinx);
+		return -EFAULT;
+	}
 
 	priv->plat->tx_queues_cfg[l_avb_struct.qinx].mode_to_use =
 		MTL_QUEUE_AVB;
@@ -587,6 +592,28 @@ static void rgmii_updatel(struct qcom_ethqos *ethqos,
 	temp =  rgmii_readl(ethqos, offset);
 	temp = (temp & ~(mask)) | val;
 	rgmii_writel(ethqos, temp, offset);
+}
+
+static void rgmii_loopback_config(void *priv_n, int loopback_en)
+{
+	struct stmmac_priv *priv = priv_n;
+	struct qcom_ethqos *ethqos;
+
+	if (!priv->plat->bsp_priv)
+		return;
+
+	ethqos = (struct qcom_ethqos *)priv->plat->bsp_priv;
+
+	if (loopback_en) {
+		rgmii_updatel(ethqos, RGMII_CONFIG_LOOPBACK_EN,
+			      RGMII_CONFIG_LOOPBACK_EN,
+			      RGMII_IO_MACRO_CONFIG);
+		ETHQOSINFO("Loopback EN Enabled\n");
+	} else {
+		rgmii_updatel(ethqos, RGMII_CONFIG_LOOPBACK_EN,
+			      0, RGMII_IO_MACRO_CONFIG);
+		ETHQOSINFO("Loopback EN Disabled\n");
+	}
 }
 
 static void rgmii_dump(struct qcom_ethqos *ethqos)
@@ -3758,7 +3785,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		}
 	}
 
-	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "rgmii");
+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "iomacro");
 	ethqos->rgmii_base = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(ethqos->rgmii_base)) {
 		dev_err(&pdev->dev, "Can't get rgmii base\n");
@@ -3830,6 +3857,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	plat_dat->offload_event_handler = ethqos_ipa_offload_event_handler;
 	plat_dat->init_pps = ethqos_init_pps;
 	plat_dat->update_ahb_clk_cfg = ethqos_update_ahb_clk_cfg;
+	plat_dat->rgmii_loopback_cfg = rgmii_loopback_config;
 	/* Get rgmii interface speed for mac2c from device tree */
 	if (of_property_read_u32(np, "mac2mac-rgmii-speed",
 				 &plat_dat->mac2mac_rgmii_speed))
@@ -4013,6 +4041,16 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 					       "emac");
 	}
 
+	if (priv->plat->mac2mac_en)
+		priv->plat->mac2mac_link = -1;
+
+#ifdef CONFIG_ETH_IPA_OFFLOAD
+	priv->plat->offload_event_handler(ethqos, EV_PROBE_INIT);
+#endif
+
+	if (pethqos->cv2x_mode != CV2X_MODE_DISABLE)
+		qcom_ethqos_register_listener();
+
 	if (ethqos->early_eth_enabled) {
 		/* Initialize work*/
 		INIT_WORK(&ethqos->early_eth,
@@ -4022,15 +4060,6 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 		/*Set early eth parameters*/
 		ethqos_set_early_eth_param(priv, ethqos);
 	}
-
-	if (priv->plat->mac2mac_en)
-		priv->plat->mac2mac_link = -1;
-
-#ifdef CONFIG_ETH_IPA_OFFLOAD
-	priv->plat->offload_event_handler(ethqos, EV_PROBE_INIT);
-#endif
-	if (pethqos->cv2x_mode != CV2X_MODE_DISABLE)
-		qcom_ethqos_register_listener();
 
 	if (qcom_ethos_init_panic_notifier(ethqos))
 		atomic_notifier_chain_register(&panic_notifier_list,

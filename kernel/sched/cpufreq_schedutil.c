@@ -226,7 +226,7 @@ static void sugov_get_util(unsigned long *util, unsigned long *max, int cpu,
 	max_cap = arch_scale_cpu_capacity(NULL, cpu);
 	*max = max_cap;
 
-	*util = boosted_cpu_util(cpu, &loadcpu->walt_load);
+	*util = cpu_util_freq(cpu, &loadcpu->walt_load);
 
 	if (likely(use_pelt())) {
 		sched_avg_update(rq);
