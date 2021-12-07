@@ -55,3 +55,6 @@
 	clocks = <&clock_rpmh RPMH_RF_CLK3>;
 };
 
+&clock_rpmh {
+	compatible = "qcom,rpmh-clk-sdxprairie-mag";
+};
