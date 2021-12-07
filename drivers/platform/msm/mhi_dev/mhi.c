@@ -2303,7 +2303,6 @@ static void mhi_dev_process_ring_pending(struct work_struct *work)
 			mhi_log(MHI_MSG_VERBOSE,
 				"error enabling chdb interrupt for %d\n",
 				ch->ch_id);
-			mutex_unlock(&ch->ch_lock);
 			goto exit;
 		}
 	}
