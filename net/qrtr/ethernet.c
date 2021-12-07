@@ -556,8 +556,9 @@ static int qcom_ethernet_qrtr_probe(struct platform_device *pdev)
 	if (IS_ERR(qdev->task)) {
 		dev_err(qdev->dev, "%s: Error starting eth_tx\n", __func__);
 		kfree(qdev->dlbuf.buf);
+		rc = PTR_ERR(qdev->task);
 		kfree(qdev);
-		return PTR_ERR(qdev->task);
+		return rc;
 	}
 
 	if (qdev->rt)
