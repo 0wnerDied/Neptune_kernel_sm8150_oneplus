@@ -13,6 +13,7 @@
 
 #include "sdxprairie-v2.dtsi"
 #include "sdxprairie-mtp.dtsi"
+#include "sdxprairie-bluetooth-mag.dtsi"
 
 /delete-node/ &pm8150b_fg;
 /delete-node/ &pm8150b_bcl;
