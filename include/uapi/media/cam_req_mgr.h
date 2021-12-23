@@ -194,6 +194,25 @@ struct cam_req_mgr_sched_request {
 	int64_t req_id;
 };
 
+/** struct cam_req_mgr_sched_info
+ * @session_hdl: Input param - Identifier for CSL session
+ * @link_hdl: Input Param -Identifier for link
+ * inluding itself.
+ * @bubble_enable: Input Param - Cam req mgr will do bubble recovery if this
+ * flag is set.
+ * @sync_mode: Type of Sync mode for this request
+ * @sof_timeout: sof time out
+ * @req_id: Input Param - Request Id from which all requests will be flushed
+ */
+struct cam_req_mgr_sched_request_v2 {
+	int32_t session_hdl;
+	int32_t link_hdl;
+	int32_t bubble_enable;
+	int32_t sync_mode;
+	int32_t sof_timeout;
+	int64_t req_id;
+};
+
 /**
  * struct cam_req_mgr_sync_mode
  * @session_hdl:         Input param - Identifier for CSL session
@@ -254,6 +273,7 @@ struct cam_req_mgr_link_control {
 #define CAM_REQ_MGR_LINK_CONTROL                (CAM_COMMON_OPCODE_MAX + 13)
 #define CAM_REQ_MGR_LINK_V2                     (CAM_COMMON_OPCODE_MAX + 14)
 #define CAM_REQ_MGR_REQUEST_DUMP                (CAM_COMMON_OPCODE_MAX + 15)
+#define CAM_REQ_MGR_SCHED_REQ_V2                (CAM_COMMON_OPCODE_MAX + 16)
 /* end of cam_req_mgr opcodes */
 
 #define CAM_MEM_FLAG_HW_READ_WRITE              (1<<0)
