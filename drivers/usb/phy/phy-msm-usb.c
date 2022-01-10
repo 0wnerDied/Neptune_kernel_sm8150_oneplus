@@ -2886,6 +2886,7 @@ static void msm_otg_sm_work(struct work_struct *w)
 			msm_otg_dbg_log_event(phy, "RT: Cable DISC",
 				get_pm_runtime_counter(dev), 0);
 			msm_otg_notify_charger(motg, 0);
+			pm_runtime_autosuspend(dev);
 		}
 		break;
 	case OTG_STATE_B_PERIPHERAL:
