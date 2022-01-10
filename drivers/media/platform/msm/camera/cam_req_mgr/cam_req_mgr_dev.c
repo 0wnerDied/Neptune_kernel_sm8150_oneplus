@@ -1,4 +1,4 @@
-/* Copyright (c) 2016-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2016-2019, 2021 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -341,6 +341,22 @@ static long cam_private_ioctl(struct file *file, void *fh,
 		}
 
 		rc = cam_req_mgr_schedule_request(&sched_req);
+		}
+		break;
+
+	case CAM_REQ_MGR_SCHED_REQ_V2: {
+		struct cam_req_mgr_sched_request_v2 sched_req;
+
+		if (k_ioctl->size != sizeof(sched_req))
+			return -EINVAL;
+
+		if (copy_from_user(&sched_req,
+			u64_to_user_ptr(k_ioctl->handle),
+			sizeof(struct cam_req_mgr_sched_request_v2))) {
+			return -EFAULT;
+		}
+
+		rc = cam_req_mgr_schedule_request_v2(&sched_req);
 		}
 		break;
 

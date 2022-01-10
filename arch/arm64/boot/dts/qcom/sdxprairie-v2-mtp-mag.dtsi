@@ -13,6 +13,7 @@
 
 #include "sdxprairie-v2.dtsi"
 #include "sdxprairie-mtp.dtsi"
+#include "sdxprairie-bluetooth-mag.dtsi"
 
 /delete-node/ &pm8150b_fg;
 /delete-node/ &pm8150b_bcl;
@@ -50,3 +51,11 @@
 	status = "ok";
 };
 
+&cnss_qca6390 {
+	clock-names = "rf_clk";
+	clocks = <&clock_rpmh RPMH_RF_CLK3>;
+};
+
+&clock_rpmh {
+	compatible = "qcom,rpmh-clk-sdxprairie-mag";
+};

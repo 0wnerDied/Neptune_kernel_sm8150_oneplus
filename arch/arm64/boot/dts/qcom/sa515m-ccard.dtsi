@@ -457,6 +457,7 @@
 			mhi,timeout = <10000>;
 			mhi,m2-no-db-access = <1>;
 			qcom,smmu-s1-enable;
+			pcie-disable-l1ss;
 			mhi_channels {
 				#address-cells = <1>;
 				#size-cells = <0>;
