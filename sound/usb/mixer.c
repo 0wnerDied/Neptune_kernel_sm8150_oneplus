@@ -1978,10 +1978,9 @@ static int parse_audio_mixer_unit(struct mixer_build *state, int unitid,
 		    NUM_CHANNELS_MONO : NUM_CHANNELS_STEREO;
 	} else {
 		input_pins = desc->bNrInPins;
-		num_outs = uac_mixer_unit_bNrChannels(desc);
 		if (desc->bLength < 11 || !input_pins ||
 		    desc->bLength < sizeof(*desc) + desc->bNrInPins ||
-		    !num_outs) {
+		    !(num_outs = uac_mixer_unit_bNrChannels(desc))) {
 			usb_audio_err(state->chip,
 				      "invalid MIXER UNIT descriptor %d\n",
 				      unitid);
