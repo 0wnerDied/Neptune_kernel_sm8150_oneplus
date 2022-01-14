@@ -25,7 +25,7 @@
  *
  * This function sets up the gpio hpd module
  */
-struct dp_hpd *dp_gpio_hpd_get(struct device *dev,
+struct dp_hpd *dp_gpio_hpd_get(struct device *dev, struct dp_parser *parser,
 	struct dp_hpd_cb *cb);
 
 /**
