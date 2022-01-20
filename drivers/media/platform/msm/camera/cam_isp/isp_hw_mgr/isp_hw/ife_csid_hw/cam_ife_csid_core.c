@@ -1,4 +1,4 @@
-/* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018-2020, 2022, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -766,7 +766,7 @@ static int cam_ife_csid_cid_reserve(struct cam_ife_csid_hw *csid_hw,
 				"CSID:%d RDI:%d resource not available",
 				csid_hw->hw_intf->hw_idx,
 				cid_reserv->res_id);
-			rc = -EINVAL;
+			rc = -EAGAIN;
 			goto end;
 		}
 		break;
