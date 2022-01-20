@@ -60,6 +60,11 @@
 
 static struct workqueue_struct	*uether_wq;
 
+static unsigned int skb_timestamp_enable;
+module_param(skb_timestamp_enable, uint, 0644);
+MODULE_PARM_DESC(skb_timestamp_enable,
+	"to enable timestamping for TX and RX packets");
+
 /* Extra buffer size to allocate for tx */
 #define EXTRA_ALLOCATION_SIZE_U_ETH	128
 
@@ -572,6 +577,8 @@ static void process_rx_w(struct work_struct *work)
 		dev->net->stats.rx_packets++;
 		dev->net->stats.rx_bytes += skb->len;
 
+		if (skb_timestamp_enable)
+			skb->tstamp = ktime_get();
 		status = netif_rx_ni(skb);
 	}
 
@@ -781,13 +788,14 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 	int			extra_alloc = 0;
 	int			retval;
 	struct usb_request	*req = NULL;
-	struct sk_buff		*new_skb;
+	struct sk_buff		*new_skb, *clone = NULL;
 	unsigned long		flags;
 	struct usb_ep		*in = NULL;
 	u16			cdc_filter = 0;
 	bool			multi_pkt_xfer = false;
 	u32			fixed_in_len = 0;
 	bool			is_fixed = false;
+	struct skb_shared_hwtstamps hwtstamps;
 
 	spin_lock_irqsave(&dev->lock, flags);
 	if (dev->port_usb) {
@@ -995,6 +1003,16 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		spin_unlock_irqrestore(&dev->req_lock, flags);
 	} else {
 		req->no_interrupt = 0;
+	}
+
+	if (skb_timestamp_enable) {
+		skb->tstamp = ktime_get();
+		clone = skb_clone_sk(skb);
+		if (clone) {
+			memset(&hwtstamps, 0,
+					sizeof(struct skb_shared_hwtstamps));
+			skb_complete_tx_timestamp(clone, &hwtstamps);
+		}
 	}
 
 	retval = usb_ep_queue(in, req, GFP_ATOMIC);

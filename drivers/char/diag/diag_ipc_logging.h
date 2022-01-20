@@ -1,4 +1,4 @@
-/* Copyright (c) 2015, 2017, 2019 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015, 2017, 2019, 2021 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -26,6 +26,7 @@
 #define DIAG_DEBUG_BRIDGE	0x0040
 #define DIAG_DEBUG_CMD_INFO	0x0080
 #define DIAG_DEBUG_MHI		0x0100
+#define DIAG_DEBUG_PCIE		0x0200
 
 #ifdef CONFIG_IPC_LOGGING
 extern uint16_t diag_debug_mask;

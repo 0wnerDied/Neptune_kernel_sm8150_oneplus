@@ -325,7 +325,7 @@ void dwc3_gadget_giveback(struct dwc3_ep *dep, struct dwc3_request *req,
 
 	dwc3_gadget_del_and_unmap_request(dep, req, status);
 
-	if (usb_endpoint_xfer_isoc(dep->endpoint.desc)) {
+	if (dep->endpoint.desc && usb_endpoint_xfer_isoc(dep->endpoint.desc)) {
 		if (list_empty(&dep->started_list)) {
 			dep->flags |= DWC3_EP_PENDING_REQUEST;
 			dbg_event(dep->number, "STARTEDLISTEMPTY", 0);
@@ -1042,10 +1042,12 @@ static int dwc3_gadget_ep_disable(struct usb_ep *ep)
 		return 0;
 
 	spin_lock_irqsave(&dwc->lock, flags);
+	dep->disable_in_progress = true;
 	ret = __dwc3_gadget_ep_disable(dep);
 	dbg_event(dep->number, "DISABLE", ret);
 	dbg_event(dep->number, "DISABLEFAILPKT", dep->failedpkt_counter);
 	dep->failedpkt_counter = 0;
+	dep->disable_in_progress = false;
 	spin_unlock_irqrestore(&dwc->lock, flags);
 
 	return ret;
@@ -1557,7 +1559,8 @@ static int __dwc3_gadget_ep_queue(struct dwc3_ep *dep, struct dwc3_request *req)
 	struct dwc3		*dwc = dep->dwc;
 	int			ret = 0;
 
-	if (!dep->endpoint.desc || !dwc->pullups_connected) {
+	if (!dep->endpoint.desc || !dwc->pullups_connected ||
+						dep->disable_in_progress) {
 		dev_err_ratelimited(dwc->dev, "%s: can't queue to disabled endpoint\n",
 				dep->name);
 		return -ESHUTDOWN;
