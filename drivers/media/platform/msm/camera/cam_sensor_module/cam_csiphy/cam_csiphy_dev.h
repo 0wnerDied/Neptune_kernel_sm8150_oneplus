@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2019, 2022, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -293,6 +293,7 @@ struct csiphy_device {
 	struct intf_params bridge_intf;
 	uint32_t clk_lane;
 	uint32_t acquire_count;
+	uint32_t share_count;
 	uint32_t start_dev_count;
 	uint32_t is_acquired_dev_combo_mode;
 	struct cam_hw_soc_info   soc_info;

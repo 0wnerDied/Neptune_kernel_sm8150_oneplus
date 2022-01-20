@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2020, 2022, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -176,6 +176,7 @@ static int32_t cam_csiphy_platform_probe(struct platform_device *pdev)
 		NULL;
 
 	new_csiphy_dev->acquire_count = 0;
+	new_csiphy_dev->share_count = 0;
 	new_csiphy_dev->start_dev_count = 0;
 	new_csiphy_dev->is_acquired_dev_combo_mode = 0;
 
