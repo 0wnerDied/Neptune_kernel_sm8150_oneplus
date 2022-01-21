@@ -3007,26 +3007,23 @@ static irqreturn_t msm_otg_irq(int irq, void *data)
 static int
 msm_otg_phy_drive_dp_pulse(struct msm_otg *motg, unsigned int pulse_width)
 {
-	int ret = 0;
 	u32 val;
-	bool in_lpm = false;
 
-	msm_otg_dbg_log_event(&motg->phy, "DRIVE DP PULSE",
-				motg->inputs, 0);
-	if (atomic_read(&motg->in_lpm))
-		in_lpm = true;
+	msm_otg_dbg_log_event(&motg->phy, "DRIVE DP PULSE", motg->inputs,
+			      get_pm_runtime_counter(motg->phy.dev));
 
-	if (in_lpm) {
-		ret = msm_hsusb_ldo_enable(motg, USB_PHY_REG_ON);
-		if (ret)
-			return ret;
-		msm_hsusb_config_vddcx(1);
-		ret = regulator_enable(hsusb_vdd);
-		WARN(ret, "hsusb_vdd LDO enable failed for driving pulse\n");
-		clk_prepare_enable(motg->xo_clk);
-		clk_prepare_enable(motg->phy_csr_clk);
-		clk_prepare_enable(motg->core_clk);
-		clk_prepare_enable(motg->pclk);
+	/*
+	 * We may come here with hardware in LPM, come out
+	 * LPM and prevent any further transitions to LPM
+	 * while DP pulse is driven.
+	 */
+	pm_runtime_get_sync(motg->phy.dev);
+	if (atomic_read(&motg->in_lpm)) {
+		pm_runtime_put_noidle(motg->phy.dev);
+		msm_otg_dbg_log_event(&motg->phy, "LPM FAIL",
+				motg->inputs,
+				get_pm_runtime_counter(motg->phy.dev));
+		return -EACCES;
 	}
 
 	msm_otg_exit_phy_retention(motg);
@@ -3071,22 +3068,16 @@ msm_otg_phy_drive_dp_pulse(struct msm_otg *motg, unsigned int pulse_width)
 	val &= ~TX_VALID;
 	writeb_relaxed(val, USB_PHY_CSR_PHY_UTMI_CTRL4);
 
-	/* Make sure above writes are completed before clks off */
-	mb();
-	if (in_lpm) {
-		clk_disable_unprepare(motg->pclk);
-		clk_disable_unprepare(motg->core_clk);
-		clk_disable_unprepare(motg->phy_csr_clk);
-		clk_disable_unprepare(motg->xo_clk);
-		regulator_disable(hsusb_vdd);
-		msm_hsusb_config_vddcx(0);
-		msm_hsusb_ldo_enable(motg, USB_PHY_REG_OFF);
-	} else {
-		msm_otg_reset(&motg->phy);
-	}
+	msm_otg_reset(&motg->phy);
 
+	/*
+	 * The state machine work will run shortly which
+	 * takes care of putting the hardware in LPM.
+	 */
+	pm_runtime_put_noidle(motg->phy.dev);
 	msm_otg_dbg_log_event(&motg->phy, "DP PULSE DRIVEN",
-				motg->inputs, 0);
+				motg->inputs,
+				get_pm_runtime_counter(motg->phy.dev));
 	return 0;
 }
 
