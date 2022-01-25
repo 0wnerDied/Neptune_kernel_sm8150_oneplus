@@ -1870,7 +1870,7 @@ static int cam_ife_hw_mgr_acquire_res_ife_csid_rdi(
 			CAM_ISP_RESOURCE_PIX_PATH;
 		csid_res->res_id = csid_acquire.res_id;
 
-		*acq_res_id = ((uint32_t)csid_acquire.res_id) <<
+		*acq_res_id |= ((uint32_t)csid_acquire.res_id) <<
 						(16 + org_path_res_id*2);
 		*acq_res_id |= 1 << (csid_acquire.res_id + 3);
 		csid_res->is_dual_vfe = 0;
