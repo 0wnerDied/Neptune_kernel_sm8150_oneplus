@@ -1,4 +1,5 @@
 /* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -127,6 +128,9 @@
 #define QPNP_GEN2_POFF_SEQ			BIT(7)
 #define QPNP_GEN2_FAULT_SEQ			BIT(6)
 #define QPNP_GEN2_S3_RESET_SEQ			BIT(5)
+#define QPNP_GEN2_IMMEDIATE_XVDD_SHUTDOWN_SEQ	BIT(4)
+#define QPNP_GEN2_RAW_DVDD_RB_OCCURRED_SEQ	BIT(3)
+#define QPNP_GEN2_RAW_XVDD_RB_OCCURRED_SEQ	BIT(2)
 
 #define QPNP_PON_S3_SRC_KPDPWR			0
 #define QPNP_PON_S3_SRC_RESIN			1
@@ -272,6 +276,7 @@ static const char * const qpnp_pon_reason[] = {
 
 #define POFF_REASON_FAULT_OFFSET	16
 #define POFF_REASON_S3_RESET_OFFSET	32
+#define POFF_REASON_OFFSET		40
 static const char * const qpnp_poff_reason[] = {
 	/* QPNP_PON_GEN1 POFF reasons */
 	[0] = "Triggered from SOFT (Software)",
@@ -318,6 +323,13 @@ static const char * const qpnp_poff_reason[] = {
 	[37] = "Triggered from S3_RESET_PBS_WATCHDOG_TO",
 	[38] = "Triggered from S3_RESET_PBS_NACK",
 	[39] = "Triggered from S3_RESET_KPDPWR_ANDOR_RESIN",
+
+	/*RAW_DVDD_RB, RAW_XVDD_RB and XVDD_SHUTDOWN reason*/
+	[40] = "N/A",
+	[41] = "N/A",
+	[42] = "Triggered from RAW_XVDD_RB_OCCURRED",
+	[43] = "Triggered from RAW_DVDD_RB_OCCURRED",
+	[44] = "Triggered from IMMEDIATE_XVDD_SHUTDOWN S2 Reset",
 };
 
 static int qpnp_pon_store_reg(struct qpnp_pon *pon, u16 addr)
@@ -2059,6 +2071,11 @@ static int qpnp_pon_read_gen2_pon_off_reason(struct qpnp_pon *pon, u16 *reason,
 			return rc;
 		*reason = (u8)reg1;
 		*reason_index_offset = POFF_REASON_S3_RESET_OFFSET;
+	} else if ((reg & QPNP_GEN2_RAW_XVDD_RB_OCCURRED_SEQ) ||
+		   (reg & QPNP_GEN2_RAW_DVDD_RB_OCCURRED_SEQ) ||
+		   (reg & QPNP_GEN2_IMMEDIATE_XVDD_SHUTDOWN_SEQ)) {
+		*reason = (u8)reg;
+		*reason_index_offset = POFF_REASON_OFFSET;
 	}
 
 	return 0;
