@@ -1702,7 +1702,6 @@ ffs_fs_mount(struct file_system_type *t, int flags,
 	rv = mount_nodev(t, flags, &data, ffs_sb_fill);
 	if (IS_ERR(rv) && data.ffs_data)
 		ffs_data_put(data.ffs_data);
-
 	return rv;
 }
 
@@ -3194,7 +3193,8 @@ static inline struct f_fs_opts *ffs_do_functionfs_bind(struct usb_function *f,
 	struct ffs_function *func = ffs_func_from_usb(f);
 	struct f_fs_opts *ffs_opts =
 		container_of(f->fi, struct f_fs_opts, func_inst);
-	struct ffs_data *ffs;
+	struct ffs_data *ffs = ffs_opts->dev->ffs_data;
+	struct ffs_data *ffs_data;
 	int ret;
 
 	ENTER();
@@ -3209,13 +3209,13 @@ static inline struct f_fs_opts *ffs_do_functionfs_bind(struct usb_function *f,
 	if (!ffs_opts->no_configfs)
 		ffs_dev_lock();
 	ret = ffs_opts->dev->desc_ready ? 0 : -ENODEV;
-	ffs = ffs_opts->dev->ffs_data;
+	ffs_data = ffs_opts->dev->ffs_data;
 	if (!ffs_opts->no_configfs)
 		ffs_dev_unlock();
 	if (ret)
 		return ERR_PTR(ret);
 
-	func->ffs = ffs;
+	func->ffs = ffs_data;
 	func->conf = c;
 	func->gadget = c->cdev->gadget;
 
@@ -3356,6 +3356,7 @@ static int _ffs_func_bind(struct usb_configuration *c,
 			ret = ss_len;
 			goto error;
 		}
+		func->function.ssp_descriptors = func->function.ss_descriptors;
 	} else {
 		ss_len = 0;
 	}
@@ -3962,11 +3963,9 @@ static void ffs_release_dev(struct ffs_dev *ffs_dev)
 			ffs_dev->ffs_data->private_data = NULL;
 			ffs_dev->ffs_data = NULL;
 		}
-
 		if (ffs_dev->ffs_release_dev_callback)
 			ffs_dev->ffs_release_dev_callback(ffs_dev);
 	}
-
 	ffs_dev_unlock();
 }
 
