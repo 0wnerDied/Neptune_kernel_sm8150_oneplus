@@ -327,10 +327,6 @@
 	status = "ok";
 };
 
-&removed_region {
-	reg = <0 0x86200000 0 0x1300000>;
-};
-
 &pil_camera_mem {
 	reg = <0 0x8f800000 0 0x500000>;
 };
