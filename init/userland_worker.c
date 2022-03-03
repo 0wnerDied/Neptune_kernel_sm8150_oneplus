@@ -13,17 +13,21 @@
 #include <linux/string.h>
 #include <linux/security.h>
 #include <linux/delay.h>
+#include <linux/userland.h>
 
 #include "../security/selinux/include/security.h"
 
 #define STANDARD_SIZE 4
 #define MAX_CHAR 128
+#define MINI_DELAY 100
 #define DELAY 500
-#define LONG_DELAY 10000
 
 static char** argv;
 
 static struct delayed_work userland_work;
+
+unsigned int is_stock;
+unsigned int is_a12;
 
 static void free_memory(char** argv, int size)
 {
@@ -108,14 +112,32 @@ static inline int linux_sh(const char* command)
 	return ret;
 }
 
+static inline int linux_test(const char* path, bool dir)
+{
+	strcpy(argv[0], "/system/bin/test");
+	strcpy(argv[1], (dir ? "-d" : "-f"));
+	strcpy(argv[2], path);
+	argv[3] = NULL;
+
+	return use_userspace(argv);
+}
+
 static void common_optimize(void)
 {
+	int retries = 0;
+	const int max_retries = 5;
+
 	if (strstr(saved_command_line, "project_name=18857")
 		|| strstr(saved_command_line, "project_name=18865"))
 		linux_sh("/system/bin/chmod 666 /dev/input/event4");
 
 	if (IS_ENABLED(CONFIG_VBSWAP)) {
-		linux_sh("/system/bin/echo 4294967296 > /sys/devices/virtual/block/vbswap0/disksize");
+		while (retries++ < max_retries) {
+			if (linux_sh("/system/bin/echo 4294967296 > /sys/devices/virtual/block/vbswap0/disksize"))
+				msleep(MINI_DELAY);
+			else
+				break;
+		} 
 		linux_sh("/vendor/bin/mkswap /dev/block/vbswap0");
 		linux_sh("/system/bin/swapon /dev/block/vbswap0");
 	}
@@ -124,10 +146,6 @@ static void common_optimize(void)
 
 	linux_sh("/system/bin/echo 262144 > /proc/sys/net/core/rmem_max");
 	linux_sh("/system/bin/echo 262144 > /proc/sys/net/core/wmem_max");
-
-	linux_write("ro.surface_flinger.supports_background_blur", "1", false);
-
-	linux_write("vendor.camera.aux.packagelist", "com.google.android.GoogleCamera,org.codeaurora.snapcam,com.oneplus.camera", true);
 
 	if (IS_ENABLED(CONFIG_PSI)) {
 		linux_write("ro.lmk.use_psi", "true", true);
@@ -142,9 +160,16 @@ static void common_optimize(void)
 	}
 }
 
+static void set_kernel_module_params(void) {
+	is_stock = !linux_test("/system/etc/buildinfo/oem_build.prop", false);
+	is_a12 = !linux_test("/system/etc/classpaths/", true);
+}
+
 static void userland_worker(struct work_struct *work)
 {
 	bool is_enforcing;
+	int retries = 0;
+  	const int max_retries = 25;
 
 	argv = alloc_memory(STANDARD_SIZE);
 	if (!argv) {
@@ -152,15 +177,22 @@ static void userland_worker(struct work_struct *work)
 		return;
 	}
 
-	is_enforcing = get_enforce_value();
+	do {
+		is_enforcing = get_enforce_value();
+		if (!is_enforcing) 
+			msleep(DELAY);
+	} while (!is_enforcing && (retries++ < max_retries));
+
 	if (is_enforcing) {
 		pr_info("Going permissive");
 		set_selinux(0);
 	}
 
-	msleep(DELAY);
+	msleep(MINI_DELAY);
 
 	common_optimize();
+
+	set_kernel_module_params();
 
 	if (is_enforcing) {
 		pr_info("Going enforcing");

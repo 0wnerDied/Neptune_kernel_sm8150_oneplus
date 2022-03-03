@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2019, 2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -515,6 +515,23 @@ static const struct clk_rpmh_desc clk_rpmh_sdxprairie = {
 	.num_clks = ARRAY_SIZE(sdxprairie_rpmh_clocks),
 };
 
+static struct clk_hw *sdxprairie_mag_rpmh_clocks[] = {
+	[RPMH_CXO_CLK]          = &sm8150_bi_tcxo.hw,
+	[RPMH_CXO_CLK_A]        = &sm8150_bi_tcxo_ao.hw,
+	[RPMH_RF_CLK1]          = &sdmshrike_rf_clk1.hw,
+	[RPMH_RF_CLK1_A]        = &sdmshrike_rf_clk1_ao.hw,
+	[RPMH_RF_CLK2]          = &sdmshrike_rf_clk2.hw,
+	[RPMH_RF_CLK2_A]        = &sdmshrike_rf_clk2_ao.hw,
+	[RPMH_RF_CLK3]          = &sdmshrike_rf_clk3.hw,
+	[RPMH_RF_CLK3_A]        = &sdmshrike_rf_clk3_ao.hw,
+	[RPMH_QPIC_CLK]		= &sdxprairie_qpic_clk.hw,
+};
+
+static const struct clk_rpmh_desc clk_rpmh_sdxprairie_mag = {
+	.clks = sdxprairie_mag_rpmh_clocks,
+	.num_clks = ARRAY_SIZE(sdxprairie_mag_rpmh_clocks),
+};
+
 static const struct of_device_id clk_rpmh_match_table[] = {
 	{ .compatible = "qcom,rpmh-clk-sm8150", .data = &clk_rpmh_sm8150},
 	{ .compatible = "qcom,rpmh-clk-sdmshrike", .data = &clk_rpmh_sdmshrike},
@@ -522,6 +539,8 @@ static const struct of_device_id clk_rpmh_match_table[] = {
 	{ .compatible = "qcom,rpmh-clk-sdmmagpie", .data = &clk_rpmh_sm6150},
 	{ .compatible = "qcom,rpmh-clk-sdxprairie",
 						.data = &clk_rpmh_sdxprairie},
+	{ .compatible = "qcom,rpmh-clk-sdxprairie-mag",
+					.data = &clk_rpmh_sdxprairie_mag},
 	{ .compatible = "qcom,rpmh-clk-atoll", .data = &clk_rpmh_sm6150},
 	{ }
 };
