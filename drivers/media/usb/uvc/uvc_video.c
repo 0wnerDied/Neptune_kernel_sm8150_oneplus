@@ -26,6 +26,8 @@
 
 #include "uvcvideo.h"
 
+#define CONFIG_DMA_NONCOHERENT 1
+
 /* ------------------------------------------------------------------------
  * UVC Controls
  */
@@ -1709,6 +1711,10 @@ static int uvc_init_video(struct uvc_streaming *stream, gfp_t gfp_flags)
 		ep = uvc_find_endpoint(&intf->altsetting[0],
 				stream->header.bEndpointAddress);
 		if (ep == NULL)
+			return -EIO;
+
+		/* Reject broken descriptors. */
+		if (usb_endpoint_maxp(&ep->desc) == 0)
 			return -EIO;
 
 		ret = uvc_init_video_bulk(stream, ep, gfp_flags);
