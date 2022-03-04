@@ -29,17 +29,15 @@ supported.versions=11 - 12
 block=/dev/block/by-name/boot;
 is_slot_device=1;
 ramdisk_compression=auto;
+patch_vbmeta_flag=auto;
 
 ## AnyKernel methods (DO NOT CHANGE)
 # import patching functions/variables - see for reference
 . tools/ak3-core.sh;
 
-android_version="$(file_getprop /system/build.prop "ro.build.version.release")";
-
 # Detect device and system
 if [ -e /system/etc/buildinfo/oem_build.prop ]; then
-  os="stock";
-  os_string="OxygenOS/HydrogenOS";
+  abort " Unsupported ROM! Aborting...";
 else
   os="custom";
   os_string="a custom ROM";
@@ -57,23 +55,6 @@ fi;
 
 ## AnyKernel install
 dump_boot;
-
-# Unified with custom ROMs
-if [ $os == "custom" ]; then
-  patch_cmdline "msm_drm.is_stock" "msm_drm.is_stock=0"
-  if [ $android_version == "11" ]; then
-    patch_cmdline "msm_drm.is_a12" "msm_drm.is_a12=0"
-  else
-    patch_cmdline "msm_drm.is_a12" "msm_drm.is_a12=1"
-  fi
-else
-  patch_cmdline "msm_drm.is_stock" "msm_drm.is_stock=1"
-fi
-
-# Override DTB
-if [ $os == "stock" ]; then
-  mv $home/dtb $home/split_img/;
-fi
 
 # Move resetprop_static
 cp -rfp $home/resetprop_static /data/local/tmp/resetprop_static;
@@ -124,5 +105,21 @@ fi
 
 # Install the boot image
 write_boot;
+## end boot install
+
+# shell variables
+#block=vendor_boot;
+#is_slot_device=1;
+#ramdisk_compression=auto;
+#patch_vbmeta_flag=auto;
+
+# reset for vendor_boot patching
+#reset_ak;
+
+## AnyKernel vendor_boot install
+#split_boot; # skip unpack/repack ramdisk since we don't need vendor_ramdisk access
+
+#flash_boot;
+## end vendor_boot install
 
 ## end install

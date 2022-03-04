@@ -29,7 +29,7 @@ ui_printfile() {
   done < $1;
 }
 show_progress() { echo "progress $1 $2" >> $OUTFD; }
-file_getprop() { $BB grep "^$2=" "$1" | $BB cut -d= -f2-; }
+file_getprop() { $BB grep "^$2=" "$1" | $BB tail -n1 | $BB cut -d= -f2-; }
 find_slot() {
   local slot=$(getprop ro.boot.slot_suffix 2>/dev/null);
   [ "$slot" ] || slot=$($BB grep -o 'androidboot.slot_suffix=.*$' /proc/cmdline | $BB cut -d\  -f1 | $BB cut -d= -f2);
@@ -272,7 +272,7 @@ do_devicecheck() {
   product=$(getprop ro.build.product 2>/dev/null);
   vendordevice=$(getprop ro.product.vendor.device 2>/dev/null);
   vendorproduct=$(getprop ro.vendor.product.device 2>/dev/null);
-  for testname in $(file_getprop anykernel.sh 'device.name.*'); do
+  for testname in $($BB grep '^device.name.*=' anykernel.sh | $BB cut -d= -f2-); do
     for devicename in $device $product $vendordevice $vendorproduct; do
       if [ "$devicename" == "$testname" ]; then
         ui_print "$testname" " ";
