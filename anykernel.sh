@@ -35,8 +35,6 @@ patch_vbmeta_flag=auto;
 # import patching functions/variables - see for reference
 . tools/ak3-core.sh;
 
-android_version="$(file_getprop /system/build.prop "ro.build.version.release")";
-
 # Detect device and system
 if [ -e /system/etc/buildinfo/oem_build.prop ]; then
   os="stock";
@@ -58,18 +56,6 @@ fi;
 
 ## AnyKernel install
 dump_boot;
-
-# Unified with custom ROMs
-if [ $os == "custom" ]; then
-  patch_cmdline "msm_drm.is_stock" "msm_drm.is_stock=0"
-  if [ $android_version == "11" ]; then
-    patch_cmdline "msm_drm.is_a12" "msm_drm.is_a12=0"
-  else
-    patch_cmdline "msm_drm.is_a12" "msm_drm.is_a12=1"
-  fi
-else
-  patch_cmdline "msm_drm.is_stock" "msm_drm.is_stock=1"
-fi
 
 # Override DTB
 if [ $os == "stock" ]; then
