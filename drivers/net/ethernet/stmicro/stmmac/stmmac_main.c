@@ -2924,6 +2924,9 @@ static int stmmac_open(struct net_device *dev)
 		stmmac_mac2mac_adjust_link(priv->plat->mac2mac_rgmii_speed,
 					   priv);
 		priv->plat->mac2mac_link = true;
+		if (priv->hw_offload_enabled)
+			priv->plat->offload_event_handler(priv,
+							  EV_PHY_LINK_UP);
 		netif_carrier_on(dev);
 	}
 
@@ -5260,6 +5263,9 @@ int stmmac_resume(struct device *dev)
 		stmmac_mac2mac_adjust_link(priv->plat->mac2mac_rgmii_speed,
 					   priv);
 		priv->plat->mac2mac_link = true;
+		if (priv->hw_offload_enabled)
+			priv->plat->offload_event_handler(priv,
+							  EV_PHY_LINK_UP);
 		netif_carrier_on(ndev);
 	}
 

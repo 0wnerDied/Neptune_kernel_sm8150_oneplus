@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2018-19, Linaro Limited
 // Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
+// Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
 
 #include <linux/module.h>
 #include <linux/of.h>
@@ -4042,7 +4043,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	}
 
 	if (priv->plat->mac2mac_en)
-		priv->plat->mac2mac_link = -1;
+		priv->plat->mac2mac_link = 0;
 
 #ifdef CONFIG_ETH_IPA_OFFLOAD
 	priv->plat->offload_event_handler(ethqos, EV_PROBE_INIT);
