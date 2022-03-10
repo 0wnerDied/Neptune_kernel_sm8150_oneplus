@@ -60,6 +60,7 @@ int pixel_div_get_div(void *context, unsigned int reg,
 {
 	int rc;
 	struct mdss_pll_resources *pll = context;
+	struct dsi_pll_db *pdb = (struct dsi_pll_db *)pll->priv;
 	u32 val = 0;
 
 	if (is_gdsc_disabled(pll))
@@ -72,6 +73,10 @@ int pixel_div_get_div(void *context, unsigned int reg,
 	}
 
 	val = (MDSS_PLL_REG_R(pll->pll_base, DSIPHY_SSC9) & 0x7F);
+	if (!val) {
+		val = pdb->param.pixel_divhf;
+		MDSS_PLL_REG_W(pll->pll_base, DSIPHY_SSC9, val);
+	}
 	*div = val + 1;
 	pr_debug("pixel_div = %d\n", (*div));
 
@@ -954,6 +959,13 @@ int pll_vco_prepare_12nm(struct clk_hw *hw)
 	if (!pll) {
 		pr_err("Dsi pll resources are not available\n");
 		return -EINVAL;
+	}
+
+	/* Skip vco recalculation for continuous splash use case */
+	if (pll->handoff_resources) {
+		pr_debug("%s: Skip recalculation during cont splash\n",
+						__func__);
+		return rc;
 	}
 
 	pdb = (struct dsi_pll_db *)pll->priv;

@@ -371,12 +371,17 @@ int cam_mem_mgr_cache_ops(struct cam_mem_cache_ops_cmd *cmd)
 	if (idx >= CAM_MEM_BUFQ_MAX || idx <= 0)
 		return -EINVAL;
 
-	mutex_lock(&tbl.bufq[idx].q_lock);
+	mutex_lock(&tbl.m_lock);
 
-	if (!tbl.bufq[idx].active) {
-		rc = -EINVAL;
-		goto end;
+	if (!test_bit(idx, tbl.bitmap)) {
+		CAM_ERR(CAM_MEM, "Buffer at idx=%d is already unmapped,",
+			idx);
+		mutex_unlock(&tbl.m_lock);
+		return -EINVAL;
 	}
+
+	mutex_lock(&tbl.bufq[idx].q_lock);
+	mutex_unlock(&tbl.m_lock);
 
 	if (cmd->buf_handle != tbl.bufq[idx].buf_handle) {
 		rc = -EINVAL;

@@ -1,4 +1,5 @@
 /* Copyright (c) 2012-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -30,6 +31,7 @@ struct hdmi_pll_vco_clk {
 	struct hdmi_pll_cfg *cp_setp;
 	struct hdmi_pll_cfg *crctrl;
 	void		*priv;
+	u32 divsel;
 
 };
 

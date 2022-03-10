@@ -2389,7 +2389,7 @@ static int ethqos_create_debugfs(struct qcom_ethqos        *ethqos)
 	struct stmmac_priv *priv;
 
 	if (!ethqos) {
-		ETHQOSERR("Null Param %s\n", __func__);
+		ETHQOSERR("Null Param\n");
 		return -ENOMEM;
 	}
 
