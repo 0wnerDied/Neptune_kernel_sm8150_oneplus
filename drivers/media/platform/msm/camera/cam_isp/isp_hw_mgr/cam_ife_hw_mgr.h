@@ -1,4 +1,4 @@
-/* Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2019, 2022, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -18,6 +18,8 @@
 #include "cam_vfe_hw_intf.h"
 #include "cam_ife_csid_hw_intf.h"
 #include "cam_tasklet_util.h"
+
+#define CAM_IFE_CSID_RDI_MAX          4
 
 /* enum cam_ife_hw_mgr_res_type - manager resource node type */
 enum cam_ife_hw_mgr_res_type {
@@ -178,6 +180,7 @@ struct cam_ife_hw_mgr_ctx {
 	bool                            is_fe_enable;
 	unsigned long                   res_bitmap;
 	uint32_t                        dual_ife_irq_mismatch_cnt;
+	uint32_t                        acq_common_args_ver;
 };
 
 /**
