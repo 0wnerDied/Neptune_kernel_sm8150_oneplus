@@ -228,7 +228,7 @@ static const struct inode_operations shmem_inode_operations;
 static const struct inode_operations shmem_dir_inode_operations;
 static const struct inode_operations shmem_special_inode_operations;
 static const struct vm_operations_struct shmem_vm_ops;
-static struct file_system_type shmem_fs_type;
+struct file_system_type shmem_fs_type;
 
 bool vma_is_shmem(struct vm_area_struct *vma)
 {
@@ -4065,7 +4065,7 @@ static struct dentry *shmem_mount(struct file_system_type *fs_type,
 	return mount_nodev(fs_type, flags, data, shmem_fill_super);
 }
 
-static struct file_system_type shmem_fs_type = {
+struct file_system_type shmem_fs_type = {
 	.owner		= THIS_MODULE,
 	.name		= "tmpfs",
 	.mount		= shmem_mount,
