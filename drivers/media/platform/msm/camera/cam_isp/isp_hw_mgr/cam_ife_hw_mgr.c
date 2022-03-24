@@ -1,4 +1,5 @@
 /* Copyright (c) 2017-2020, 2022, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -924,9 +925,12 @@ static int cam_ife_hw_mgr_acquire_res_ife_out_rdi(
 		out_port = &in_port->data[i];
 
 
-		if ((vfe_out_res_id != out_port->res_type) &&
+		if (((vfe_out_res_id != out_port->res_type) &&
 			((vfe_out_res_id < CAM_ISP_IFE_OUT_RES_RDI_0) ||
-			(vfe_out_res_id > CAM_ISP_IFE_OUT_RES_RDI_3)))
+			(vfe_out_res_id > CAM_ISP_IFE_OUT_RES_RDI_3))) ||
+			((out_port->res_type < CAM_ISP_IFE_OUT_RES_RDI_0) ||
+			(out_port->res_type > CAM_ISP_IFE_OUT_RES_RDI_3)))
+
 			continue;
 
 		out_port->res_type = vfe_out_res_id;
