@@ -1211,7 +1211,7 @@ static int mmc_select_hs400(struct mmc_card *card)
 {
 	struct mmc_host *host = card->host;
 	unsigned int max_dtr;
-	int err = 0;
+	int err = -EINVAL;
 	u8 val;
 
 	/*
