@@ -44,6 +44,8 @@
 #define AIS_VFE_MASK0_RDI 0x780001E0
 #define AIS_VFE_MASK1_RDI 0x000000BC
 
+#define AIS_VFE_MASK1_RDI_OVERFLOW_SHT 2
+
 #define AIS_VFE_STATUS0_BUS_WR_IRQ  (1 << 9)
 #define AIS_VFE_STATUS0_RDI_SOF_IRQ  (0xF << AIS_VFE_STATUS0_RDI_SOF_IRQ_SHFT)
 #define AIS_VFE_STATUS0_RDI_OVERFLOW_IRQ  \
@@ -1542,6 +1544,7 @@ irqreturn_t ais_vfe_irq(int irq_num, void *data)
 	struct cam_hw_info            *vfe_hw;
 	struct ais_vfe_hw_core_info   *core_info;
 	uint32_t ife_status[2] = {};
+	int path =  0;
 
 	if (!data)
 		return IRQ_NONE;
@@ -1624,10 +1627,25 @@ irqreturn_t ais_vfe_irq(int irq_num, void *data)
 				AIS_VFE_STATUS1_RDI_OVERFLOW_IRQ_SHFT) &
 				AIS_VFE_STATUS1_RDI_OVERFLOW_IRQ_MSK;
 
+				for (path; path < AIS_IFE_PATH_MAX; path++) {
+
+					if (!(work_data.path & (1 << path)))
+						continue;
+
+					/* Disable rdi* overflow irq mask*/
+					core_info->irq_mask1 &= ~(1 <<
+					(AIS_VFE_MASK1_RDI_OVERFLOW_SHT +
+					path));
+					cam_io_w_mb(core_info->irq_mask1,
+						core_info->mem_base +
+						AIS_VFE_IRQ_MASK1);
+				}
+
 				CAM_ERR_RATE_LIMIT(CAM_ISP,
 					"IFE%d Overflow 0x%x",
 					core_info->vfe_idx,
 					work_data.path);
+
 				work_data.evt_type = AIS_VFE_HW_IRQ_EVENT_ERROR;
 				ais_vfe_dispatch_irq(vfe_hw, &work_data);
 			}
