@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2018-19, Linaro Limited
 // Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
+// Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
 
 #include <linux/module.h>
 #include <linux/of.h>
@@ -3081,9 +3082,8 @@ static ssize_t ethqos_write_dev_emac(struct file *file,
 	if (strnstr(vlan_str, "QOE", sizeof(vlan_str))) {
 		ethqos->qoe_vlan.available = true;
 		queue = ethqos->qoe_vlan.rx_queue;
+		priv->plat->rx_queues_cfg[queue].use_prio = true;
 		prio = priv->plat->rx_queues_cfg[queue].prio;
-		/* Convert prio to bit format */
-		prio = MAC_RXQCTRL_PSRQX_PRIO_SHIFT(prio);
 		priv->hw->mac->rx_queue_prio(priv->hw, prio, queue);
 	}
 
@@ -3104,8 +3104,10 @@ static ssize_t ethqos_write_dev_emac(struct file *file,
 		if (prefix) {
 			err = kstrtouint(prefix + 1, 0, &number);
 			if (!err) {
+				/* Convert prio to bit format */
+				prio = MAC_RXQCTRL_PSRQX_PRIO_SHIFT(number);
 				queue = ethqos->qoe_vlan.rx_queue;
-				priv->plat->rx_queues_cfg[queue].prio = number;
+				priv->plat->rx_queues_cfg[queue].prio = prio;
 			}
 		}
 	}
@@ -3114,9 +3116,8 @@ static ssize_t ethqos_write_dev_emac(struct file *file,
 		ETHQOSDBG("Cv2X supported mode is %u\n", ethqos->cv2x_mode);
 		ethqos->cv2x_vlan.available = true;
 		queue = ethqos->cv2x_vlan.rx_queue;
+		priv->plat->rx_queues_cfg[queue].use_prio = true;
 		prio = priv->plat->rx_queues_cfg[queue].prio;
-		/* Convert prio to bit format */
-		prio = MAC_RXQCTRL_PSRQX_PRIO_SHIFT(prio);
 		priv->hw->mac->rx_queue_prio(priv->hw, prio, queue);
 	}
 
@@ -3136,8 +3137,10 @@ static ssize_t ethqos_write_dev_emac(struct file *file,
 		if (prefix) {
 			err = kstrtouint(prefix + 1, 0, &number);
 			if (!err) {
+				/* Convert prio to bit format */
+				prio = MAC_RXQCTRL_PSRQX_PRIO_SHIFT(number);
 				queue = ethqos->cv2x_vlan.rx_queue;
-				priv->plat->rx_queues_cfg[queue].prio = number;
+				priv->plat->rx_queues_cfg[queue].prio = prio;
 			}
 		}
 	}
@@ -4042,7 +4045,7 @@ static int qcom_ethqos_probe(struct platform_device *pdev)
 	}
 
 	if (priv->plat->mac2mac_en)
-		priv->plat->mac2mac_link = -1;
+		priv->plat->mac2mac_link = 0;
 
 #ifdef CONFIG_ETH_IPA_OFFLOAD
 	priv->plat->offload_event_handler(ethqos, EV_PROBE_INIT);
