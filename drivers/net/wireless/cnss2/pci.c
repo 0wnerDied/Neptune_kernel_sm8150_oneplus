@@ -145,9 +145,6 @@ static DEFINE_SPINLOCK(pci_reg_window_lock);
 #define PCIE_REG_FOR_QRTR_NODE_INSTANCE_ID	\
 	QCA6390_PCIE_SCRATCH_2_SOC_PCIE_REG
 
-#define POWER_ON_RETRY_MAX_TIMES		3
-#define POWER_ON_RETRY_DELAY_MS			200
-
 #define LINK_TRAINING_RETRY_MAX_TIMES		3
 
 static void cnss_pci_update_fw_name(struct cnss_pci_data *pci_priv);

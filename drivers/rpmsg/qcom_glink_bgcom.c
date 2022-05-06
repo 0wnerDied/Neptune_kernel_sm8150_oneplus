@@ -795,11 +795,14 @@ static int glink_bgcom_request_intent(struct glink_bgcom *glink,
 		dev_err(glink->dev, "intent request ack timed out\n");
 		ret = -ETIMEDOUT;
 	} else if (atomic_read(&glink->in_reset)) {
-		CH_INFO(channel, "ssr detected\n");
+		CH_INFO(channel, "intent req failed, ssr detected\n");
 		ret = -ECONNRESET;
 	} else {
 		ret = channel->intent_req_result ? 0 : -ECANCELED;
 	}
+
+	if (ret < 0)
+		goto unlock;
 
 	if (!channel->intent_req_result) {
 		dev_err(glink->dev, "intent request not granted for lcid\n");
@@ -814,7 +817,7 @@ static int glink_bgcom_request_intent(struct glink_bgcom *glink,
 		dev_err(glink->dev, "intent request alloc timed out\n");
 		ret = -ETIMEDOUT;
 	} else if (atomic_read(&glink->in_reset)) {
-		CH_INFO(channel, "ssr detected\n");
+		CH_INFO(channel, "intent alloc failed, ssr detected\n");
 		ret = -ECONNRESET;
 	} else {
 		ret = channel->intent_req_result ? 0 : -ECANCELED;
@@ -2061,9 +2064,6 @@ static int glink_bgcom_cleanup(struct glink_bgcom *glink)
 
 	atomic_inc(&glink->in_reset);
 
-	kthread_flush_worker(&glink->kworker);
-	cancel_work_sync(&glink->rx_defer_work);
-
 	ret = device_for_each_child(glink->dev, NULL,
 					glink_bgcom_remove_device);
 	if (ret)
@@ -2086,6 +2086,9 @@ static int glink_bgcom_cleanup(struct glink_bgcom *glink)
 	}
 
 	mutex_unlock(&glink->idr_lock);
+
+	cancel_work_sync(&glink->rx_defer_work);
+	kthread_flush_worker(&glink->kworker);
 
 	return ret;
 }
