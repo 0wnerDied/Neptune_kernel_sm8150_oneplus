@@ -232,7 +232,7 @@ static void qdss_write_complete(struct usb_ep *ep,
 	enum qdss_state state;
 	unsigned long flags;
 
-	qdss_log("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	if (qdss->debug_inface_enabled) {
 		in = qdss->port.ctrl_in;
@@ -275,7 +275,7 @@ static void qdss_ctrl_read_complete(struct usb_ep *ep,
 	struct qdss_request *d_req = req->context;
 	unsigned long flags;
 
-	qdss_log("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	d_req->actual = req->actual;
 	d_req->status = req->status;
@@ -295,13 +295,13 @@ void usb_qdss_free_req(struct usb_qdss_ch *ch)
 	struct usb_request *req;
 	struct list_head *act, *tmp;
 
+	pr_debug("%s\n", __func__);
+
 	qdss = ch->priv_usb;
 	if (!qdss) {
 		pr_err("%s: qdss ctx is NULL\n", __func__);
 		return;
 	}
-
-	qdss_log("%s: channel name = %s\n", __func__, qdss->ch.name);
 
 	list_for_each_safe(act, tmp, &qdss->data_write_pool) {
 		req = list_entry(act, struct usb_request, list);
@@ -332,7 +332,7 @@ int usb_qdss_alloc_req(struct usb_qdss_ch *ch, int no_write_buf,
 	struct list_head *list_pool;
 	int i;
 
-	qdss_log("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	if (!qdss) {
 		pr_err("%s: %s closed\n", __func__, ch->name);
@@ -387,7 +387,7 @@ static void clear_eps(struct usb_function *f)
 {
 	struct f_qdss *qdss = func_to_qdss(f);
 
-	qdss_log("%s: channel name = %s\n", __func__, qdss->ch.name);
+	pr_debug("%s\n", __func__);
 
 	if (qdss->port.ctrl_in)
 		qdss->port.ctrl_in->driver_data = NULL;
@@ -399,9 +399,7 @@ static void clear_eps(struct usb_function *f)
 
 static void clear_desc(struct usb_gadget *gadget, struct usb_function *f)
 {
-	struct f_qdss *qdss = func_to_qdss(f);
-
-	qdss_log("%s: channel name = %s\n", __func__, qdss->ch.name);
+	pr_debug("%s\n", __func__);
 
 	usb_free_all_descriptors(f);
 }
@@ -414,7 +412,7 @@ static int qdss_bind(struct usb_configuration *c, struct usb_function *f)
 	int iface, id, ret;
 
 	qdss->gadget = gadget;
-	qdss_log("%s: channel name = %s\n", __func__, qdss->ch.name);
+	pr_debug("%s\n", __func__);
 
 	/* Allocate data I/F */
 	iface = usb_interface_id(c, f);
@@ -548,7 +546,7 @@ static void qdss_unbind(struct usb_configuration *c, struct usb_function *f)
 	struct f_qdss  *qdss = func_to_qdss(f);
 	struct usb_gadget *gadget = c->cdev->gadget;
 
-	qdss_log("%s: channel name = %s\n", __func__, qdss->ch.name);
+	pr_debug("%s\n", __func__);
 
 	flush_workqueue(qdss->wq);
 
@@ -572,7 +570,7 @@ static void qdss_eps_disable(struct usb_function *f)
 {
 	struct f_qdss  *qdss = func_to_qdss(f);
 
-	qdss_log("%s: channel name = %s\n", __func__, qdss->ch.name);
+	pr_debug("%s\n", __func__);
 
 	if (qdss->ctrl_in_enabled) {
 		usb_ep_disable(qdss->port.ctrl_in);
@@ -597,7 +595,7 @@ static void usb_qdss_disconnect_work(struct work_struct *work)
 	int status;
 
 	qdss = container_of(work, struct f_qdss, disconnect_w);
-	qdss_log("%s: channel name = %s\n", __func__, qdss->ch.name);
+	pr_debug("%s\n", __func__);
 
 
 	/* Notify qdss to cancel all active transfers */
@@ -630,7 +628,7 @@ static void qdss_disable(struct usb_function *f)
 	struct f_qdss	*qdss = func_to_qdss(f);
 	unsigned long flags;
 
-	qdss_log("%s: channel name = %s\n", __func__, qdss->ch.name);
+	pr_debug("%s\n", __func__);
 	spin_lock_irqsave(&qdss->lock, flags);
 	if (!qdss->usb_connected) {
 		spin_unlock_irqrestore(&qdss->lock, flags);
@@ -655,12 +653,12 @@ static void usb_qdss_connect_work(struct work_struct *work)
 
 	/* If cable is already removed, discard connect_work */
 	if (qdss->usb_connected == 0) {
-		qdss_log("%s: discard connect_work\n", __func__);
+		pr_debug("%s: discard connect_work\n", __func__);
 		cancel_work_sync(&qdss->disconnect_w);
 		return;
 	}
 
-	qdss_log("%s: channel name = %s\n", __func__, qdss->ch.name);
+	pr_debug("%s\n", __func__);
 
 	if (!strcmp(qdss->ch.name, USB_QDSS_CH_MDM))
 		goto notify;
@@ -697,7 +695,7 @@ static int qdss_set_alt(struct usb_function *f, unsigned int intf,
 	struct usb_qdss_ch *ch = &qdss->ch;
 	int ret = 0;
 
-	qdss_log("%s qdss pointer = %pK\n", __func__, qdss);
+	pr_debug("%s qdss pointer = %pK\n", __func__, qdss);
 	qdss->gadget = gadget;
 
 	if (alt != 0)
@@ -762,12 +760,12 @@ static int qdss_set_alt(struct usb_function *f, unsigned int intf,
 		if (qdss->ctrl_out_enabled && qdss->ctrl_in_enabled &&
 			qdss->data_enabled) {
 			qdss->usb_connected = 1;
-			qdss_log("%s usb_connected INTF enabled\n", __func__);
+			pr_debug("%s usb_connected INTF enabled\n", __func__);
 		}
 	} else {
 		if (qdss->data_enabled) {
 			qdss->usb_connected = 1;
-			qdss_log("%s usb_connected INTF disabled\n", __func__);
+			pr_debug("%s usb_connected INTF disabled\n", __func__);
 		}
 	}
 
@@ -841,7 +839,7 @@ int usb_qdss_ctrl_read(struct usb_qdss_ch *ch, struct qdss_request *d_req)
 	unsigned long flags;
 	struct usb_request *req = NULL;
 
-	qdss_log("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	if (!qdss)
 		return -ENODEV;
@@ -886,7 +884,7 @@ int usb_qdss_ctrl_write(struct usb_qdss_ch *ch, struct qdss_request *d_req)
 	unsigned long flags;
 	struct usb_request *req = NULL;
 
-	qdss_log("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	if (!qdss)
 		return -ENODEV;
@@ -930,7 +928,7 @@ int usb_qdss_write(struct usb_qdss_ch *ch, struct qdss_request *d_req)
 	unsigned long flags;
 	struct usb_request *req = NULL;
 
-	qdss_log("usb_qdss_data_write\n");
+	pr_debug("usb_qdss_ctrl_write\n");
 
 	if (!qdss)
 		return -ENODEV;
@@ -977,7 +975,7 @@ struct usb_qdss_ch *usb_qdss_open(const char *name, void *priv,
 	unsigned long flags;
 	int found = 0;
 
-	qdss_log("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	if (!notify) {
 		pr_err("%s: notification func is missing\n", __func__);
@@ -995,11 +993,11 @@ struct usb_qdss_ch *usb_qdss_open(const char *name, void *priv,
 
 	if (!found) {
 		spin_unlock_irqrestore(&qdss_lock, flags);
-		qdss_log("%s failed as %s not found\n", __func__, name);
+		pr_debug("%s failed as %s not found\n", __func__, name);
 		return NULL;
 	}
 
-	qdss_log("%s: qdss ctx found\n", __func__);
+	pr_debug("%s: qdss ctx found\n", __func__);
 	qdss = container_of(ch, struct f_qdss, ch);
 	ch->priv_usb = qdss;
 	ch->priv = priv;
@@ -1022,7 +1020,7 @@ void usb_qdss_close(struct usb_qdss_ch *ch)
 	unsigned long flags;
 	int status;
 
-	qdss_log("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	spin_lock_irqsave(&qdss_lock, flags);
 	ch->priv_usb = NULL;
@@ -1059,7 +1057,7 @@ static void qdss_cleanup(void)
 	struct usb_qdss_ch *_ch;
 	unsigned long flags;
 
-	qdss_log("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	list_for_each_safe(act, tmp, &usb_qdss_ch_list) {
 		_ch = list_entry(act, struct usb_qdss_ch, list);
@@ -1184,7 +1182,7 @@ static int usb_qdss_set_inst_name(struct usb_function_instance *f,
 	}
 
 	opts->channel_name = ptr;
-	qdss_log("qdss: channel_name:%s\n", opts->channel_name);
+	pr_debug("qdss: channel_name:%s\n", opts->channel_name);
 
 	usb_qdss = alloc_usb_qdss(opts->channel_name);
 	if (IS_ERR(usb_qdss)) {
@@ -1235,10 +1233,6 @@ static int __init usb_qdss_init(void)
 {
 	int ret;
 
-	_qdss_ipc_log = ipc_log_context_create(NUM_PAGES, "usb_qdss", 0);
-	if (IS_ERR_OR_NULL(_qdss_ipc_log))
-		_qdss_ipc_log =  NULL;
-
 	INIT_LIST_HEAD(&usb_qdss_ch_list);
 	ret = usb_function_register(&qdssusb_func);
 	if (ret) {
@@ -1250,7 +1244,6 @@ static int __init usb_qdss_init(void)
 
 static void __exit usb_qdss_exit(void)
 {
-	ipc_log_context_destroy(_qdss_ipc_log);
 	usb_function_unregister(&qdssusb_func);
 	qdss_cleanup();
 }
