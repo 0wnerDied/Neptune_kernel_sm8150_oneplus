@@ -27,6 +27,7 @@
 struct dp_gpio_hpd_private {
 	struct device *dev;
 	struct dp_hpd base;
+	struct dp_parser *parser;
 	struct dss_gpio gpio_cfg;
 	struct delayed_work work;
 	struct dp_hpd_cb *cb;
@@ -220,7 +221,43 @@ int dp_gpio_hpd_register(struct dp_hpd *dp_hpd)
 	return rc;
 }
 
-struct dp_hpd *dp_gpio_hpd_get(struct device *dev,
+static void dp_gpio_hpd_deinit(struct dp_gpio_hpd_private *gpio_hpd)
+{
+	struct dp_parser *parser = gpio_hpd->parser;
+	int i = 0;
+
+	for (i = 0; i < parser->mp[DP_PHY_PM].num_vreg; i++) {
+		if (!strcmp(parser->mp[DP_PHY_PM].vreg_config[i].vreg_name,
+								"hpd-pwr")) {
+			/* disable the hpd-pwr voltage regulator */
+			if (msm_dss_enable_vreg(
+				&parser->mp[DP_PHY_PM].vreg_config[i],
+				1, false))
+				pr_err("hpd-pwr vreg not disabled\n");
+				break;
+		}
+	}
+}
+
+static void dp_gpio_hpd_init(struct dp_gpio_hpd_private *gpio_hpd)
+{
+	struct dp_parser *parser = gpio_hpd->parser;
+	int i = 0;
+
+	for (i = 0; i < parser->mp[DP_PHY_PM].num_vreg; i++) {
+		if (!strcmp(parser->mp[DP_PHY_PM].vreg_config[i].vreg_name,
+								"hpd-pwr")) {
+			/* enable the hpd-pwr voltage regulator */
+			if (msm_dss_enable_vreg(
+				&parser->mp[DP_PHY_PM].vreg_config[i],
+				1, true))
+				pr_err("hpd-pwr vreg not enabled\n");
+				break;
+		}
+	}
+}
+
+struct dp_hpd *dp_gpio_hpd_get(struct device *dev, struct dp_parser *parser,
 	struct dp_hpd_cb *cb)
 {
 	int rc = 0;
@@ -228,7 +265,7 @@ struct dp_hpd *dp_gpio_hpd_get(struct device *dev,
 	struct dp_gpio_hpd_private *gpio_hpd;
 	struct dp_pinctrl pinctrl = {0};
 
-	if (!dev || !cb) {
+	if (!dev || !cb || !parser) {
 		pr_err("invalid device\n");
 		rc = -EINVAL;
 		goto error;
@@ -279,10 +316,12 @@ struct dp_hpd *dp_gpio_hpd_get(struct device *dev,
 	gpio_hpd->irq = gpio_to_irq(gpio_hpd->gpio_cfg.gpio);
 	INIT_DELAYED_WORK(&gpio_hpd->work, dp_gpio_hpd_work);
 
+	gpio_hpd->parser = parser;
 	gpio_hpd->base.simulate_connect = dp_gpio_hpd_simulate_connect;
 	gpio_hpd->base.simulate_attention = dp_gpio_hpd_simulate_attention;
 	gpio_hpd->base.register_hpd = dp_gpio_hpd_register;
 
+	dp_gpio_hpd_init(gpio_hpd);
 	return &gpio_hpd->base;
 
 gpio_error:
@@ -300,6 +339,7 @@ void dp_gpio_hpd_put(struct dp_hpd *dp_hpd)
 
 	gpio_hpd = container_of(dp_hpd, struct dp_gpio_hpd_private, base);
 
+	dp_gpio_hpd_deinit(gpio_hpd);
 	gpio_free(gpio_hpd->gpio_cfg.gpio);
 	devm_kfree(gpio_hpd->dev, gpio_hpd);
 }
