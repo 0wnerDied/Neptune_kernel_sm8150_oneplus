@@ -70,7 +70,7 @@ struct dp_hpd *dp_hpd_get(struct device *dev, struct dp_parser *parser,
 		}
 		dp_hpd->type = DP_HPD_LPHW;
 	} else if (parser->no_aux_switch) {
-		dp_hpd = dp_gpio_hpd_get(dev, cb);
+		dp_hpd = dp_gpio_hpd_get(dev, parser, cb);
 		if (IS_ERR(dp_hpd)) {
 			pr_err("failed to get gpio hpd\n");
 			goto out;

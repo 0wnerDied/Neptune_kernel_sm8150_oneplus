@@ -3176,6 +3176,7 @@ static int ipa3_lcl_mdm_ssr_notifier_cb(struct notifier_block *this,
 	case SUBSYS_AFTER_POWERUP:
 		IPAWANINFO("IPA received MPSS AFTER_POWERUP\n");
 		ipa3_set_modem_up(true);
+		IPAWANINFO("Set Modem up completed\n");
 		if (!atomic_read(&rmnet_ipa3_ctx->is_initialized) &&
 		       atomic_read(&rmnet_ipa3_ctx->is_ssr))
 			platform_driver_register(&rmnet_ipa_driver);
