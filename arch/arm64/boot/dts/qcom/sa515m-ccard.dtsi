@@ -358,9 +358,22 @@
 	status = "disabled";
 };
 
+&pmxprairie_gpios {
+	bt_en_default: bt_en_default {
+		pins = "gpio6";
+		function = "normal";
+		output-low;
+		bias-pull-down;
+		qcom,drive-strength = <2>;
+		power-source = <1>;
+	};
+};
+
 &soc {
 	bluetooth: bt_qca6390 {
 		compatible = "qca,qca6390";
+		pinctrl-names = "default";
+		pinctrl-0 = <&bt_en_default>;
 		qca,bt-reset-gpio = <&pmxprairie_gpios 6 0>;
 		/* PWR_CTR1_VDD_PA */
 		qca,bt-vdd-pa-supply = <&vreg_conn_pa>;

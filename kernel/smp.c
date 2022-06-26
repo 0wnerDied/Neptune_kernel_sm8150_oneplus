@@ -13,6 +13,7 @@
 #include <linux/export.h>
 #include <linux/percpu.h>
 #include <linux/init.h>
+#include <linux/interrupt.h>
 #include <linux/gfp.h>
 #include <linux/smp.h>
 #include <linux/cpu.h>
@@ -127,7 +128,8 @@ static __always_inline void csd_lock(struct __call_single_data *csd)
 
 static __always_inline void csd_unlock(struct __call_single_data *csd)
 {
-	WARN_ON(!(csd->flags & CSD_FLAG_LOCK));
+	if (!(csd->flags & CSD_FLAG_LOCK))
+		return;
 
 	/*
 	 * ensure we're all done before releasing data:
@@ -144,8 +146,8 @@ extern void send_call_function_single_ipi(int cpu);
  * for execution on the given CPU. data must already have
  * ->func, ->info, and ->flags set.
  */
-static int generic_exec_single(int cpu, struct __call_single_data *csd,
-			       smp_call_func_t func, void *info)
+int generic_exec_single(int cpu, struct __call_single_data *csd, smp_call_func_t func,
+			void *info)
 {
 	if (cpu == smp_processor_id()) {
 		unsigned long flags;
@@ -227,7 +229,7 @@ static void flush_smp_call_function_queue(bool warn_cpu_offline)
 
 	/* There shouldn't be any pending callbacks on an offline CPU. */
 	if (unlikely(warn_cpu_offline && !cpu_online(smp_processor_id()) &&
-		     !warned && !llist_empty(head))) {
+		     !warned && entry != NULL)) {
 		warned = true;
 		WARN(1, "IPI on offline CPU %d\n", smp_processor_id());
 
@@ -272,6 +274,9 @@ void flush_smp_call_function_from_idle(void)
 
 	local_irq_save(flags);
 	flush_smp_call_function_queue(true);
+	if (local_softirq_pending())
+		do_softirq();
+
 	local_irq_restore(flags);
 }
 

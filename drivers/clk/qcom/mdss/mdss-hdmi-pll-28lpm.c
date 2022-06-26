@@ -1,4 +1,5 @@
 /* Copyright (c) 2018-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -242,7 +243,8 @@ static int hdmi_pll_enable_28lpm(struct clk_hw *hw)
 	return 0;
 } /* hdmi_pll_enable_28lpm */
 
-static void hdmi_phy_pll_calculator_28lpm(unsigned long vco_rate,
+static void hdmi_phy_pll_calculator_28lpm(struct clk_hw *hw,
+			unsigned long vco_rate,
 			struct mdss_pll_resources *hdmi_pll_res)
 {
 	u32 ref_clk		= 19200000;
@@ -264,6 +266,7 @@ static void hdmi_phy_pll_calculator_28lpm(unsigned long vco_rate,
 	u32 val2		= 0;
 	u32 val3		= 0;
 	void __iomem *pll_base	= hdmi_pll_res->pll_base;
+	struct hdmi_pll_vco_clk *vco = to_hdmi_vco_clk_hw(hw);
 
 	multiplier_q = vco_rate;
 	multiplier_r = do_div(multiplier_q, int_ref_clk_freq);
@@ -291,6 +294,7 @@ static void hdmi_phy_pll_calculator_28lpm(unsigned long vco_rate,
 	refclk_cfg &= ~0xf;
 	refclk_cfg |= (ref_clk_multiplier == 2) ? 0x8
 			: (ref_clk_multiplier == 1) ? 0 : 0x2;
+	refclk_cfg |= vco->divsel;
 
 	MDSS_PLL_REG_W(pll_base, HDMI_PHY_PLL_REFCLK_CFG, refclk_cfg);
 	MDSS_PLL_REG_W(pll_base, HDMI_PHY_PLL_CHRG_PUMP_CFG, 0x02);
@@ -357,7 +361,7 @@ int hdmi_vco_set_rate_28lpm(struct clk_hw *hw, unsigned long rate,
 
 	pr_debug("rate=%ld\n", rate);
 
-	hdmi_phy_pll_calculator_28lpm(rate, hdmi_pll_res);
+	hdmi_phy_pll_calculator_28lpm(hw, rate, hdmi_pll_res);
 
 	/* Make sure writes complete before disabling iface clock */
 	wmb();
@@ -536,7 +540,8 @@ unsigned long hdmi_vco_recalc_rate_28lpm(struct clk_hw *hw,
 static int hdmi_mux_set_parent(void *context, unsigned int reg,
 				unsigned int mux_sel)
 {
-	struct mdss_pll_resources *hdmi_pll_res = context;
+	struct hdmi_pll_vco_clk *vco = context;
+	struct mdss_pll_resources *hdmi_pll_res = vco->priv;
 	int rc = 0;
 	u32 reg_val = 0;
 	const u32 div_4 = 0x20;
@@ -574,6 +579,7 @@ static int hdmi_mux_set_parent(void *context, unsigned int reg,
 				HDMI_PHY_PLL_REFCLK_CFG, reg_val);
 
 	(void)mdss_pll_resource_enable(hdmi_pll_res, false);
+	vco->divsel = (mux_sel & 0x70);
 
 	return 0;
 }
@@ -583,15 +589,15 @@ static int hdmi_mux_get_parent(void *context, unsigned int reg,
 {
 	int rc = 0;
 	int mux_sel = 0;
-	struct mdss_pll_resources *hdmi_pll_res = context;
+	struct hdmi_pll_vco_clk *vco = context;
+	struct mdss_pll_resources *hdmi_pll_res = vco->priv;
 
 	rc = mdss_pll_resource_enable(hdmi_pll_res, true);
 	if (rc) {
 		*val = 0;
 		pr_err("Failed to enable hdmi pll resources\n");
 	} else {
-		mux_sel = MDSS_PLL_REG_R(hdmi_pll_res->pll_base,
-				HDMI_PHY_PLL_REFCLK_CFG);
+		mux_sel = vco->divsel;
 		mux_sel &= 0x70;
 		*val = mux_sel;
 		pr_debug("mux_sel = %d\n", *val);
@@ -764,7 +770,7 @@ int hdmi_pll_clock_register_28lpm(struct platform_device *pdev,
 
 	/* Set client data for vco, mux and div clocks */
 	regmap = devm_regmap_init(&pdev->dev, &hdmi_pclk_src_mux_regmap_ops,
-			pll_res, &hdmi_pll_28lpm_cfg);
+			&hdmi_vco_clk, &hdmi_pll_28lpm_cfg);
 	hdmi_pclk_src_mux.clkr.regmap = regmap;
 
 	hdmi_vco_clk.priv = pll_res;

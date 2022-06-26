@@ -4550,6 +4550,13 @@ static void sdhci_set_default_hw_caps(struct sdhci_msm_host *msm_host,
 	caps = readl_relaxed(host->ioaddr + SDHCI_CAPABILITIES);
 
 	/*
+	 * Support for some capabilities is not advertised by newer
+	 * controller versions and must be explicitly enabled.
+	 */
+	if (major >= 1 && minor != 0x11 && minor != 0x12)
+		caps |= SDHCI_CAN_VDD_300 | SDHCI_CAN_DO_8BIT;
+
+	/*
 	 * Starting with SDCC 5 controller (core major version = 1)
 	 * controller won't advertise 3.0v, 1.8v and 8-bit features
 	 * except for some targets.
