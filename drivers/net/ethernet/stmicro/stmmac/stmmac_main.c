@@ -2937,6 +2937,9 @@ static int stmmac_open(struct net_device *dev)
 		stmmac_mac2mac_adjust_link(priv->plat->mac2mac_rgmii_speed,
 					   priv);
 		priv->plat->mac2mac_link = true;
+		if (priv->hw_offload_enabled)
+			priv->plat->offload_event_handler(priv,
+							  EV_PHY_LINK_UP);
 		netif_carrier_on(dev);
 	}
 
@@ -5282,6 +5285,9 @@ int stmmac_resume(struct device *dev)
 		stmmac_mac2mac_adjust_link(priv->plat->mac2mac_rgmii_speed,
 					   priv);
 		priv->plat->mac2mac_link = true;
+		if (priv->hw_offload_enabled)
+			priv->plat->offload_event_handler(priv,
+							  EV_PHY_LINK_UP);
 		netif_carrier_on(ndev);
 	}
 
@@ -5300,7 +5306,7 @@ static int __init stmmac_cmdline_opt(char *str)
 	char *opt;
 
 	if (!str || !*str)
-		return -EINVAL;
+		return 1;
 	while ((opt = strsep(&str, ",")) != NULL) {
 		if (!strncmp(opt, "debug:", 6)) {
 			if (kstrtoint(opt + 6, 0, &debug))
@@ -5331,11 +5337,11 @@ static int __init stmmac_cmdline_opt(char *str)
 				goto err;
 		}
 	}
-	return 0;
+	return 1;
 
 err:
 	pr_err("%s: ERROR broken module parameter conversion", __func__);
-	return -EINVAL;
+	return 1;
 }
 
 __setup("stmmaceth=", stmmac_cmdline_opt);

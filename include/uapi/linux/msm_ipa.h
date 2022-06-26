@@ -2325,6 +2325,8 @@ struct ipa_ioc_vlan_iface_info {
 	uint16_t vlan_id;
 #define IPACM_RESTART_FUNCTIONALITY
 	uint8_t add_vlan_done;
+#define IPA_VLAN_PRIORITY
+	uint8_t priority;
 };
 
 /**

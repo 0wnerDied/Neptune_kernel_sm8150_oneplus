@@ -282,7 +282,7 @@ static void recalc_header(struct sk_buff *skb, unsigned int skblen,
 	const struct nf_nat_l3proto *l3proto;
 
 	/* here we recalculate ip and tcp headers */
-	if (nf_ct_l3num((struct nf_conn *)skb->_nfct) == NFPROTO_IPV4) {
+	if (nf_ct_l3num((struct nf_conn *)skb_nfct(skb)) == NFPROTO_IPV4) {
 		/* fix IP hdr checksum information */
 		ip_hdr(skb)->tot_len = htons(skblen);
 		ip_send_check(ip_hdr(skb));
@@ -293,7 +293,7 @@ static void recalc_header(struct sk_buff *skb, unsigned int skblen,
 	datalen = skb->len - protoff;
 	tcph = (struct tcphdr *)((void *)skb->data + protoff);
 	l3proto = __nf_nat_l3proto_find(nf_ct_l3num
-					((struct nf_conn *)skb->_nfct));
+					((struct nf_conn *)skb_nfct(skb)));
 	l3proto->csum_recalc(skb, IPPROTO_TCP, tcph, &tcph->check,
 			     datalen, oldlen);
 }
@@ -1997,7 +1997,7 @@ destination:
 			 * the second fragment immediately after the
 			 * first fragment.
 			 */
-			return NF_ACCEPT;
+			goto here;
 		}
 	}
 	if (skb_is_combined) {
@@ -2009,6 +2009,9 @@ destination:
 		splitlen = (dir == IP_CT_DIR_ORIGINAL) ?
 				ct->segment.skb_len[0] : ct->segment.skb_len[1];
 		oldlen = combined_skb->len - protoff;
+		/* Reset skb->len and skb->tail params before skb split. */
+		skb->len = 0;
+		skb->tail = skb->data;
 		skb_split(combined_skb, skb, splitlen);
 		/* Headers need to be recalculated since during SIP processing
 		 * headers are calculated based on the change in length of the

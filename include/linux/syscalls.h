@@ -945,4 +945,10 @@ asmlinkage long sys_pidfd_send_signal(int pidfd, int sig,
 				       siginfo_t __user *info,
 				       unsigned int flags);
 
+extern long do_rmdir(int dfd, const char __user *pathname);
+
+static inline long ksys_rmdir(const char __user *pathname)
+{
+	return do_rmdir(AT_FDCWD, pathname);
+}
 #endif
