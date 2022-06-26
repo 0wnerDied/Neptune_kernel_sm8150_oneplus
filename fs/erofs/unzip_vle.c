@@ -956,7 +956,7 @@ static int z_erofs_vle_unzip(struct super_block *sb,
 
 	struct z_erofs_pagevec_ctor ctor;
 	unsigned int nr_pages;
-	unsigned int sparsemem_pages = 0;
+	unsigned int __maybe_unused sparsemem_pages = 0;
 	struct page *pages_onstack[Z_EROFS_VLE_VMAP_ONSTACK_PAGES];
 	struct page **pages, **compressed_pages, *page;
 	unsigned int algorithm;
