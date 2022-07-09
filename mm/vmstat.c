@@ -1096,6 +1096,10 @@ const char * const vmstat_text[] = {
 	"nr_written",
 	"nr_kernel_misc_reclaimable",
 	"nr_unreclaimable_pages",
+#ifdef CONFIG_KZEROD
+	"zero_page_alloc_total",
+	"zero_page_alloc_prezero",
+#endif
 
 	/* enum writeback_stat_item counters */
 	"nr_dirty_threshold",

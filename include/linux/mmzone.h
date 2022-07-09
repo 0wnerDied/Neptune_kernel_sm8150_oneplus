@@ -188,6 +188,10 @@ enum node_stat_item {
 	NR_WRITTEN,		/* page writings since bootup */
 	NR_KERNEL_MISC_RECLAIMABLE,	/* reclaimable non-slab kernel pages */
 	NR_UNRECLAIMABLE_PAGES,
+#ifdef CONFIG_KZEROD
+	ZERO_PAGE_ALLOC_TOTAL,
+	ZERO_PAGE_ALLOC_PREZERO,
+#endif
 	NR_VM_NODE_STAT_ITEMS
 };
 
