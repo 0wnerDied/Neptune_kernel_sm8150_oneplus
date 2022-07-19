@@ -3450,7 +3450,6 @@ static ssize_t fastrpc_debugfs_read(struct file *filp, char __user *buffer,
 				map->secure, map->attr);
 		}
 		mutex_unlock(&fl->map_mutex);
-
 		len += scnprintf(fileinfo + len, DEBUGFS_SIZE - len,
 			"\n======%s %s %s======\n", title,
 			" LIST OF BUFS ", title);
