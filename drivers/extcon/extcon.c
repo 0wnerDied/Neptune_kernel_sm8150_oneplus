@@ -1098,7 +1098,7 @@ static void dummy_sysfs_dev_release(struct device *dev)
  * @supported_cable:	the array of the supported external connectors
  *			ending with EXTCON_NONE.
  *
- * Note that this function allocates the memory for extcon device
+ * Note that this function allocates the memory for extcon device 
  * and initialize default setting for the extcon device.
  *
  * Returns the pointer memory of allocated extcon_dev if success
@@ -1309,6 +1309,12 @@ int extcon_dev_register(struct extcon_dev *edev)
 		}
 	}
 
+	edev->bnh = kzalloc(sizeof(*edev->bnh) * edev->max_supported, GFP_KERNEL);
+	if (!edev->bnh) {
+		ret = -ENOMEM;
+		goto err_dev;
+	}
+
 	for (index = 0; index < edev->max_supported; index++)
 		RAW_INIT_NOTIFIER_HEAD(&edev->nh[index]);
 
@@ -1320,14 +1326,7 @@ int extcon_dev_register(struct extcon_dev *edev)
 	ret = device_register(&edev->dev);
 	if (ret) {
 		put_device(&edev->dev);
-		goto err_dev;
-	}
-
-	edev->bnh = devm_kzalloc(&edev->dev,
-			sizeof(*edev->bnh) * edev->max_supported, GFP_KERNEL);
-	if (!edev->bnh) {
-		ret = -ENOMEM;
-		goto err_dev;
+		goto err_reg;
 	}
 
 	mutex_lock(&extcon_dev_list_lock);
@@ -1336,6 +1335,8 @@ int extcon_dev_register(struct extcon_dev *edev)
 
 	return 0;
 
+err_reg:
+	kfree(edev->bnh);
 err_dev:
 	if (edev->max_supported)
 		kfree(edev->nh);
@@ -1402,6 +1403,7 @@ void extcon_dev_unregister(struct extcon_dev *edev)
 		kfree(edev->cables);
 		kfree(edev->nh);
 	}
+	kfree(edev->bnh);
 
 	put_device(&edev->dev);
 }

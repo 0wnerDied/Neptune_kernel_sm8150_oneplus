@@ -6,7 +6,9 @@
 #include <linux/slab.h>
 #include <asm/unaligned.h>
 #include <linux/buffer_head.h>
+#include <linux/blkdev.h>
 
+#include "exfat_raw.h"
 #include "exfat_fs.h"
 
 static int exfat_mirror_bh(struct super_block *sb, sector_t sec,
@@ -25,7 +27,11 @@ static int exfat_mirror_bh(struct super_block *sb, sector_t sec,
 		memcpy(c_bh->b_data, bh->b_data, sb->s_blocksize);
 		set_buffer_uptodate(c_bh);
 		mark_buffer_dirty(c_bh);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
 		if (sb->s_flags & SB_SYNCHRONOUS)
+#else
+		if (sb->s_flags & MS_SYNCHRONOUS)
+#endif
 			err = sync_dirty_buffer(c_bh);
 		brelse(c_bh);
 	}
@@ -74,18 +80,14 @@ int exfat_ent_set(struct super_block *sb, unsigned int loc,
 
 	fat_entry = (__le32 *)&(bh->b_data[off]);
 	*fat_entry = cpu_to_le32(content);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
 	exfat_update_bh(bh, sb->s_flags & SB_SYNCHRONOUS);
+#else
+	exfat_update_bh(bh, sb->s_flags & MS_SYNCHRONOUS);
+#endif
 	exfat_mirror_bh(sb, sec, bh);
 	brelse(bh);
 	return 0;
-}
-
-static inline bool is_valid_cluster(struct exfat_sb_info *sbi,
-		unsigned int clus)
-{
-	if (clus < EXFAT_FIRST_CLUSTER || sbi->num_clusters <= clus)
-		return false;
-	return true;
 }
 
 int exfat_ent_get(struct super_block *sb, unsigned int loc,
@@ -275,10 +277,9 @@ int exfat_zeroed_cluster(struct inode *dir, unsigned int clu)
 {
 	struct super_block *sb = dir->i_sb;
 	struct exfat_sb_info *sbi = EXFAT_SB(sb);
-	struct buffer_head *bhs[MAX_BUF_PER_PAGE];
-	int nr_bhs = MAX_BUF_PER_PAGE;
+	struct buffer_head *bh;
 	sector_t blknr, last_blknr;
-	int err, i, n;
+	int i;
 
 	blknr = exfat_cluster_to_sector(sbi, clu);
 	last_blknr = blknr + sbi->sect_per_clus;
@@ -292,30 +293,30 @@ int exfat_zeroed_cluster(struct inode *dir, unsigned int clu)
 	}
 
 	/* Zeroing the unused blocks on this cluster */
-	while (blknr < last_blknr) {
-		for (n = 0; n < nr_bhs && blknr < last_blknr; n++, blknr++) {
-			bhs[n] = sb_getblk(sb, blknr);
-			if (!bhs[n]) {
-				err = -ENOMEM;
-				goto release_bhs;
-			}
-			memset(bhs[n]->b_data, 0, sb->s_blocksize);
-		}
+	for (i = blknr; i < last_blknr; i++) {
+		bh = sb_getblk(sb, i);
+		if (!bh)
+			return -ENOMEM;
 
-		err = exfat_update_bhs(bhs, n, IS_DIRSYNC(dir));
-		if (err)
-			goto release_bhs;
-
-		for (i = 0; i < n; i++)
-			brelse(bhs[i]);
+		memset(bh->b_data, 0, sb->s_blocksize);
+		set_buffer_uptodate(bh);
+		mark_buffer_dirty(bh);
+		brelse(bh);
 	}
-	return 0;
 
-release_bhs:
-	exfat_err(sb, "failed zeroed sect %llu\n", (unsigned long long)blknr);
-	for (i = 0; i < n; i++)
-		bforget(bhs[i]);
-	return err;
+	if (IS_DIRSYNC(dir))
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0)
+		return sync_blockdev_range(sb->s_bdev,
+				EXFAT_BLK_TO_B(blknr, sb),
+				EXFAT_BLK_TO_B(last_blknr, sb) - 1);
+#else
+		return filemap_write_and_wait_range(sb->s_bdev->bd_inode->i_mapping,
+				EXFAT_BLK_TO_B(blknr, sb),
+				EXFAT_BLK_TO_B(last_blknr, sb) - 1);
+#endif
+
+
+	return 0;
 }
 
 int exfat_alloc_cluster(struct inode *inode, unsigned int num_alloc,
