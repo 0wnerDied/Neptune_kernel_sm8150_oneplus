@@ -11,6 +11,7 @@
 
 #include "lrng_es_aux.h"
 #include "lrng_es_mgr.h"
+#include "lrng_interface_dev_common.h"
 #include "lrng_numa.h"
 
 static int __maybe_unused
@@ -20,9 +21,14 @@ lrng_hash_switch(struct lrng_drng *drng_store, const void *cb, int node)
 	const struct lrng_hash_cb *old_cb = drng_store->hash_cb;
 	unsigned long flags;
 	u32 i;
-	void *new_hash = new_cb->hash_alloc();
-	void *old_hash = drng_store->hash;
+	void *new_hash, *old_hash;
 	int ret;
+
+	if (node == -1)
+		return 0;
+
+	new_hash = new_cb->hash_alloc();
+	old_hash = drng_store->hash;
 
 	if (IS_ERR(new_hash)) {
 		pr_warn("could not allocate new LRNG pool hash (%ld)\n",
@@ -158,6 +164,7 @@ static int lrng_switch(const void *cb,
 {
 	struct lrng_drng **lrng_drng = lrng_drng_instances();
 	struct lrng_drng *lrng_drng_init = lrng_drng_init_instance();
+	struct lrng_drng *lrng_drng_pr = lrng_drng_pr_instance();
 	int ret = 0;
 
 	if (lrng_drng) {
@@ -165,13 +172,15 @@ static int lrng_switch(const void *cb,
 
 		for_each_online_node(node) {
 			if (lrng_drng[node])
-				ret = switcher(lrng_drng[node], cb, node);
+				ret |= switcher(lrng_drng[node], cb, node);
 		}
 	} else {
-		ret = switcher(lrng_drng_init, cb, 0);
+		ret |= switcher(lrng_drng_init, cb, 0);
 	}
 
-	return 0;
+	ret |= switcher(lrng_drng_pr, cb, -1);
+
+	return ret;
 }
 
 /*
@@ -216,7 +225,7 @@ int lrng_set_drng_cb(const struct lrng_drng_cb *drng_cb)
 	}
 
 	ret = lrng_switch(drng_cb, lrng_drng_switch);
-	/* The swtich may imply new entropy due to larger DRNG sec strength. */
+	/* The switch may imply new entropy due to larger DRNG sec strength. */
 	if (!ret)
 		lrng_es_add_entropy();
 
@@ -260,9 +269,15 @@ int lrng_set_hash_cb(const struct lrng_hash_cb *hash_cb)
 	}
 
 	ret = lrng_switch(hash_cb, lrng_hash_switch);
-	/* The swtich may imply new entropy due to larger digest size. */
-	if (!ret)
+	/*
+	 * The switch may imply new entropy due to larger digest size. But
+	 * it may also offer more room in the aux pool which means we ping
+	 * any waiting entropy providers.
+	 */
+	if (!ret) {
 		lrng_es_add_entropy();
+		lrng_writer_wakeup();
+	}
 
 out:
 	mutex_unlock(&lrng_crypto_cb_update);

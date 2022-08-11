@@ -250,8 +250,7 @@ lrng_irq_switch_hash(struct lrng_drng *drng, int node,
 		       * considered no issue and even good as we have some more
 		       * uncertainty here.
 		       */
-		      new_cb->hash_update(pcpu_shash, digest,
-					       sizeof(digest));
+		      new_cb->hash_update(pcpu_shash, digest, sizeof(digest));
 		if (ret)
 			goto out;
 
@@ -266,7 +265,7 @@ lrng_irq_switch_hash(struct lrng_drng *drng, int node,
 		atomic_add_return_relaxed(found_irqs,
 				per_cpu_ptr(&lrng_irq_array_irqs, cpu));
 
-		pr_debug("Re-initialize per-CPU entropy pool for CPU %d on NUMA node %d with hash %s\n",
+		pr_debug("Re-initialize per-CPU interrupt entropy pool for CPU %d on NUMA node %d with hash %s\n",
 			 cpu, node, new_cb->hash_name());
 	}
 

@@ -51,6 +51,7 @@ struct lrng_drng {
 	.hash_lock			= __RW_LOCK_UNLOCKED(x.hash_lock)
 
 struct lrng_drng *lrng_drng_init_instance(void);
+struct lrng_drng *lrng_drng_pr_instance(void);
 struct lrng_drng *lrng_drng_node_instance(void);
 
 void lrng_reset(void);
@@ -58,6 +59,7 @@ int lrng_drng_alloc_common(struct lrng_drng *drng,
 			   const struct lrng_drng_cb *crypto_cb);
 int lrng_drng_initalize(void);
 bool lrng_sp80090c_compliant(void);
+bool lrng_ntg1_compliant(void);
 bool lrng_get_available(void);
 void lrng_drng_reset(struct lrng_drng *drng);
 void lrng_drng_inject(struct lrng_drng *drng, const u8 *inbuf, u32 inbuflen,
@@ -65,7 +67,7 @@ void lrng_drng_inject(struct lrng_drng *drng, const u8 *inbuf, u32 inbuflen,
 int lrng_drng_get(struct lrng_drng *drng, u8 *outbuf, u32 outbuflen);
 int lrng_drng_sleep_while_nonoperational(int nonblock);
 int lrng_drng_sleep_while_non_min_seeded(void);
-int lrng_drng_get_sleep(u8 *outbuf, u32 outbuflen);
+int lrng_drng_get_sleep(u8 *outbuf, u32 outbuflen, bool pr);
 void lrng_drng_seed_work(struct work_struct *dummy);
 void lrng_drng_force_reseed(void);
 

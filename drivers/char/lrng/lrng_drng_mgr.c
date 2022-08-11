@@ -71,6 +71,13 @@ static struct lrng_drng lrng_drng_init = {
 	.lock = __MUTEX_INITIALIZER(lrng_drng_init.lock),
 };
 
+/* Prediction-resistance DRNG: only deliver as much data as received entropy */
+static struct lrng_drng lrng_drng_pr = {
+	LRNG_DRNG_STATE_INIT(lrng_drng_pr, NULL, NULL, NULL,
+			     &lrng_sha_hash_cb),
+	.lock = __MUTEX_INITIALIZER(lrng_drng_pr.lock),
+};
+
 static u32 max_wo_reseed = LRNG_DRNG_MAX_WITHOUT_RESEED;
 #ifdef CONFIG_LRNG_RUNTIME_MAX_WO_RESEED_CONFIG
 module_param(max_wo_reseed, uint, 0444);
@@ -91,6 +98,11 @@ bool lrng_get_available(void)
 struct lrng_drng *lrng_drng_init_instance(void)
 {
 	return &lrng_drng_init;
+}
+
+struct lrng_drng *lrng_drng_pr_instance(void)
+{
+	return &lrng_drng_pr;
 }
 
 struct lrng_drng *lrng_drng_node_instance(void)
@@ -120,6 +132,8 @@ int lrng_drng_alloc_common(struct lrng_drng *drng,
 {
 	if (!drng || !drng_cb)
 		return -EINVAL;
+	if (!IS_ERR_OR_NULL(drng->drng))
+		return 0;
 
 	drng->drng_cb = drng_cb;
 	drng->drng = drng_cb->drng_alloc(LRNG_DRNG_SECURITY_STRENGTH_BYTES);
@@ -147,13 +161,22 @@ int lrng_drng_initalize(void)
 		return 0;
 	}
 
-	ret = lrng_drng_alloc_common(&lrng_drng_init, lrng_default_drng_cb);
+	/* Initialize the PR DRNG inside init lock as it guards lrng_avail. */
+	mutex_lock(&lrng_drng_pr.lock);
+	ret = lrng_drng_alloc_common(&lrng_drng_pr, lrng_default_drng_cb);
+	mutex_unlock(&lrng_drng_pr.lock);
+
+	if (!ret) {
+		ret = lrng_drng_alloc_common(&lrng_drng_init,
+					     lrng_default_drng_cb);
+		if (!ret)
+			atomic_set(&lrng_avail, 1);
+	}
 	mutex_unlock(&lrng_drng_init.lock);
 	if (ret)
 		return ret;
 
 	pr_debug("LRNG for general use is available\n");
-	atomic_set(&lrng_avail, 1);
 
 	/* Seed the DRNG with any entropy available */
 	if (!lrng_pool_trylock()) {
@@ -176,6 +199,12 @@ bool lrng_sp80090c_compliant(void)
 {
 	/* SP800-90C compliant oversampling is only requested in FIPS mode */
 	return fips_enabled;
+}
+
+bool lrng_ntg1_compliant(void)
+{
+	/* Implies using of /dev/random with O_SYNC */
+	return true;
 }
 
 /************************* Random Number Generation ***************************/
@@ -215,24 +244,37 @@ void lrng_drng_inject(struct lrng_drng *drng, const u8 *inbuf, u32 inbuflen,
 	}
 }
 
-/* Perform the seeding of the DRNG with data from entropy source */
-static void lrng_drng_seed_es(struct lrng_drng *drng)
+/*
+ * Perform the seeding of the DRNG with data from entropy source.
+ * The function returns the entropy injected into the DRNG in bits.
+ */
+static u32 lrng_drng_seed_es_nolock(struct lrng_drng *drng)
 {
 	struct entropy_buf seedbuf __aligned(LRNG_KCAPI_ALIGN);
+	u32 collected_entropy;
 
 	lrng_fill_seed_buffer(&seedbuf,
 			      lrng_get_seed_entropy_osr(drng->fully_seeded));
 
-	mutex_lock(&drng->lock);
+	collected_entropy = lrng_entropy_rate_eb(&seedbuf);
 	lrng_drng_inject(drng, (u8 *)&seedbuf, sizeof(seedbuf),
-			 lrng_fully_seeded_eb(drng->fully_seeded, &seedbuf),
+			 lrng_fully_seeded(drng->fully_seeded,
+					   collected_entropy),
 			 "regular");
-	mutex_unlock(&drng->lock);
 
 	/* Set the seeding state of the LRNG */
 	lrng_init_ops(&seedbuf);
 
 	memzero_explicit(&seedbuf, sizeof(seedbuf));
+
+	return collected_entropy;
+}
+
+static void lrng_drng_seed_es(struct lrng_drng *drng)
+{
+	mutex_lock(&drng->lock);
+	lrng_drng_seed_es_nolock(drng);
+	mutex_unlock(&drng->lock);
 }
 
 static void lrng_drng_seed(struct lrng_drng *drng)
@@ -291,6 +333,11 @@ void lrng_drng_seed_work(struct work_struct *dummy)
 			_lrng_drng_seed_work(&lrng_drng_init, 0);
 			goto out;
 		}
+	}
+
+	if (!lrng_drng_pr.fully_seeded) {
+		_lrng_drng_seed_work(&lrng_drng_pr, 0);
+		goto out;
 	}
 
 	lrng_pool_all_numa_nodes_seeded(true);
@@ -354,6 +401,7 @@ static bool lrng_drng_must_reseed(struct lrng_drng *drng)
 int lrng_drng_get(struct lrng_drng *drng, u8 *outbuf, u32 outbuflen)
 {
 	u32 processed = 0;
+	bool pr = (drng == &lrng_drng_pr) ? true : false;
 
 	if (!outbuf || !outbuflen)
 		return 0;
@@ -372,7 +420,8 @@ int lrng_drng_get(struct lrng_drng *drng, u8 *outbuf, u32 outbuflen)
 		u32 todo = min_t(u32, outbuflen, LRNG_DRNG_MAX_REQSIZE);
 		int ret;
 
-		if (lrng_drng_must_reseed(drng)) {
+		/* In normal operation, check whether to reseed */
+		if (!pr && lrng_drng_must_reseed(drng)) {
 			if (lrng_pool_trylock()) {
 				drng->force_reseed = true;
 			} else {
@@ -382,8 +431,38 @@ int lrng_drng_get(struct lrng_drng *drng, u8 *outbuf, u32 outbuflen)
 		}
 
 		mutex_lock(&drng->lock);
+
+		if (pr) {
+			/* If async reseed did not deliver entropy, try now */
+			if (!drng->fully_seeded) {
+				u32 coll_ent_bits;
+
+				/* If we cannot get the pool lock, try again. */
+				if (lrng_pool_trylock()) {
+					mutex_unlock(&drng->lock);
+					continue;
+				}
+
+				coll_ent_bits = lrng_drng_seed_es_nolock(drng);
+
+				lrng_pool_unlock();
+
+				/* If no new entropy was received, stop now. */
+				if (!coll_ent_bits) {
+					mutex_unlock(&drng->lock);
+					goto out;
+				}
+
+				/* Produce no more data than received entropy */
+				todo = min_t(u32, todo, coll_ent_bits >> 3);
+			}
+
+			/* Do not produce more than DRNG security strength */
+			todo = min_t(u32, todo, lrng_security_strength() >> 3);
+		}
 		ret = drng->drng_cb->drng_generate(drng->drng,
 						   outbuf + processed, todo);
+
 		mutex_unlock(&drng->lock);
 		if (ret <= 0) {
 			pr_warn("getting random data from DRNG failed (%d)\n",
@@ -392,12 +471,20 @@ int lrng_drng_get(struct lrng_drng *drng, u8 *outbuf, u32 outbuflen)
 		}
 		processed += ret;
 		outbuflen -= ret;
+
+		if (pr) {
+			/* Force the async reseed for PR DRNG */
+			lrng_unset_fully_seeded(drng);
+			if (outbuflen)
+				cond_resched();
+		}
 	}
 
+out:
 	return processed;
 }
 
-int lrng_drng_get_sleep(u8 *outbuf, u32 outbuflen)
+int lrng_drng_get_sleep(u8 *outbuf, u32 outbuflen, bool pr)
 {
 	struct lrng_drng **lrng_drng = lrng_drng_instances();
 	struct lrng_drng *drng = &lrng_drng_init;
@@ -405,7 +492,9 @@ int lrng_drng_get_sleep(u8 *outbuf, u32 outbuflen)
 
 	might_sleep();
 
-	if (lrng_drng && lrng_drng[node] && lrng_drng[node]->fully_seeded)
+	if (pr)
+		drng = &lrng_drng_pr;
+	else if (lrng_drng && lrng_drng[node] && lrng_drng[node]->fully_seeded)
 		drng = lrng_drng[node];
 
 	ret = lrng_drng_initalize();
@@ -437,6 +526,11 @@ static void _lrng_reset(struct work_struct *work)
 			mutex_unlock(&drng->lock);
 		}
 	}
+
+	mutex_lock(&lrng_drng_pr.lock);
+	lrng_drng_reset(&lrng_drng_pr);
+	mutex_unlock(&lrng_drng_pr.lock);
+
 	lrng_drng_atomic_reset();
 	lrng_set_entropy_thresh(LRNG_INIT_ENTROPY_BITS);
 
@@ -473,13 +567,20 @@ int lrng_drng_sleep_while_non_min_seeded(void)
 void lrng_get_random_bytes_full(void *buf, int nbytes)
 {
 	lrng_drng_sleep_while_nonoperational(0);
-	lrng_drng_get_sleep((u8 *)buf, (u32)nbytes);
+	lrng_drng_get_sleep((u8 *)buf, (u32)nbytes, false);
 }
 EXPORT_SYMBOL(lrng_get_random_bytes_full);
 
 void lrng_get_random_bytes_min(void *buf, int nbytes)
 {
 	lrng_drng_sleep_while_non_min_seeded();
-	lrng_drng_get_sleep((u8 *)buf, (u32)nbytes);
+	lrng_drng_get_sleep((u8 *)buf, (u32)nbytes, false);
 }
 EXPORT_SYMBOL(lrng_get_random_bytes_min);
+
+int lrng_get_random_bytes_pr(void *buf, int nbytes)
+{
+	lrng_drng_sleep_while_nonoperational(0);
+	return lrng_drng_get_sleep((u8 *)buf, (u32)nbytes, true);
+}
+EXPORT_SYMBOL(lrng_get_random_bytes_pr);

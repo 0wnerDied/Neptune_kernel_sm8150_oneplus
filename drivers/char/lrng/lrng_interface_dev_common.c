@@ -80,7 +80,7 @@ void lrng_state_exseed_allow_all(void)
 
 /************************ LRNG user output interfaces *************************/
 
-ssize_t lrng_read_common(char __user *buf, size_t nbytes)
+ssize_t lrng_read_common(char __user *buf, size_t nbytes, bool pr)
 {
 	ssize_t ret = 0;
 	u8 tmpbuf[LRNG_DRNG_BLOCKSIZE] __aligned(LRNG_KCAPI_ALIGN);
@@ -118,7 +118,7 @@ ssize_t lrng_read_common(char __user *buf, size_t nbytes)
 			schedule();
 		}
 
-		rc = lrng_drng_get_sleep(tmp, todo);
+		rc = lrng_drng_get_sleep(tmp, todo, pr);
 		if (rc <= 0) {
 			if (rc < 0)
 				ret = rc;
@@ -143,7 +143,8 @@ ssize_t lrng_read_common(char __user *buf, size_t nbytes)
 	return ret;
 }
 
-ssize_t lrng_read_common_block(int nonblock, char __user *buf, size_t nbytes)
+ssize_t lrng_read_common_block(int nonblock, int pr,
+			       char __user *buf, size_t nbytes)
 {
 	int ret;
 
@@ -154,13 +155,14 @@ ssize_t lrng_read_common_block(int nonblock, char __user *buf, size_t nbytes)
 	if (ret)
 		return ret;
 
-	return lrng_read_common(buf, nbytes);
+	return lrng_read_common(buf, nbytes, !!pr);
 }
 
 ssize_t lrng_drng_read_block(struct file *file, char __user *buf, size_t nbytes,
 			     loff_t *ppos)
 {
-	return lrng_read_common_block(file->f_flags & O_NONBLOCK, buf, nbytes);
+	return lrng_read_common_block(file->f_flags & O_NONBLOCK,
+				      file->f_flags & O_SYNC, buf, nbytes);
 }
 
 unsigned int lrng_random_poll(struct file *file, poll_table *wait)
@@ -233,7 +235,7 @@ long lrng_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case RNDGETENTCNT:
-		ent_count_bits = lrng_avail_entropy();
+		ent_count_bits = lrng_avail_entropy_aux();
 		if (put_user(ent_count_bits, p))
 			return -EFAULT;
 		return 0;

@@ -170,20 +170,19 @@ static void lrng_init_wakeup(void)
 	lrng_init_wakeup_dev();
 }
 
-static bool lrng_fully_seeded(bool fully_seeded, u32 collected_entropy)
+bool lrng_fully_seeded(bool fully_seeded, u32 collected_entropy)
 {
 	return (collected_entropy >= lrng_get_seed_entropy_osr(fully_seeded));
 }
 
-/* Policy to check whether entropy buffer contains full seeded entropy */
-bool lrng_fully_seeded_eb(bool fully_seeded, struct entropy_buf *eb)
+u32 lrng_entropy_rate_eb(struct entropy_buf *eb)
 {
 	u32 i, collected_entropy = 0;
 
 	for_each_lrng_es(i)
 		collected_entropy += eb->e_bits[i];
 
-	return lrng_fully_seeded(fully_seeded, collected_entropy);
+	return collected_entropy;
 }
 
 /* Mark one DRNG as not fully seeded */
@@ -249,6 +248,13 @@ u32 lrng_avail_entropy(void)
 	for_each_lrng_es(i)
 		ent += lrng_es[i]->curr_entropy(ent_thresh);
 	return ent;
+}
+
+u32 lrng_avail_entropy_aux(void)
+{
+	u32 ent_thresh = lrng_avail_entropy_thresh();
+
+	return lrng_es[lrng_ext_es_aux]->curr_entropy(ent_thresh);
 }
 
 /*
@@ -324,13 +330,12 @@ int __init lrng_rand_initialize(void)
 {
 	struct seed {
 		ktime_t time;
-		unsigned long data[(LRNG_MAX_DIGESTSIZE /
+		unsigned long data[((LRNG_MAX_DIGESTSIZE +
+				     sizeof(unsigned long) - 1) /
 				    sizeof(unsigned long))];
 		struct new_utsname utsname;
 	} seed __aligned(LRNG_KCAPI_ALIGN);
 	unsigned int i;
-
-	BUILD_BUG_ON(LRNG_MAX_DIGESTSIZE % sizeof(unsigned long));
 
 	seed.time = ktime_get_real();
 

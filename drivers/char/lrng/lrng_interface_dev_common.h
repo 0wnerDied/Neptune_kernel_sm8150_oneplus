@@ -38,13 +38,13 @@ ssize_t lrng_drng_write(struct file *file, const char __user *buffer,
 ssize_t lrng_drng_write_common(const char __user *buffer, size_t count,
 			       u32 entropy_bits);
 unsigned int lrng_random_poll(struct file *file, poll_table *wait);
-ssize_t lrng_read_common_block(int nonblock, char __user *buf, size_t nbytes);
+ssize_t lrng_read_common_block(int nonblock, int pr,
+			       char __user *buf, size_t nbytes);
 ssize_t lrng_drng_read_block(struct file *file, char __user *buf, size_t nbytes,
 			     loff_t *ppos);
-ssize_t lrng_read_common(char __user *buf, size_t nbytes);
+ssize_t lrng_read_common(char __user *buf, size_t nbytes, bool pr);
 bool lrng_need_entropy(void);
 
 extern struct wait_queue_head lrng_write_wait;
-extern struct wait_queue_head lrng_init_wait;
 
 #endif /* _LRNG_INTERFACE_DEV_COMMON_H */

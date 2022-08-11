@@ -31,6 +31,7 @@ bool lrng_state_operational(void);
 extern u32 lrng_write_wakeup_bits;
 void lrng_set_entropy_thresh(u32 new);
 u32 lrng_avail_entropy(void);
+u32 lrng_avail_entropy_aux(void);
 void lrng_reset_state(void);
 
 bool lrng_state_fully_seeded(void);
@@ -39,7 +40,8 @@ int lrng_pool_trylock(void);
 void lrng_pool_unlock(void);
 void lrng_pool_all_numa_nodes_seeded(bool set);
 
-bool lrng_fully_seeded_eb(bool fully_seeded, struct entropy_buf *eb);
+bool lrng_fully_seeded(bool fully_seeded, u32 collected_entropy);
+u32 lrng_entropy_rate_eb(struct entropy_buf *eb);
 void lrng_unset_fully_seeded(struct lrng_drng *drng);
 void lrng_fill_seed_buffer(struct entropy_buf *eb, u32 requested_bits);
 void lrng_init_ops(struct entropy_buf *eb);
