@@ -158,6 +158,7 @@ enum {
 	Opt_gc_merge,
 	Opt_nogc_merge,
 	Opt_discard_unit,
+	Opt_memory_mode,
 	Opt_err,
 };
 
@@ -234,6 +235,7 @@ static match_table_t f2fs_tokens = {
 	{Opt_gc_merge, "gc_merge"},
 	{Opt_nogc_merge, "nogc_merge"},
 	{Opt_discard_unit, "discard_unit=%s"},
+	{Opt_memory_mode, "memory=%s"},
 	{Opt_err, NULL},
 };
 
@@ -1220,6 +1222,22 @@ static int parse_options(struct super_block *sb, char *options, bool is_remount)
 			}
 			kfree(name);
 			break;
+		case Opt_memory_mode:
+			name = match_strdup(&args[0]);
+			if (!name)
+				return -ENOMEM;
+			if (!strcmp(name, "normal")) {
+				F2FS_OPTION(sbi).memory_mode =
+						MEMORY_MODE_NORMAL;
+			} else if (!strcmp(name, "low")) {
+				F2FS_OPTION(sbi).memory_mode =
+						MEMORY_MODE_LOW;
+			} else {
+				kfree(name);
+				return -EINVAL;
+			}
+			kfree(name);
+			break;
 		default:
 			f2fs_err(sbi, "Unrecognized mount option \"%s\" or missing value",
 				 p);
@@ -1377,8 +1395,7 @@ static int f2fs_drop_inode(struct inode *inode)
 			atomic_inc(&inode->i_count);
 			spin_unlock(&inode->i_lock);
 
-			if (f2fs_is_atomic_file(inode))
-				f2fs_abort_atomic_write(inode, true);
+			f2fs_abort_atomic_write(inode, true);
 
 			/* should remain fi->extent_tree for writepage */
 			f2fs_destroy_extent_node(inode);
@@ -2021,6 +2038,11 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
 	else if (F2FS_OPTION(sbi).discard_unit == DISCARD_UNIT_SECTION)
 		seq_printf(seq, ",discard_unit=%s", "section");
 
+	if (F2FS_OPTION(sbi).memory_mode == MEMORY_MODE_NORMAL)
+		seq_printf(seq, ",memory=%s", "normal");
+	else if (F2FS_OPTION(sbi).memory_mode == MEMORY_MODE_LOW)
+		seq_printf(seq, ",memory=%s", "low");
+
 	return 0;
 }
 
@@ -2045,6 +2067,7 @@ static void default_options(struct f2fs_sb_info *sbi)
 	F2FS_OPTION(sbi).compress_ext_cnt = 0;
 	F2FS_OPTION(sbi).compress_mode = COMPR_MODE_FS;
 	F2FS_OPTION(sbi).bggc_mode = BGGC_MODE_ON;
+	F2FS_OPTION(sbi).memory_mode = MEMORY_MODE_NORMAL;
 
 	set_opt(sbi, INLINE_XATTR);
 	set_opt(sbi, INLINE_DATA);
@@ -3617,6 +3640,7 @@ static void init_sb_info(struct f2fs_sb_info *sbi)
 	sbi->max_fragment_chunk = DEF_FRAGMENT_SIZE;
 	sbi->max_fragment_hole = DEF_FRAGMENT_SIZE;
 	spin_lock_init(&sbi->gc_urgent_high_lock);
+	atomic64_set(&sbi->current_atomic_write, 0);
 
 	sbi->dir_level = DEF_DIR_LEVEL;
 	sbi->interval_time[CP_TIME] = DEF_CP_INTERVAL;
