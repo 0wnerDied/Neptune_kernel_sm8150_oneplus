@@ -1303,6 +1303,8 @@ static void retract_page_tables(struct address_space *mapping, pgoff_t pgoff)
 				atomic_long_dec(&mm->nr_ptes);
 				vm_write_end(vma);
 				pte_free(mm, pmd_pgtable(_pmd));
+				mmu_notifier_invalidate_range_end(mm, addr,
+								  end);
 			}
 			up_write(&mm->mmap_sem);
 		}
