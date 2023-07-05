@@ -4,25 +4,17 @@
 ## AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=NeptuneKernel by Vwool0xE9
+kernel.string=NeptuneKernel by 0wnerDied
 do.devicecheck=1
 do.modules=0
 do.systemless=1
 do.cleanup=1
 do.cleanuponabort=0
-device.name1=OnePlus7
-device.name2=guacamoleb
-device.name3=OnePlus7Pro
-device.name4=guacamole
-device.name5=OnePlus7ProTMO
-device.name6=guacamolet
-device.name7=OnePlus7T
-device.name8=hotdogb
-device.name9=OnePlus7TPro
-device.name10=hotdog
-device.name11=OnePlus7TProNR
-device.name12=hotdogg
-supported.versions=11 - 12
+device.name1=OnePlus7Pro
+device.name2=guacamole
+device.name3=OnePlus7ProTMO
+device.name4=guacamolet
+supported.versions=13
 '; } # end properties
 
 # shell variables
