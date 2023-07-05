@@ -61,6 +61,7 @@
 #include <linux/sched.h>
 #include <linux/kthread.h>
 #include <linux/dma-mapping.h>
+#include <linux/haven/hh_irq_lend.h>
 #include "focaltech_common.h"
 
 /*****************************************************************************
@@ -138,6 +139,128 @@ struct ts_event {
 	int area;
 };
 
+enum trusted_touch_mode_config {
+	TRUSTED_TOUCH_VM_MODE,
+	TRUSTED_TOUCH_MODE_NONE
+};
+
+enum trusted_touch_pvm_states {
+	TRUSTED_TOUCH_PVM_INIT,
+	PVM_I2C_RESOURCE_ACQUIRED,
+	PVM_INTERRUPT_DISABLED,
+	PVM_IOMEM_LENT,
+	PVM_IOMEM_LENT_NOTIFIED,
+	PVM_IRQ_LENT,
+	PVM_IRQ_LENT_NOTIFIED,
+	PVM_IOMEM_RELEASE_NOTIFIED,
+	PVM_IRQ_RELEASE_NOTIFIED,
+	PVM_ALL_RESOURCES_RELEASE_NOTIFIED,
+	PVM_IRQ_RECLAIMED,
+	PVM_IOMEM_RECLAIMED,
+	PVM_INTERRUPT_ENABLED,
+	PVM_I2C_RESOURCE_RELEASED,
+	TRUSTED_TOUCH_PVM_STATE_MAX
+};
+
+enum trusted_touch_tvm_states {
+	TRUSTED_TOUCH_TVM_INIT,
+	TVM_IOMEM_LENT_NOTIFIED,
+	TVM_IRQ_LENT_NOTIFIED,
+	TVM_ALL_RESOURCES_LENT_NOTIFIED,
+	TVM_IOMEM_ACCEPTED,
+	TVM_I2C_SESSION_ACQUIRED,
+	TVM_IRQ_ACCEPTED,
+	TVM_INTERRUPT_ENABLED,
+	TVM_INTERRUPT_DISABLED,
+	TVM_IRQ_RELEASED,
+	TVM_I2C_SESSION_RELEASED,
+	TVM_IOMEM_RELEASED,
+	TRUSTED_TOUCH_TVM_STATE_MAX
+};
+
+#define TRUSTED_TOUCH_EVENT_LEND_FAILURE -1
+#define TRUSTED_TOUCH_EVENT_LEND_NOTIFICATION_FAILURE -2
+#define TRUSTED_TOUCH_EVENT_ACCEPT_FAILURE -3
+#define	TRUSTED_TOUCH_EVENT_FUNCTIONAL_FAILURE -4
+#define	TRUSTED_TOUCH_EVENT_RELEASE_FAILURE -5
+#define	TRUSTED_TOUCH_EVENT_RECLAIM_FAILURE -6
+#define	TRUSTED_TOUCH_EVENT_NOTIFICATIONS_PENDING 5
+
+#ifdef CONFIG_FTS_TRUSTED_TOUCH
+#define TRUSTED_TOUCH_MEM_LABEL 0x7
+
+enum trusted_touch_pvm_states {
+	TRUSTED_TOUCH_PVM_INIT,
+	PVM_I2C_RESOURCE_ACQUIRED,
+	PVM_INTERRUPT_DISABLED,
+	PVM_IOMEM_LENT,
+	PVM_IOMEM_LENT_NOTIFIED,
+	PVM_IRQ_LENT,
+	PVM_IRQ_LENT_NOTIFIED,
+	PVM_IOMEM_RELEASE_NOTIFIED,
+	PVM_IRQ_RELEASE_NOTIFIED,
+	PVM_ALL_RESOURCES_RELEASE_NOTIFIED,
+	PVM_IRQ_RECLAIMED,
+	PVM_IOMEM_RECLAIMED,
+	PVM_INTERRUPT_ENABLED,
+	PVM_I2C_RESOURCE_RELEASED,
+	TRUSTED_TOUCH_PVM_STATE_MAX
+};
+
+enum trusted_touch_tvm_states {
+	TRUSTED_TOUCH_TVM_INIT,
+	TVM_IOMEM_LENT_NOTIFIED,
+	TVM_IRQ_LENT_NOTIFIED,
+	TVM_ALL_RESOURCES_LENT_NOTIFIED,
+	TVM_IOMEM_ACCEPTED,
+	TVM_I2C_SESSION_ACQUIRED,
+	TVM_IRQ_ACCEPTED,
+	TVM_INTERRUPT_ENABLED,
+	TVM_INTERRUPT_DISABLED,
+	TVM_IRQ_RELEASED,
+	TVM_IOMEM_RELEASED,
+	TVM_I2C_SESSION_RELEASED,
+	TRUSTED_TOUCH_TVM_STATE_MAX
+};
+
+#ifdef CONFIG_FTS_TRUSTED_TOUCH
+#define TRUSTED_TOUCH_MEM_LABEL 0x7
+
+#define TOUCH_RESET_GPIO_BASE 0xF116000
+#define TOUCH_RESET_GPIO_SIZE 0x1000
+#define TOUCH_RESET_GPIO_OFFSET 0x4
+#define TOUCH_INTR_GPIO_BASE 0xF117000
+#define TOUCH_INTR_GPIO_SIZE 0x1000
+#define TOUCH_INTR_GPIO_OFFSET 0x8
+
+#define TRUSTED_TOUCH_EVENT_LEND_FAILURE -1
+#define TRUSTED_TOUCH_EVENT_LEND_NOTIFICATION_FAILURE -2
+#define TRUSTED_TOUCH_EVENT_ACCEPT_FAILURE -3
+#define	TRUSTED_TOUCH_EVENT_FUNCTIONAL_FAILURE -4
+#define	TRUSTED_TOUCH_EVENT_RELEASE_FAILURE -5
+#define	TRUSTED_TOUCH_EVENT_RECLAIM_FAILURE -6
+#define	TRUSTED_TOUCH_EVENT_I2C_FAILURE -7
+#define	TRUSTED_TOUCH_EVENT_NOTIFICATIONS_PENDING 5
+
+struct trusted_touch_vm_info {
+	enum hh_irq_label irq_label;
+	enum hh_vm_names vm_name;
+	u32 hw_irq;
+	hh_memparcel_handle_t vm_mem_handle;
+	u32 *iomem_bases;
+	u32 *iomem_sizes;
+	u32 iomem_list_size;
+	void *mem_cookie;
+#ifdef CONFIG_ARCH_QTI_VM
+	struct mutex tvm_state_mutex;
+	atomic_t tvm_state;
+#else
+	struct mutex pvm_state_mutex;
+	atomic_t pvm_state;
+#endif
+};
+#endif
+
 struct fts_ts_data {
 	struct i2c_client *client;
 	struct spi_device *spi;
@@ -150,6 +273,7 @@ struct fts_ts_data {
 	struct delayed_work esdcheck_work;
 	struct delayed_work prc_work;
 	struct work_struct resume_work;
+	struct work_struct suspend_work;
 	struct ftxxxx_proc proc;
 	spinlock_t irq_lock;
 	struct mutex report_mutex;
@@ -166,6 +290,7 @@ struct fts_ts_data {
 	bool cover_mode;
 	bool charger_mode;
 	bool gesture_mode;      /* gesture enable or disable, default: disable */
+	int report_rate;
 	/* multi-touch */
 	struct ts_event *events;
 	u8 *bus_tx_buf;
@@ -188,6 +313,21 @@ struct fts_ts_data {
 	struct notifier_block fb_notif;
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend early_suspend;
+#endif
+
+#ifdef CONFIG_FTS_TRUSTED_TOUCH
+	struct trusted_touch_vm_info *vm_info;
+	struct mutex fts_clk_io_ctrl_mutex;
+	const char *touch_environment;
+	struct completion trusted_touch_powerdown;
+	struct clk *core_clk;
+	struct clk *iface_clk;
+	atomic_t trusted_touch_initialized;
+	atomic_t trusted_touch_enabled;
+	atomic_t trusted_touch_event;
+	atomic_t trusted_touch_abort_status;
+	atomic_t delayed_vm_probe_pending;
+	atomic_t trusted_touch_mode;
 #endif
 };
 
@@ -257,4 +397,11 @@ int fts_ex_mode_recovery(struct fts_ts_data *ts_data);
 
 void fts_irq_disable(void);
 void fts_irq_enable(void);
+int fts_ts_handle_trusted_touch_pvm(struct fts_ts_data *ts_data, int value);
+int fts_ts_handle_trusted_touch_tvm(struct fts_ts_data *ts_data, int value);
+#ifdef CONFIG_FTS_TRUSTED_TOUCH
+#ifdef CONFIG_ARCH_QTI_VM
+void fts_ts_trusted_touch_tvm_i2c_failure_report(struct fts_ts_data *fts_data);
+#endif
+#endif
 #endif /* __LINUX_FOCALTECH_CORE_H__ */
