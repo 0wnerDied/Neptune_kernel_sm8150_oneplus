@@ -4,12 +4,13 @@
 export HOME=/home/atndko
 
 # Compiler environment
-export CLANG_PATH=$HOME/rui-clang/bin
+export CLANG_PATH=$HOME/linux-x86/clang-r498229/bin
 export PATH="$CLANG_PATH:$PATH"
-export CROSS_COMPILE=aarch64-linux-gnu-
-export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-export KBUILD_BUILD_USER=Vwool0xE9
-export KBUILD_BUILD_HOST=Atndko
+export CROSS_COMPILE=$HOME/gcc64/bin/aarch64-linux-android-
+export CROSS_COMPILE_ARM32=$HOME/gcc32/bin/arm-linux-androideabi-
+export CLANG_TRIPLE=aarch64-linux-gnu-
+export KBUILD_BUILD_USER=0wnerDied
+export KBUILD_BUILD_HOST=Neptune
 
 echo
 echo "Setting defconfig"
