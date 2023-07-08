@@ -79,6 +79,7 @@ static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
 static struct wakeup_source fp_wakelock;
 static struct gf_dev gf;
+static int tp_event = 0;
 
 struct gf_key_map maps[] = {
 	{ EV_KEY, GF_KEY_INPUT_HOME },
@@ -441,7 +442,8 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case GF_IOC_ENABLE_IRQ:
 		pr_debug("%s GF_IOC_ENABLE_IRQ\n", __func__);
-		gf_enable_irq(gf_dev);
+		if (gf_dev->screen_state)
+			gf_enable_irq(gf_dev);
 		break;
 	case GF_IOC_RESET:
 		pr_info("%s GF_IOC_RESET. \n", __func__);
@@ -665,10 +667,12 @@ static const struct attribute_group gf_attribute_group = {
 int gf_opticalfp_irq_handler(int event)
 {
 	char msg = 0;
+	struct gf_dev *gf_dev = &gf;
 
 	pr_info("[info]:%s, event %d", __func__, event);
 
-	if (gf.spi == NULL) {
+	tp_event = event;
+	if (gf.spi == NULL || gf_dev->screen_state == 0) {
 		return 0;
 	}
 	if (event == 1) {
@@ -798,6 +802,7 @@ static int goodix_fb_state_chg_callback(
 						SIGIO, POLL_IN);
 				}
 #endif
+				gf_disable_irq(gf_dev);
 			}
 			gf_dev->screen_state = 0;
 			sysfs_notify(&gf_dev->spi->dev.kobj,
@@ -816,6 +821,7 @@ static int goodix_fb_state_chg_callback(
 #endif
 			}
 			gf_dev->screen_state = 1;
+			gf_opticalfp_irq_handler(tp_event);
 			sysfs_notify(&gf_dev->spi->dev.kobj,
 				NULL, dev_attr_screen_state.attr.name);
 			break;
