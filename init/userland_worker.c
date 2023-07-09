@@ -13,7 +13,6 @@
 #include <linux/string.h>
 #include <linux/security.h>
 #include <linux/delay.h>
-#include <linux/userland.h>
 
 #include "../security/selinux/include/security.h"
 
@@ -25,9 +24,6 @@
 static char** argv;
 
 static struct delayed_work userland_work;
-
-unsigned int is_stock;
-unsigned int is_a12;
 
 static void free_memory(char** argv, int size)
 {
@@ -160,11 +156,6 @@ static void common_optimize(void)
 	}
 }
 
-static void set_kernel_module_params(void) {
-	is_stock = !linux_test("/system/etc/buildinfo/oem_build.prop", false);
-	is_a12 = !linux_test("/system/etc/classpaths/", true);
-}
-
 static void userland_worker(struct work_struct *work)
 {
 	bool is_enforcing;
@@ -191,8 +182,6 @@ static void userland_worker(struct work_struct *work)
 	msleep(MINI_DELAY);
 
 	common_optimize();
-
-	set_kernel_module_params();
 
 	if (is_enforcing) {
 		pr_info("Going enforcing");

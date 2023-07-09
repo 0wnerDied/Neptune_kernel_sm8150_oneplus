@@ -5195,20 +5195,18 @@ int dsi_panel_enable(struct dsi_panel *panel)
 	oneplus_panel_status = 2; // DISPLAY_POWER_ON
 	pr_debug("dsi_panel_enable aod_mode =%d\n",panel->aod_mode);
 
-	if (is_a12 == 1 && is_stock == 0) {
-		if (oneplus_auth_status == 2) {
-			backup_dimlayer_hbm = 0;
-			backup_dim_status = 0;
-		} else if (oneplus_auth_status == 1) {
-			backup_dimlayer_hbm = 1;
-			backup_dim_status = 1;
-		}
-		oneplus_dimlayer_hbm_enable = backup_dimlayer_hbm;
-		oneplus_dim_status = backup_dim_status;
-		if (oneplus_auth_status != 2)
-			pr_err("Restore dim when panel goes on");
-		oneplus_auth_status = 0;
+	if (oneplus_auth_status == 2) {
+		backup_dimlayer_hbm = 0;
+		backup_dim_status = 0;
+	} else if (oneplus_auth_status == 1) {
+		backup_dimlayer_hbm = 1;
+		backup_dim_status = 1;
 	}
+	oneplus_dimlayer_hbm_enable = backup_dimlayer_hbm;
+	oneplus_dim_status = backup_dim_status;
+	if (oneplus_auth_status != 2)
+		pr_err("Restore dim when panel goes on");
+	oneplus_auth_status = 0;
 
 	blank = MSM_DRM_BLANK_UNBLANK_CHARGE;
 	notifier_data.data = &blank;
@@ -5286,18 +5284,16 @@ int dsi_panel_disable(struct dsi_panel *panel)
 
 	/* Avoid sending panel off commands when ESD recovery is underway */
 	if (!atomic_read(&panel->esd_recovery_pending)) {
-		if (is_a12 == 1 && is_stock == 0) {
-			oneplus_dimlayer_hbm_enable = false;
-			oneplus_dim_status = 0;
-			pr_err("Kill dim when panel goes off");
-		}
+		oneplus_dimlayer_hbm_enable = false;
+		oneplus_dim_status = 0;
+		pr_err("Kill dim when panel goes off");
 		HBM_flag = false;
 
-	if (panel->aod_mode == 2)
+		if (panel->aod_mode == 2)
 			panel->aod_status = 1;
 
-	if (panel->aod_mode == 0)
-		panel->aod_status = 0;
+		if (panel->aod_mode == 0)
+			panel->aod_status = 0;
 
 		/*
 		 * Need to set IBB/AB regulator mode to STANDBY,
