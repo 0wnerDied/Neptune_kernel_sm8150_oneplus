@@ -653,10 +653,21 @@ static ssize_t screen_state_get(struct device *device,
 	return scnprintf(buffer, PAGE_SIZE, "%i\n", gfDev->screen_state);
 }
 
+static ssize_t fp_state_get(struct device *device,
+			     struct device_attribute *attribute,
+			     char *buffer)
+{
+	struct gf_dev *gfDev = dev_get_drvdata(device);
+
+	return scnprintf(buffer, PAGE_SIZE, "%i\n", gfDev->fp_state);
+}
+
 static DEVICE_ATTR(screen_state, 0400, screen_state_get, NULL);
+static DEVICE_ATTR(fp_state, 0400, fp_state_get, NULL);
 
 static struct attribute *gf_attributes[] = {
 	&dev_attr_screen_state.attr,
+	&dev_attr_fp_state.attr,
 	NULL
 };
 
@@ -682,6 +693,8 @@ int gf_opticalfp_irq_handler(int event)
 		msg = GF_NET_EVENT_TP_TOUCHUP;
 		sendnlmsg(&msg);
 	}
+	gf_dev->fp_state = !!event;
+	sysfs_notify(&gf_dev->spi->dev.kobj, NULL, dev_attr_fp_state.attr.name);
 
 	__pm_wakeup_event(&fp_wakelock, 10*HZ);
 
