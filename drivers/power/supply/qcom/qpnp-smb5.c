@@ -614,8 +614,6 @@ static int smb5_parse_dt(struct smb5 *chip)
 	chg->plug_irq = of_get_named_gpio_flags(node,
 					"op,usb-check", 0, &flags);
 
-	chg->vph_sel_disable = of_property_read_bool(node,
-					"vph-sel-disable");
 	chg->ffc_vbat_limit = of_property_read_bool(node,
 					"ffc-vbat-limit");
 	chg->lcd_psm_not_support = of_property_read_bool(node,

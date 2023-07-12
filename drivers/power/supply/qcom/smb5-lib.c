@@ -92,7 +92,6 @@ static int op_check_battery_temp(struct smb_charger *chg);
 static int get_usb_temp(struct smb_charger *chg);
 static void op_clean_dash_status(void);
 void op_typec_state_change_irq_handler(void);
-static void op_dcdc_vph_track_sel(struct smb_charger *chg);
 static int sys_boot_complete;
 static int usb_enum_check(const char *val, const struct kernel_param *kp);
 module_param_call(sys_boot_complete, usb_enum_check, param_get_int, &sys_boot_complete, 0644);
@@ -5284,7 +5283,6 @@ irqreturn_t chg_state_change_irq_handler(int irq, void *data)
 	stat = stat & BATTERY_CHARGER_STATUS_MASK;
 	if (stat == TERMINATE_CHARGE) {
 		chg->chg_done = true;
-		op_dcdc_vph_track_sel(chg);
 		pr_info("TERMINATE_CHARGE: chg_done: CAP=%d (Q:%d),\
 			VBAT=%d (Q:%d), IBAT=%d (Q:%d), BAT_TEMP=%d\n",
 			get_prop_batt_capacity(chg),
@@ -9064,27 +9062,6 @@ static void op_check_charger_uovp(struct smb_charger *chg, int vchg_mv)
 	pre_uovp_satus = uovp_satus;
 }
 
-static void op_dcdc_vph_track_sel(struct smb_charger *chg)
-{
-	int rc = 0;
-
-	pr_debug("lcd_is_on:%d\n", chg->oem_lcd_is_on);
-
-	if (chg->vbus_present && chg->chg_done && !chg->vph_sel_disable) {
-		if ((chg->oem_lcd_is_on && !chg->vph_set_flag) ||
-			(!chg->oem_lcd_is_on && chg->vph_set_flag)) {
-			pr_info("vbus present,LCD on set dcdc vph 300mv\n");
-			/* config the DCDC_VPH_TRACK_SEL 300mv */
-			rc = smblib_masked_write(chg, DCDC_VPH_TRACK_SEL,
-					VPH_TRACK_SEL_MASK, SEL_300MV);
-			if (rc < 0)
-				pr_err("Couldn't set  DCDC_VPH_TRACK_SEL rc=%d\n",
-						rc);
-			chg->vph_set_flag = true;
-		}
-	}
-}
-
 #if defined(CONFIG_FB)
 static int fb_notifier_callback(struct notifier_block *self,
 		unsigned long event, void *data)
@@ -9141,7 +9118,6 @@ static int msm_drm_notifier_callback(struct notifier_block *self,
 				set_property_on_fg(chip,
 				POWER_SUPPLY_PROP_UPDATE_LCD_IS_OFF, 1);
 			chip->oem_lcd_is_on = false;
-			op_dcdc_vph_track_sel(chip);
 		}
 		/* add to set pd charging current 2.0A when panel on */
 		if (typec_mode == POWER_SUPPLY_TYPEC_SOURCE_HIGH ||
@@ -9479,7 +9455,6 @@ void checkout_term_current(struct smb_charger *chg)
 	if (chg_full) {
 		chg->chg_done = true;
 		op_charging_en(chg, false);
-		op_dcdc_vph_track_sel(chg);
 		pr_info("chg_done:CAP=%d (Q:%d),VBAT=%d (Q:%d),IBAT=%d (Q:%d),BAT_TEMP=%d\n",
 				get_prop_batt_capacity(chg),
 				get_prop_fg_capacity(chg),

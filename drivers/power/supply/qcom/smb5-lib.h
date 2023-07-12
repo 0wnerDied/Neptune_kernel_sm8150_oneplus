@@ -708,8 +708,6 @@ struct smb_charger {
 	int			disconnect_vbus;
 	int			vbus_ctrl;
 	bool			low_voltage_charger;
-	bool			vph_sel_disable;
-	bool			vph_set_flag;
 	bool			ffc_vbat_limit;
 	bool			lcd_psm_not_support;
 	bool			uusb_apsd_rerun_done;
