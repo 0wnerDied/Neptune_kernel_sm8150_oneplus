@@ -4358,28 +4358,20 @@ int smblib_get_prop_connector_health(struct smb_charger *chg)
 	return POWER_SUPPLY_HEALTH_COOL;
 }
 
-#define PD_PANELON_CURRENT_UA		2000000
 #define PD_PANELOFF_CURRENT_UA		3000000
-#define DCP_PANELOFF_CURRENT_UA		1800000
 static int get_rp_based_dcp_current(struct smb_charger *chg, int typec_mode)
 {
 	int rp_ua;
 
 	switch (typec_mode) {
 	case POWER_SUPPLY_TYPEC_SOURCE_HIGH:
-		if (chg->oem_lcd_is_on)
-			rp_ua = PD_PANELON_CURRENT_UA;
-		else
-			rp_ua = TYPEC_HIGH_CURRENT_UA;
+		rp_ua = TYPEC_HIGH_CURRENT_UA;
 		break;
 	case POWER_SUPPLY_TYPEC_SOURCE_MEDIUM:
 	case POWER_SUPPLY_TYPEC_SOURCE_DEFAULT:
 	/* fall through */
 	default:
-		if (chg->oem_lcd_is_on)
-			rp_ua = DCP_CURRENT_UA;
-		else
-			rp_ua = chg->disable_ctrl_current > 0 ? DCP_CURRENT_UA : DCP_PANELOFF_CURRENT_UA;
+		rp_ua = DCP_CURRENT_UA;
 	}
 
 	return rp_ua;
@@ -4402,9 +4394,6 @@ int smblib_set_prop_pd_current_max(struct smb_charger *chg,
 	} else {
 		rc = -EPERM;
 	}
-	if (chg->oem_lcd_is_on)
-		rc = vote(chg->usb_icl_votable,
-			SW_ICL_MAX_VOTER, true, PD_PANELON_CURRENT_UA);
 
 	return rc;
 }
@@ -8517,14 +8506,8 @@ void set_chg_ibat_vbat_max(
 	vote(chg->fv_votable,
 			DEFAULT_VOTER, true, vfloat * 1000);
 	temp_region = op_battery_temp_region_get(chg);
-	if (chg->pd_active &&
-		temp_region == BATT_TEMP_NORMAL) {
-		vote(chg->fcc_votable,
-			DEFAULT_VOTER, true, PD_PANELOFF_CURRENT_UA);
-	} else {
-		vote(chg->fcc_votable,
+	vote(chg->fcc_votable,
 			DEFAULT_VOTER, true, ibat * 1000);
-	}
 
 	/* set cc to cv 100mv lower than vfloat */
 	set_property_on_fg(chg, POWER_SUPPLY_PROP_CC_TO_CV_POINT, vfloat - 100);
