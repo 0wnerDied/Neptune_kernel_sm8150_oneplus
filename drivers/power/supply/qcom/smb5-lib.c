@@ -9071,7 +9071,8 @@ static void op_dcdc_vph_track_sel(struct smb_charger *chg)
 	pr_debug("lcd_is_on:%d\n", chg->oem_lcd_is_on);
 
 	if (chg->vbus_present && chg->chg_done && !chg->vph_sel_disable) {
-		if (chg->oem_lcd_is_on && !chg->vph_set_flag) {
+		if ((chg->oem_lcd_is_on && !chg->vph_set_flag) ||
+			(!chg->oem_lcd_is_on && chg->vph_set_flag)) {
 			pr_info("vbus present,LCD on set dcdc vph 300mv\n");
 			/* config the DCDC_VPH_TRACK_SEL 300mv */
 			rc = smblib_masked_write(chg, DCDC_VPH_TRACK_SEL,
@@ -9080,15 +9081,6 @@ static void op_dcdc_vph_track_sel(struct smb_charger *chg)
 				pr_err("Couldn't set  DCDC_VPH_TRACK_SEL rc=%d\n",
 						rc);
 			chg->vph_set_flag = true;
-		} else if (!chg->oem_lcd_is_on && chg->vph_set_flag) {
-			pr_info("vbus present,LCD off set dcdc vph 100mv\n");
-			/* config the DCDC_VPH_TRACK_SEL 100mv */
-			rc = smblib_masked_write(chg, DCDC_VPH_TRACK_SEL,
-					VPH_TRACK_SEL_MASK, 0);
-			if (rc < 0)
-				pr_err("Couldn't set  DCDC_VPH_TRACK_SEL rc=%d\n",
-						rc);
-			chg->vph_set_flag = false;
 		}
 	}
 }
@@ -9142,13 +9134,8 @@ static int msm_drm_notifier_callback(struct notifier_block *self,
 	if (evdata && evdata->data && chip) {
 		blank = evdata->data;
 		if (*blank == MSM_DRM_BLANK_UNBLANK ||
-				*blank == MSM_DRM_BLANK_UNBLANK_CHARGE) {
-			if (!chip->oem_lcd_is_on)
-				set_property_on_fg(chip,
-				POWER_SUPPLY_PROP_UPDATE_LCD_IS_OFF, 0);
-			chip->oem_lcd_is_on = true;
-			op_dcdc_vph_track_sel(chip);
-		} else if (*blank == MSM_DRM_BLANK_POWERDOWN ||
+				*blank == MSM_DRM_BLANK_UNBLANK_CHARGE ||
+				*blank == MSM_DRM_BLANK_POWERDOWN ||
 				*blank == MSM_DRM_BLANK_POWERDOWN_CHARGE) {
 			if (chip->oem_lcd_is_on != false)
 				set_property_on_fg(chip,
