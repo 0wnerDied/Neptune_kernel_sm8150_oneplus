@@ -8862,7 +8862,6 @@ void op_charge_info_init(struct smb_charger *chg)
 	chg->recharge_pending = false;
 	chg->recharge_status = false;
 	chg->temp_littel_cool_set_current_0_point_25c = false;
-	chg->oem_lcd_is_on = false;
 	chg->time_out = false;
 	chg->battery_status = BATT_STATUS_GOOD;
 	chg->disable_normal_chg_for_dash = false;

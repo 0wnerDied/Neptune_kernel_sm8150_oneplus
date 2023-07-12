@@ -616,7 +616,6 @@ struct smb_charger {
 	bool				recharge_pending;
 	bool				recharge_status;
 	bool temp_littel_cool_set_current_0_point_25c;
-	bool				oem_lcd_is_on;
 	bool                            disable_ctrl_current;
 	bool				chg_enabled;
 	bool				op_apsd_done;
