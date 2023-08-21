@@ -13,8 +13,6 @@ matrix:
           packages:
             - swig
             - python-dev
-            - valgrind
-            - libyaml-0-2
         coverity_scan:
           project:
             name: dtc
@@ -22,44 +20,11 @@ matrix:
           notification_email: david@gibson.dropbear.id.au
           build_command: make
           branch_pattern: coverity_scan
-      script:
-        - make
-        - make check && make checkm
 
-    # Check it builds properly without optional packages:
-    #     python, valgrind, libyaml
-    - script:
+    - addons:
+        apt:
+          packages:
+
+script:
         - make
         - make check
-
-    - arch: arm64
-      addons:
-        apt_packages:
-          - swig
-          - python-dev
-          - valgrind
-          - libyaml-0-2
-      script:
-        - make
-        - make check checkm
-
-    - arch: ppc64le
-      addons:
-        apt_packages:
-          - swig
-          - python-dev
-          - libyaml-0-2
-      script:
-        - make
-        - make check
-
-    - arch: s390x
-      addons:
-        apt_packages:
-          - swig
-          - python-dev
-          - valgrind
-          - libyaml-0-2
-      script:
-        - make
-        - make check checkm

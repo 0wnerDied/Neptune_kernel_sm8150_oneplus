@@ -1,7 +1,6 @@
 #! /bin/sh
 
-SRCDIR=`dirname "$0"`
-. "$SRCDIR/testutils.sh"
+. ./tests.sh
 
 if [ "$1" = "-n" ]; then
     NEG="$1"

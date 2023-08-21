@@ -1,7 +1,6 @@
 #! /bin/sh
 
-SRCDIR=`dirname "$0"`
-. "$SRCDIR/testutils.sh"
+. ./tests.sh
 
 for x; do
     shift
@@ -31,13 +30,13 @@ ret="$?"
 FAIL_IF_SIGNAL $ret
 
 for c in $YESCHECKS; do
-    if ! grep -E "(ERROR|Warning) \($c\):" $LOG > /dev/null; then
+    if ! grep -E "^(ERROR)|(Warning) \($c\):" $LOG > /dev/null; then
 	FAIL "Failed to trigger check \"$c\""
     fi
 done
 
 for c in $NOCHECKS; do
-    if grep -E "(ERROR|Warning) \($c\):" $LOG > /dev/null; then
+    if grep -E "^(ERROR)|(Warning) \($c\):" $LOG > /dev/null; then
 	FAIL "Incorrectly triggered check \"$c\""
     fi
 done

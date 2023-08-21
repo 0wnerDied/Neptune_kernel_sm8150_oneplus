@@ -4,7 +4,6 @@
 *.patch
 *.so
 *~
-*.bak
 *.tab.[ch]
 lex.yy.c
 *.lex.c
@@ -14,6 +13,5 @@ lex.yy.c
 /version_gen.h
 /fdtget
 /fdtput
-/fdtoverlay
 /patches
 /.pc

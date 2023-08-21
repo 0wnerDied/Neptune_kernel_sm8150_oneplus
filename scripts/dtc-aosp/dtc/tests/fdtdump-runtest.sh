@@ -4,8 +4,7 @@
 #   $1 - source file to compile and compare with fdtdump output of the
 #	  compiled file.
 
-SRCDIR=`dirname "$0"`
-. "$SRCDIR/testutils.sh"
+. ./tests.sh
 
 dts="$1"
 dtb="${dts}.dtb"

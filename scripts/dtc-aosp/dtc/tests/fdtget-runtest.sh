@@ -1,7 +1,6 @@
 #! /bin/sh
 
-SRCDIR=`dirname "$0"`
-. "$SRCDIR/testutils.sh"
+. ./tests.sh
 
 LOG=tmp.log.$$
 EXPECT=tmp.expect.$$

@@ -1,5 +1,4 @@
 #! /bin/sh
-# SPDX-License-Identifier: GPL-2.0-or-later
 
 REMOTE_GIT=/pub/scm/utils/dtc/dtc.git
 REMOTE_PATH=/pub/software/utils/dtc

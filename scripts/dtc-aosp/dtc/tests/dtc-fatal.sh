@@ -1,7 +1,6 @@
 #! /bin/sh
 
-SRCDIR=`dirname "$0"`
-. "$SRCDIR/testutils.sh"
+. ./tests.sh
 
 verbose_run $VALGRIND "$DTC" -o/dev/null "$@"
 ret="$?"
