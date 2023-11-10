@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # HOME path
-export HOME=/home/atndko
+export HOME=/home/Neptune
 
 # Compiler environment
-export CLANG_PATH=$HOME/linux-x86/clang-r498229/bin
+export CLANG_PATH=$HOME/linux-x86/clang-r498229b/bin
 export PATH="$CLANG_PATH:$PATH"
 export CROSS_COMPILE=$HOME/gcc64/bin/aarch64-linux-android-
 export CROSS_COMPILE_ARM32=$HOME/gcc32/bin/arm-linux-androideabi-
