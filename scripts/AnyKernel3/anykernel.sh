@@ -14,7 +14,7 @@ device.name1=OnePlus7Pro
 device.name2=guacamole
 device.name3=OnePlus7ProTMO
 device.name4=guacamolet
-supported.versions=13
+supported.versions=14
 '; } # end properties
 
 # shell variables
