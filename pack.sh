@@ -41,3 +41,6 @@ fi
 END=$(date +"%s")
 DIFF=$((END - START))
 echo -e "Kernel compiled successfully in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
+
+# Copy the kernel to Windows file
+cp $ZIPNAME.zip /mnt/d/kernel/
