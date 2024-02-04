@@ -4,7 +4,7 @@
 export HOME=/home/Neptune
 
 # Compiler environment
-export CLANG_PATH=$HOME/linux-x86/clang-r510928/bin
+export CLANG_PATH=$HOME/llvm-18.1.0-rc1-x86_64/bin
 export PATH="$CLANG_PATH:$PATH"
 export CROSS_COMPILE=$HOME/gcc64/bin/aarch64-linux-android-
 export CROSS_COMPILE_ARM32=$HOME/gcc32/bin/arm-linux-androideabi-
