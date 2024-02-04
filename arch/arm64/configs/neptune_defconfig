@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 4.14.334 Kernel Configuration
+# Linux/arm64 4.14.336 Kernel Configuration
 #
 CONFIG_ARM64=y
 CONFIG_64BIT=y
@@ -165,7 +165,6 @@ CONFIG_NAMESPACES=y
 # CONFIG_USER_NS is not set
 # CONFIG_PID_NS is not set
 CONFIG_NET_NS=y
-CONFIG_SCHED_CASS=y
 # CONFIG_SCHED_AUTOGROUP is not set
 CONFIG_SCHED_TUNE=y
 CONFIG_CPUSET_ASSIST=y
